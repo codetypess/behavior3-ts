@@ -1,0 +1,265 @@
+{
+  "name": "hero",
+  "root": {
+    "id": 1,
+    "name": "Selector",
+    "desc": "英雄测试AI",
+    "args": {},
+    "children": [
+      {
+        "id": 2,
+        "name": "Once",
+        "args": {},
+        "children": [
+          {
+            "id": 3,
+            "name": "AlwaysFail",
+            "args": {},
+            "children": [
+              {
+                "id": 4,
+                "name": "Sequence",
+                "args": {},
+                "children": [
+                  {
+                    "id": 5,
+                    "name": "Log",
+                    "args": {
+                      "message": "B: test sequeue1"
+                    }
+                  },
+                  {
+                    "id": 6,
+                    "name": "Log",
+                    "args": {
+                      "message": "B: test sequeue2"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": 7,
+            "name": "AlwaysFail",
+            "args": {},
+            "children": [
+              {
+                "id": 8,
+                "name": "Sequence",
+                "args": {},
+                "debug": true,
+                "children": [
+                  {
+                    "id": 9,
+                    "name": "Log",
+                    "args": {
+                      "message": "A: test sequeue1"
+                    }
+                  },
+                  {
+                    "id": 10,
+                    "name": "AlwaysFail",
+                    "args": {},
+                    "children": [
+                      {
+                        "id": 11,
+                        "name": "Log",
+                        "args": {
+                          "message": "A: test fail"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "id": 12,
+                    "name": "Log",
+                    "args": {
+                      "message": "A: test sequeue2"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": 13,
+            "name": "AlwaysFail",
+            "args": {},
+            "children": [
+              {
+                "id": 14,
+                "name": "Selector",
+                "args": {},
+                "children": [
+                  {
+                    "id": 15,
+                    "name": "AlwaysFail",
+                    "args": {},
+                    "children": [
+                      {
+                        "id": 16,
+                        "name": "Log",
+                        "args": {
+                          "message": "C: test fail"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "id": 17,
+                    "name": "Log",
+                    "args": {
+                      "message": "C: test sequeue1"
+                    }
+                  },
+                  {
+                    "id": 18,
+                    "name": "Log",
+                    "args": {
+                      "message": "C: test sequeue2"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": 19,
+            "name": "AlwaysFail",
+            "args": {},
+            "children": [
+              {
+                "id": 20,
+                "name": "Parallel",
+                "args": {},
+                "children": [
+                  {
+                    "id": 21,
+                    "name": "Log",
+                    "args": {
+                      "message": "D: test sequeue1"
+                    }
+                  },
+                  {
+                    "id": 22,
+                    "name": "AlwaysFail",
+                    "args": {},
+                    "children": [
+                      {
+                        "id": 23,
+                        "name": "Log",
+                        "args": {
+                          "message": "D: test fail"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "id": 24,
+                    "name": "Log",
+                    "args": {
+                      "message": "D: test sequeue2"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 25,
+        "name": "Sequence",
+        "desc": "攻击",
+        "args": {},
+        "children": [
+          {
+            "id": 26,
+            "name": "FindEnemy",
+            "args": {
+              "x": 0,
+              "y": 0,
+              "w": 100,
+              "h": 50
+            },
+            "output": ["enemy"],
+            "debug": true
+          },
+          {
+            "id": 27,
+            "name": "Attack",
+            "args": {},
+            "input": ["enemy"]
+          },
+          {
+            "id": 28,
+            "name": "Wait",
+            "args": {
+              "time": 10
+            }
+          }
+        ]
+      },
+      {
+        "id": 29,
+        "name": "Sequence",
+        "desc": "移动",
+        "args": {},
+        "children": [
+          {
+            "id": 30,
+            "name": "FindEnemy",
+            "args": {
+              "w": 1000,
+              "h": 500,
+              "x": 0,
+              "y": 0
+            },
+            "output": ["enemy"]
+          },
+          {
+            "id": 31,
+            "name": "MoveToTarget",
+            "args": {},
+            "input": ["enemy"]
+          }
+        ]
+      },
+      {
+        "id": 32,
+        "name": "Sequence",
+        "desc": "逃跑",
+        "args": {},
+        "children": [
+          {
+            "id": 33,
+            "name": "GetHp",
+            "args": {},
+            "output": ["hp"]
+          },
+          {
+            "id": 34,
+            "name": "Check",
+            "args": {
+              "value": "hp > 50"
+            }
+          },
+          {
+            "id": 35,
+            "name": "MoveToPos",
+            "args": {
+              "x": 0,
+              "y": 0
+            }
+          }
+        ]
+      },
+      {
+        "id": 36,
+        "name": "Idle"
+      }
+    ]
+  },
+  "desc": "英雄测试AI"
+}

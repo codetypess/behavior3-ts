@@ -1,0 +1,89 @@
+{
+  "name": "test-parallel",
+  "root": {
+    "id": 1,
+    "name": "Sequence",
+    "children": [
+      {
+        "id": 2,
+        "name": "Log",
+        "args": {
+          "message": "Begin test parallel"
+        }
+      },
+      {
+        "id": 3,
+        "name": "Parallel",
+        "children": [
+          {
+            "id": 4,
+            "name": "Sequence",
+            "children": [
+              {
+                "id": 5,
+                "name": "Wait",
+                "args": {
+                  "time": 1
+                }
+              },
+              {
+                "id": 6,
+                "name": "Log",
+                "args": {
+                  "message": "wait 1s"
+                }
+              }
+            ]
+          },
+          {
+            "id": 7,
+            "name": "Log",
+            "args": {
+              "message": "run parallel!!!"
+            }
+          },
+          {
+            "id": 8,
+            "name": "Sequence",
+            "children": [
+              {
+                "id": 9,
+                "name": "Sequence",
+                "children": [
+                  {
+                    "id": 10,
+                    "name": "Wait",
+                    "args": {
+                      "time": 2
+                    }
+                  },
+                  {
+                    "id": 11,
+                    "name": "Log",
+                    "args": {
+                      "message": "wait 2s"
+                    }
+                  }
+                ]
+              },
+              {
+                "id": 12,
+                "name": "Log",
+                "args": {
+                  "message": "wait 2s complete!!!"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 13,
+        "name": "Log",
+        "args": {
+          "message": "End test parallel"
+        }
+      }
+    ]
+  }
+}
