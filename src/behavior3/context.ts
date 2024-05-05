@@ -69,7 +69,7 @@ export class Context {
         this._processResolvers.set(process.descriptor.name, process);
     }
 
-    resolveProcess(name: string) {
+    findProcess(name: string) {
         return this._processResolvers.get(name);
     }
 }

@@ -1,0 +1,106 @@
+{
+  "name": "test-repeat-until-success",
+  "root": {
+    "id": 1,
+    "name": "Sequence",
+    "children": [
+      {
+        "id": 2,
+        "name": "Log",
+        "args": {
+          "message": "Begin test repeat until success"
+        }
+      },
+      {
+        "id": 3,
+        "name": "AlwaysSuccess",
+        "children": [
+          {
+            "id": 4,
+            "name": "Sequence",
+            "children": [
+              {
+                "id": 5,
+                "name": "RepeatUntilSuccess",
+                "args": {
+                  "maxLoop": 3
+                },
+                "input": [
+                  ""
+                ],
+                "children": [
+                  {
+                    "id": 6,
+                    "name": "Sequence",
+                    "children": [
+                      {
+                        "id": 7,
+                        "name": "Sequence",
+                        "children": [
+                          {
+                            "id": 8,
+                            "name": "Wait",
+                            "args": {
+                              "time": 1
+                            }
+                          },
+                          {
+                            "id": 9,
+                            "name": "Log",
+                            "args": {
+                              "message": "wait 1s"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "id": 10,
+                        "name": "AlwaysFail",
+                        "children": [
+                          {
+                            "id": 11,
+                            "name": "Log",
+                            "args": {
+                              "message": "run repeat until success!!!"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": 12,
+                "name": "Log",
+                "args": {
+                  "message": "DO NOT LOG THIS!!!"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 13,
+        "name": "RepeatUntilSuccess",
+        "children": [
+          {
+            "id": 14,
+            "name": "Log",
+            "args": {
+              "message": "repeat success"
+            }
+          }
+        ]
+      },
+      {
+        "id": 15,
+        "name": "Log",
+        "args": {
+          "message": "End test repeat until success"
+        }
+      }
+    ]
+  }
+}

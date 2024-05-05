@@ -2,6 +2,12 @@ import { Node, NodeDef } from "../../node";
 import { Process, Status } from "../../process";
 import { TreeEnv } from "../../tree-env";
 
+interface NodeArgs {
+    maxLoop?: number;
+}
+
+type NodeInput = [number | undefined];
+
 export class RepeatUntilSuccess extends Process {
     override check(node: Node) {
         if (node.children.length == 0) {
@@ -10,20 +16,32 @@ export class RepeatUntilSuccess extends Process {
     }
 
     override run(node: Node, env: TreeEnv): Status {
-        const isYield = node.resume(env) !== undefined;
-        if (isYield) {
+        let [maxLoop] = env.input as NodeInput;
+        maxLoop = maxLoop ?? (node.args as NodeArgs).maxLoop ?? Number.MAX_SAFE_INTEGER;
+
+        let count = node.resume(env) as number | undefined;
+
+        if (typeof count === "number") {
             if (env.status === "running") {
                 node.error(`unexpected status error`);
             }
+
             if (env.status === "success") {
                 return "success";
+            } else if (count >= maxLoop) {
+                return "failure";
+            } else if (env.status === "failure") {
+                count++;
             }
+        } else {
+            count = 1;
         }
+
         const status = node.children[0].run(env);
         if (status === "success") {
             return "success";
         } else {
-            return "running";
+            return node.yield(env, count);
         }
     }
 
@@ -32,9 +50,12 @@ export class RepeatUntilSuccess extends Process {
             name: "RepeatUntilSuccess",
             type: "Decorator",
             desc: "一直尝试直到子节点返回成功",
+            input: ["最大循环次数?"],
+            args: [{ name: "maxLoop", type: "int?", desc: "最大循环次数" }],
             doc: `
                 + 只能有一个子节点，多个仅执行第一个
-                + 只有当子节点返回成功时，才返回成功，其它情况返回运行中状态`,
+                + 只有当子节点返回成功时，才返回成功，其它情况返回运行中状态
+                + 如果设定了尝试次数，超过指定次数则返回失败`,
         };
     }
 }

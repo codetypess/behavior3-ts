@@ -2,13 +2,13 @@ import { Node, NodeDef } from "../../node";
 import { Process, Status } from "../../process";
 import { TreeEnv } from "../../tree-env";
 
-interface WaitArgs {
+interface NodeArgs {
     time: number;
 }
 
 export class Wait extends Process {
     override check(node: Node): void {
-        const args = node.args as WaitArgs;
+        const args = node.args as NodeArgs;
         if (typeof args.time !== "number") {
             node.error(`args.time is not a number`);
         }
@@ -23,7 +23,7 @@ export class Wait extends Process {
                 return "running";
             }
         } else {
-            const args = node.args as WaitArgs;
+            const args = node.args as NodeArgs;
             return node.yield(env, env.context.time + args.time);
         }
     }

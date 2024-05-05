@@ -64,7 +64,7 @@ export class Node {
             this.children.push(new Node(value, tree));
         });
 
-        const process = tree.context.resolveProcess(this.name);
+        const process = tree.context.findProcess(this.name);
         if (!process) {
             throw new Error(`behavior3: process '${this.name}' not found`);
         }

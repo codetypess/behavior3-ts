@@ -2,11 +2,11 @@ import { Node, NodeDef } from "../../node";
 import { Process, Status } from "../../process";
 import { TreeEnv } from "../../tree-env";
 
-type ForeachInput = [unknown[]];
+type NodeInput = [unknown[]];
 
 export class Foreach extends Process {
     override run(node: Node, env: TreeEnv): Status {
-        const [arr] = env.input as ForeachInput;
+        const [arr] = env.input as NodeInput;
         let last = node.resume(env);
         let i: number = 0;
         let j: number = 0;

@@ -55,3 +55,15 @@ for (let i = 0; i < 3; i++) {
     context.time++;
     testParallel.run();
 }
+console.log("");
+const testRepeatUntilSuccess = createTreeRunner("./example/test-repeat-until-success.json");
+for (let i = 0; i < 4; i++) {
+    context.time++;
+    testRepeatUntilSuccess.run();
+}
+console.log("");
+const testRepeatUntilFailure = createTreeRunner("./example/test-repeat-until-failure.json");
+for (let i = 0; i < 4; i++) {
+    context.time++;
+    testRepeatUntilFailure.run();
+}

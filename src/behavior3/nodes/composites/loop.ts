@@ -2,16 +2,16 @@ import { Node, NodeDef } from "../../node";
 import { Process, Status } from "../../process";
 import { TreeEnv } from "../../tree-env";
 
-interface LoopArgs {
+interface NodeArgs {
     count: number;
 }
 
-type LoopInput = [number?];
+type NodeInput = [number | undefined];
 
 export class Loop extends Process {
     override run(node: Node, env: TreeEnv): Status {
-        let [count] = env.input as LoopInput;
-        count = count ?? (node.args as LoopArgs).count;
+        let [count] = env.input as NodeInput;
+        count = count ?? (node.args as NodeArgs).count;
 
         let last = node.resume(env);
         let i = 0;
@@ -53,8 +53,8 @@ export class Loop extends Process {
             name: "Loop",
             type: "Composite",
             desc: "循环执行",
-            args: [{ name: "count", type: "int?", desc: "次数" }],
-            input: ["次数(int)?"],
+            input: ["循环次数?"],
+            args: [{ name: "count", type: "int?", desc: "循环次数" }],
         };
     }
 }

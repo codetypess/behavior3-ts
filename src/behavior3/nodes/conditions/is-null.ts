@@ -2,11 +2,11 @@ import { Node, NodeDef } from "../../node";
 import { Process, Status } from "../../process";
 import { TreeEnv } from "../../tree-env";
 
-type IsNullInput = [unknown];
+type NodeInput = [unknown];
 
 export class IsNull extends Process {
     override run(node: Node, env: TreeEnv): Status {
-        const [value] = env.input as IsNullInput;
+        const [value] = env.input as NodeInput;
         if (value === undefined || value === null) {
             return "success";
         } else {

@@ -2,13 +2,13 @@ import { Node, NodeDef } from "../../node";
 import { Process, Status } from "../../process";
 import { TreeEnv } from "../../tree-env";
 
-interface LogArgs {
+interface NodeArgs {
     message: string;
 }
 
 export class Log extends Process {
     override run(node: Node, env: TreeEnv): Status {
-        const args = node.args as LogArgs;
+        const args = node.args as NodeArgs;
         console.log("behavior3 -> log:", args.message);
         return "success";
     }
