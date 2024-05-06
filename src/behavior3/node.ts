@@ -1,6 +1,6 @@
+import { Process, Status } from "./process";
 import { Tree } from "./tree";
 import { TreeEnv } from "./tree-env";
-import { Process, Status } from "./process";
 
 export interface NodeDef {
     name: string;
@@ -35,6 +35,7 @@ export interface NodeData {
     desc: string;
     args: unknown;
     debug?: boolean;
+    disabled?: boolean;
     input?: ReadonlyArray<string>;
     output?: ReadonlyArray<string>;
     children?: ReadonlyArray<NodeData>;
@@ -61,7 +62,9 @@ export class Node {
         this.data = data;
         this.args = data.args ?? {};
         data.children?.forEach((value) => {
-            this.children.push(new Node(value, tree));
+            if (!value.disabled) {
+                this.children.push(new Node(value, tree));
+            }
         });
 
         const process = tree.context.findProcess(this.name);
