@@ -3,7 +3,7 @@ import { Process, Status } from "../../process";
 import { TreeEnv } from "../../tree-env";
 
 interface NodeArgs {
-    count: number;
+    readonly count: number;
 }
 
 type NodeInput = [number | undefined];

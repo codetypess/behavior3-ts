@@ -3,8 +3,8 @@ import { Process, Status } from "../../process";
 import { TreeEnv } from "../../tree-env";
 
 interface NodeArgs {
-    time: number;
-    random?: number;
+    readonly time: number;
+    readonly random?: number;
 }
 
 type NodeInput = [number | undefined];

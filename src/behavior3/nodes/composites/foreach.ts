@@ -49,8 +49,8 @@ export class Foreach extends Process {
             name: "ForEach",
             type: "Composite",
             desc: "遍历数组",
-            input: ["[{数组}]"],
-            output: ["{变量}"],
+            input: ["数组"],
+            output: ["变量"],
             doc: `
                 + 每次执行子节点前会设置当前遍历到的变量
                 + 会执行所有子节点

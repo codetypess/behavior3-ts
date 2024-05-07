@@ -3,7 +3,7 @@ import { Process, Status } from "../../process";
 import { TreeEnv } from "../../tree-env";
 
 interface NodeArgs {
-    value: string;
+    readonly value: string;
 }
 
 export class Check extends Process {

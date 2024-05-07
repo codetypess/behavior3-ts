@@ -3,7 +3,7 @@ import { Process, Status } from "../../process";
 import { TreeEnv } from "../../tree-env";
 
 interface NodeArgs {
-    maxLoop?: number;
+    readonly maxLoop?: number;
 }
 
 type NodeInput = [number | undefined];
