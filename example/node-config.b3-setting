@@ -67,10 +67,10 @@
     "type": "Composite",
     "desc": "遍历数组",
     "input": [
-      "[{数组}]"
+      "数组"
     ],
     "output": [
-      "{变量}"
+      "变量"
     ],
     "doc": "+ 每次执行子节点前会设置当前遍历到的变量\n+ 会执行所有子节点\n+ 永远返回成功/正在运行"
   },
@@ -80,14 +80,6 @@
     "desc": "获取生命值",
     "output": [
       "hp"
-    ]
-  },
-  {
-    "name": "GetTime",
-    "type": "Action",
-    "desc": "获取当前时间",
-    "output": [
-      "当前时间"
     ]
   },
   {
@@ -119,15 +111,15 @@
     "name": "Loop",
     "type": "Composite",
     "desc": "循环执行",
+    "input": [
+      "循环次数?"
+    ],
     "args": [
       {
         "name": "count",
-        "type": "int?",
-        "desc": "次数"
+        "type": "int",
+        "desc": "循环次数"
       }
-    ],
-    "input": [
-      "次数(int)?"
     ]
   },
   {
@@ -167,6 +159,14 @@
     "desc": "判断变量是否存在",
     "input": [
       "判断的变量"
+    ]
+  },
+  {
+    "name": "Now",
+    "type": "Action",
+    "desc": "获取当前时间",
+    "output": [
+      "当前时间"
     ]
   },
   {
@@ -229,11 +229,19 @@
     "name": "Wait",
     "type": "Action",
     "desc": "等待",
+    "input": [
+      "等待时间?"
+    ],
     "args": [
       {
         "name": "time",
         "type": "float",
-        "desc": "时间/tick"
+        "desc": "等待时间"
+      },
+      {
+        "name": "random",
+        "type": "float?",
+        "desc": "随机范围"
       }
     ]
   }

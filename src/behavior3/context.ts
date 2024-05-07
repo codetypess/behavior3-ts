@@ -1,7 +1,7 @@
 import { Evaluator, ExpressionEvaluator } from "./evaluator";
 import { Clear } from "./nodes/actions/clear";
-import { GetTime } from "./nodes/actions/get-time";
 import { Log } from "./nodes/actions/log";
+import { Now } from "./nodes/actions/now";
 import { Wait } from "./nodes/actions/wait";
 import { Foreach } from "./nodes/composites/foreach";
 import { Loop } from "./nodes/composites/loop";
@@ -35,12 +35,12 @@ export class Context {
         this.registerProcess(Check);
         this.registerProcess(Clear);
         this.registerProcess(Foreach);
-        this.registerProcess(GetTime);
         this.registerProcess(IsNull);
         this.registerProcess(Log);
         this.registerProcess(Loop);
         this.registerProcess(Not);
         this.registerProcess(NotNull);
+        this.registerProcess(Now);
         this.registerProcess(Once);
         this.registerProcess(Parallel);
         this.registerProcess(RepeatUntilFailure);

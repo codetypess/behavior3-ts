@@ -10,10 +10,6 @@ export class TreeRunner<T extends TreeEnv> {
 
     constructor(readonly env: T, readonly tree: Tree) {}
 
-    get running() {
-        return this.env.stack.length > 0;
-    }
-
     get status() {
         return this._status;
     }
@@ -23,9 +19,11 @@ export class TreeRunner<T extends TreeEnv> {
     }
 
     interrupt() {
-        this.env.__privateInterrupted = true;
-        if (!this._executing) {
-            this.run();
+        if (this._status === "running") {
+            this.env.__privateInterrupted = true;
+            if (!this._executing) {
+                this.run();
+            }
         }
     }
 
