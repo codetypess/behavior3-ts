@@ -33,7 +33,7 @@ export interface NodeData {
     id: number;
     name: string;
     desc: string;
-    args: unknown;
+    args: { [k: string]: unknown };
     debug?: boolean;
     disabled?: boolean;
     input?: ReadonlyArray<string>;
@@ -46,7 +46,7 @@ export class Node {
     readonly name: string;
     readonly id: number;
     readonly info: string;
-    readonly args: unknown;
+    readonly args: { [k: string]: unknown };
     readonly data: NodeData;
     readonly children: Node[] = [];
 

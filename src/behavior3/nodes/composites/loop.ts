@@ -11,7 +11,8 @@ type NodeInput = [number | undefined];
 export class Loop extends Process {
     override run(node: Node, env: TreeEnv): Status {
         let [count] = env.input as NodeInput;
-        count = count ?? (node.args as NodeArgs).count;
+        const args = node.args as unknown as NodeArgs;
+        count = count ?? args.count;
 
         let last = node.resume(env);
         let i = 0;

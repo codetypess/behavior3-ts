@@ -8,7 +8,7 @@ interface NodeArgs {
 
 export class Check extends Process {
     override check(node: Node): void {
-        const args = node.args as NodeArgs;
+        const args = node.args as unknown as NodeArgs;
         if (typeof args.value !== "string" || args.value.length == 0) {
             node.error(`args.value is not a expr string`);
         }
@@ -16,7 +16,7 @@ export class Check extends Process {
     }
 
     override run(node: Node, env: TreeEnv): Status {
-        const args = node.args as NodeArgs;
+        const args = node.args as unknown as NodeArgs;
         const value = env.eval(args.value);
         return value ? "success" : "failure";
     }

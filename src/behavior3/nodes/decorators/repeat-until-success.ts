@@ -17,7 +17,8 @@ export class RepeatUntilSuccess extends Process {
 
     override run(node: Node, env: TreeEnv): Status {
         let [maxLoop] = env.input as NodeInput;
-        maxLoop = maxLoop ?? (node.args as NodeArgs).maxLoop ?? Number.MAX_SAFE_INTEGER;
+        const args = node.args as unknown as NodeArgs;
+        maxLoop = maxLoop ?? args.maxLoop ?? Number.MAX_SAFE_INTEGER;
 
         let count = node.resume(env) as number | undefined;
 

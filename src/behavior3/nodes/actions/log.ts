@@ -8,7 +8,7 @@ interface NodeArgs {
 
 export class Log extends Process {
     override run(node: Node, env: TreeEnv): Status {
-        const args = node.args as NodeArgs;
+        const args = node.args as unknown as NodeArgs;
         console.log("behavior3 -> log:", args.message);
         return "success";
     }

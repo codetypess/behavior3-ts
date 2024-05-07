@@ -11,7 +11,7 @@ type NodeInput = [number | undefined];
 
 export class Wait extends Process {
     override check(node: Node): void {
-        const args = node.args as NodeArgs;
+        const args = node.args as unknown as NodeArgs;
         if (typeof args.time !== "number") {
             node.error(`args.time is not a number`);
         }
@@ -27,7 +27,7 @@ export class Wait extends Process {
             }
         } else {
             let [time] = env.input as NodeInput;
-            const args = node.args as NodeArgs;
+            const args = node.args as unknown as NodeArgs;
             time = time ?? args.time;
             if (args.random) {
                 time += (Math.random() - 0.5) * args.random;
