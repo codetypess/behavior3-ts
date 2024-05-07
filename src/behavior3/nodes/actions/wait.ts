@@ -4,7 +4,10 @@ import { TreeEnv } from "../../tree-env";
 
 interface NodeArgs {
     time: number;
+    random?: number;
 }
+
+type NodeInput = [number | undefined];
 
 export class Wait extends Process {
     override check(node: Node): void {
@@ -23,8 +26,13 @@ export class Wait extends Process {
                 return "running";
             }
         } else {
+            let [time] = env.input as NodeInput;
             const args = node.args as NodeArgs;
-            return node.yield(env, env.context.time + args.time);
+            time = time ?? args.time;
+            if (args.random) {
+                time += (Math.random() - 0.5) * args.random;
+            }
+            return node.yield(env, env.context.time + time);
         }
     }
 
@@ -33,7 +41,11 @@ export class Wait extends Process {
             name: "Wait",
             type: "Action",
             desc: "等待",
-            args: [{ name: "time", type: "float", desc: "时间/tick" }],
+            input: ["等待时间?"],
+            args: [
+                { name: "time", type: "float", desc: "等待时间" },
+                { name: "random", type: "float?", desc: "随机范围" },
+            ],
         };
     }
 }

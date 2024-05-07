@@ -54,7 +54,7 @@ export class Loop extends Process {
             type: "Composite",
             desc: "循环执行",
             input: ["循环次数?"],
-            args: [{ name: "count", type: "int?", desc: "循环次数" }],
+            args: [{ name: "count", type: "int", desc: "循环次数" }],
         };
     }
 }
