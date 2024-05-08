@@ -23,15 +23,11 @@ export class RepeatUntilSuccess extends Process {
         let count = node.resume(env) as number | undefined;
 
         if (typeof count === "number") {
-            if (env.status === "running") {
-                node.error(`unexpected status error`);
-            }
-
             if (env.status === "success") {
                 return "success";
             } else if (count >= maxLoop) {
                 return "failure";
-            } else if (env.status === "failure") {
+            } else  {
                 count++;
             }
         } else {

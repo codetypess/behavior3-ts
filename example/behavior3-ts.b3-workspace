@@ -1,4 +1,24 @@
 {
-  "nodeConf": "node-config.b3-setting",
-  "metadata": []
+  "files": [
+    {
+      "path": "hero.json",
+      "desc": "英雄测试AI"
+    },
+    {
+      "path": "monster.json",
+      "desc": "怪物测试AI"
+    },
+    {
+      "path": "test-parallel.json",
+      "desc": ""
+    },
+    {
+      "path": "test-repeat-until-failure.json",
+      "desc": ""
+    },
+    {
+      "path": "test-repeat-until-success.json",
+      "desc": ""
+    }
+  ]
 }
