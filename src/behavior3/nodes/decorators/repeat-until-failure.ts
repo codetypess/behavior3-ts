@@ -9,7 +9,7 @@ interface NodeArgs {
 type NodeInput = [number | undefined];
 
 export class RepeatUntilFailure extends Process {
-    override check(node: Node) {
+    override init(node: Node) {
         if (node.children.length == 0) {
             node.error(`at least one children`);
         }

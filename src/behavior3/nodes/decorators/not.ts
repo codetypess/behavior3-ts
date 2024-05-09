@@ -3,7 +3,7 @@ import { Process, Status } from "../../process";
 import { TreeEnv } from "../../tree-env";
 
 export class Not extends Process {
-    override check(node: Node): void {
+    override init(node: Node): void {
         if (node.children.length == 0) {
             node.error(`at least one children`);
         }

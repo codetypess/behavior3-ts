@@ -1,13 +1,20 @@
-import { Node, NodeDef } from "../../node";
+import { Node, NodeDef, NodeVars as NodeVarsBase } from "../../node";
 import { Process, Status } from "../../process";
 import { TreeEnv } from "../../tree-env";
 
+interface NodeVars extends NodeVarsBase {
+    once: string;
+}
+
 export class Once extends Process {
-    override check(node: Node): void {}
+    override init(node: Node): void {
+        const vars = node.vars as NodeVars;
+        vars.once = TreeEnv.makePrivateVar(node, "once");
+    }
 
     override run(node: Node, env: TreeEnv): Status {
-        const onceKey = TreeEnv.makePrivateVar(node, "once");
-        if (env.getValue(onceKey) === true) {
+        const once = (node.vars as NodeVars).once;
+        if (env.getValue(once) === true) {
             return "failure";
         }
 
@@ -18,8 +25,8 @@ export class Once extends Process {
             }
         }
 
-        env.setValue(onceKey, true);
-        return "failure";
+        env.setValue(once, true);
+        return "success";
     }
 
     override get descriptor(): NodeDef {

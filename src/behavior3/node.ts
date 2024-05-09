@@ -41,7 +41,12 @@ export interface NodeData {
     children?: ReadonlyArray<NodeData>;
 }
 
+export interface NodeVars {
+    readonly stack: string;
+}
+
 export class Node {
+    readonly vars: NodeVars;
     readonly tree: Tree;
     readonly name: string;
     readonly id: number;
@@ -51,15 +56,14 @@ export class Node {
     readonly children: Node[] = [];
 
     private _process: Process;
-    private _yield: string;
 
     constructor(data: NodeData, tree: Tree) {
+        this.data = data;
         this.tree = tree;
         this.name = data.name;
         this.id = data.id;
         this.info = `node ${tree.name}.${this.id}.${this.name}`;
-
-        this.data = data;
+        this.vars = { stack: TreeEnv.makeTempVar(this, "yield") } as NodeVars;
         this.args = data.args ?? {};
         data.children?.forEach((value) => {
             if (!value.disabled) {
@@ -72,12 +76,12 @@ export class Node {
             throw new Error(`behavior3: process '${this.name}' not found`);
         }
         this._process = process;
-        this._process.check(this);
-        this._yield = TreeEnv.makeTempVar(this, "yield");
+        this._process.init(this);
     }
 
     run(env: TreeEnv) {
-        if (env.getValue(this._yield) === undefined) {
+        const stack = this.vars.stack;
+        if (env.getValue(stack) === undefined) {
             env.stack.push(this);
         }
 
@@ -97,10 +101,10 @@ export class Node {
             data.output?.forEach((varName, i) => {
                 env.setValue(varName, env.output[i]);
             });
-            env.setValue(this._yield, undefined);
+            env.setValue(stack, undefined);
             env.stack.pop();
-        } else if (env.getValue(this._yield) === undefined) {
-            env.setValue(this._yield, true);
+        } else if (env.getValue(stack) === undefined) {
+            env.setValue(stack, true);
         }
 
         env.__privateStatus = status;
@@ -123,12 +127,12 @@ export class Node {
     }
 
     yield(env: TreeEnv, value?: unknown): Status {
-        env.setValue(this._yield, value ?? true);
+        env.setValue(this.vars.stack, value ?? true);
         return "running";
     }
 
     resume(env: TreeEnv): unknown {
-        return env.getValue(this._yield);
+        return env.getValue(this.vars.stack);
     }
 
     error(msg: string) {

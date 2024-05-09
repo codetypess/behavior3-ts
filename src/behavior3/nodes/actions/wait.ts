@@ -10,7 +10,7 @@ interface NodeArgs {
 type NodeInput = [number | undefined];
 
 export class Wait extends Process {
-    override check(node: Node): void {
+    override init(node: Node): void {
         const args = node.args as unknown as NodeArgs;
         if (typeof args.time !== "number") {
             node.error(`args.time is not a number`);

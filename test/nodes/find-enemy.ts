@@ -9,7 +9,7 @@ interface FindEnemyArgs {
 
 export class FindEnemy extends Process {
     override run(node: Node, env: RoleTreeEnv): Status {
-        const args = node.args as FindEnemyArgs;
+        const args = node.args as unknown as FindEnemyArgs;
         const x = env.owner.x;
         const y = env.owner.y;
         const w = args.w;
