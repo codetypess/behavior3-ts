@@ -13,8 +13,8 @@ export class TreeEnv {
     // variables of running node
     readonly input: unknown[] = [];
     readonly output: unknown[] = [];
-    __privateStatus: Status = "success";
-    __privateInterrupted: boolean = false;
+    __status: Status = "success";
+    __interrupted: boolean = false;
 
     private _values: ObjectType = {};
     private _stack: Node[] = [];
@@ -26,7 +26,7 @@ export class TreeEnv {
     }
 
     get status() {
-        return this.__privateStatus;
+        return this.__status;
     }
 
     get vars() {
@@ -41,7 +41,7 @@ export class TreeEnv {
         return this.context.compileCode(code)(this._values);
     }
 
-    getValue(k: string) {
+    get(k: string) {
         if (k) {
             return this._values[k];
         } else {
@@ -49,7 +49,7 @@ export class TreeEnv {
         }
     }
 
-    setValue(k: string, v: unknown) {
+    set(k: string, v: unknown) {
         if (k) {
             if (v === undefined || v === null) {
                 delete this._values[k];

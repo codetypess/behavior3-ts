@@ -11,7 +11,7 @@ export class Attack extends Process {
         }
         console.log("Do Attack");
         enemy.hp -= 100;
-        env.setValue("ATTACKING", true);
+        env.set("ATTACKING", true);
         return "success";
     }
 

@@ -81,7 +81,7 @@ export class Node {
 
     run(env: TreeEnv) {
         const stack = this.vars.stack;
-        if (env.getValue(stack) === undefined) {
+        if (env.get(stack) === undefined) {
             env.stack.push(this);
         }
 
@@ -91,23 +91,23 @@ export class Node {
         env.output.length = 0;
 
         data.input?.forEach((varName) => {
-            env.input.push(env.getValue(varName));
+            env.input.push(env.get(varName));
         });
 
         const status = this._process.run(this, env);
-        if (env.__privateInterrupted) {
+        if (env.__interrupted) {
             return "running";
         } else if (status != "running") {
             data.output?.forEach((varName, i) => {
-                env.setValue(varName, env.output[i]);
+                env.set(varName, env.output[i]);
             });
-            env.setValue(stack, undefined);
+            env.set(stack, undefined);
             env.stack.pop();
-        } else if (env.getValue(stack) === undefined) {
-            env.setValue(stack, true);
+        } else if (env.get(stack) === undefined) {
+            env.set(stack, true);
         }
 
-        env.__privateStatus = status;
+        env.__status = status;
 
         if (data.debug || env.debug) {
             let varStr = "";
@@ -127,12 +127,12 @@ export class Node {
     }
 
     yield(env: TreeEnv, value?: unknown): Status {
-        env.setValue(this.vars.stack, value ?? true);
+        env.set(this.vars.stack, value ?? true);
         return "running";
     }
 
     resume(env: TreeEnv): unknown {
-        return env.getValue(this.vars.stack);
+        return env.get(this.vars.stack);
     }
 
     error(msg: string) {

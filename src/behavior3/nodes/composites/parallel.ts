@@ -58,7 +58,7 @@ export class Parallel extends Process {
             name: "Parallel",
             type: "Composite",
             desc: "并行执行",
-            doc: `执行所有子节点并返回成功`,
+            doc: `执行所有子节点并返回「成功」/「运行中」`,
         };
     }
 }

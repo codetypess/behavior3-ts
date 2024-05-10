@@ -28,7 +28,7 @@ export class Check extends Process {
             desc: "检查True或False",
             args: [{ name: "value", type: "code", desc: "值" }],
             doc: `
-                + 做简单数值公式判定，返回成功或失败`,
+                + 做简单数值公式判定，返回「成功」或「失败」`,
         };
     }
 }

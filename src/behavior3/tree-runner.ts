@@ -20,7 +20,7 @@ export class TreeRunner<T extends TreeEnv> {
 
     interrupt() {
         if (this._status === "running") {
-            this.env.__privateInterrupted = true;
+            this.env.__interrupted = true;
             if (!this._executing) {
                 this.run();
             }
@@ -37,7 +37,7 @@ export class TreeRunner<T extends TreeEnv> {
 
         this._executing = true;
 
-        if (!env.__privateInterrupted) {
+        if (!env.__interrupted) {
             if (stack.length > 0) {
                 let node = stack.at(-1);
                 while (node) {
@@ -53,7 +53,7 @@ export class TreeRunner<T extends TreeEnv> {
             }
         }
 
-        if (env.__privateInterrupted) {
+        if (env.__interrupted) {
             this._status = "interrupted";
             stack.length = 0;
             for (const key in vars) {
@@ -61,7 +61,7 @@ export class TreeRunner<T extends TreeEnv> {
                     delete vars[key];
                 }
             }
-            env.__privateInterrupted = false;
+            env.__interrupted = false;
         }
 
         this._executing = false;

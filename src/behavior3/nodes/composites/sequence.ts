@@ -35,7 +35,7 @@ export class Sequence extends Process {
             type: "Composite",
             desc: "顺序执行",
             doc: `
-                + 一直往下执行，只有当所有子节点都返回成功, 才返回成功
+                + 一直往下执行，只有当所有子节点都返回「成功」, 才返回「成功」
                 + 子节点是与（AND）的关系`,
         };
     }

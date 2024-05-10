@@ -25,7 +25,7 @@ export class Foreach extends Process {
         }
 
         for (; i < arr.length; i++) {
-            env.setValue(node.data.output![0], arr[i]);
+            env.set(node.data.output![0], arr[i]);
             for (; j < node.children.length; j++) {
                 const status = node.children[j].run(env);
                 if (status === "running") {
@@ -54,7 +54,7 @@ export class Foreach extends Process {
             doc: `
                 + 每次执行子节点前会设置当前遍历到的变量
                 + 会执行所有子节点
-                + 永远返回成功/正在运行`,
+                + 永远返回「成功」/「运行中」`,
         };
     }
 }

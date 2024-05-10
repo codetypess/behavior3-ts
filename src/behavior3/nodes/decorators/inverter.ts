@@ -2,7 +2,7 @@ import { Node, NodeDef } from "../../node";
 import { Process, Status } from "../../process";
 import { TreeEnv } from "../../tree-env";
 
-export class Not extends Process {
+export class Inverter extends Process {
     override init(node: Node): void {
         if (node.children.length == 0) {
             node.error(`at least one children`);
@@ -15,27 +15,30 @@ export class Not extends Process {
             if (env.status === "running") {
                 return "running";
             } else {
-                return this._retNot(env.status);
+                return this._invert(env.status);
             }
         }
         const status = node.children[0].run(env);
         if (status === "running") {
             return node.yield(env);
         }
-        return this._retNot(status);
+        return this._invert(status);
     }
 
-    private _retNot(status: Status): Status {
+    private _invert(status: Status): Status {
         return status === "failure" ? "success" : "failure";
     }
 
     override get descriptor(): NodeDef {
         return {
-            name: "Not",
+            name: "Inverter",
             type: "Decorator",
-            desc: "取反",
+            desc: "反转子节点运行结果",
             doc: `
-                + 将子节点的返回值取反`,
+                + 只能有一个子节点，多个仅执行第一个
+                + 当子节点返回「成功」时返回「失败」
+                + 当子节点返回「失败」时返回「成功」
+                + 其余返回「运行中」`,
         };
     }
 }
