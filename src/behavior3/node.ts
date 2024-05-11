@@ -6,6 +6,8 @@ export interface NodeDef {
     name: string;
     type: "Action" | "Decorator" | "Condition" | "Composite";
     desc: string;
+    icon?: string;
+    color?: string;
     input?: string[];
     args?: {
         name: string;

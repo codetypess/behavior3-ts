@@ -7,22 +7,25 @@ export type ObjectType = { [k: string]: unknown };
 const PRIVATE_PREFIX = "__PRIVATE_VAR";
 const TEMP_PREFIX = "__TEMP_VAR";
 
-export class TreeEnv {
-    readonly context: Context;
-
+export class TreeEnv<T extends Context = Context> {
     // variables of running node
     readonly input: unknown[] = [];
     readonly output: unknown[] = [];
     __status: Status = "success";
     __interrupted: boolean = false;
 
-    private _values: ObjectType = {};
-    private _stack: Node[] = [];
+    protected _context: T;
+    protected _values: ObjectType = {};
+    protected _stack: Node[] = [];
 
     debug: boolean = false;
 
-    constructor(context: Context) {
-        this.context = context;
+    constructor(context: T) {
+        this._context = context;
+    }
+
+    get context() {
+        return this._context;
     }
 
     get status() {
@@ -60,8 +63,11 @@ export class TreeEnv {
     }
 
     clear() {
+        this.__interrupted = false;
+        this.__status = "success";
         this._stack.length = 0;
         this._values = {};
+        this.debug = false;
         this.input.length = 0;
         this.output.length = 0;
     }

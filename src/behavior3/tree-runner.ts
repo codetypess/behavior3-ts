@@ -5,10 +5,23 @@ import { TreeEnv } from "./tree-env";
 export type TreeStatus = Status | "interrupted";
 
 export class TreeRunner<T extends TreeEnv> {
-    private _executing: boolean = false;
-    private _status: TreeStatus = "success";
+    protected _executing: boolean = false;
+    protected _status: TreeStatus = "success";
+    protected _env: T;
+    protected _tree: Tree;
 
-    constructor(readonly env: T, readonly tree: Tree) {}
+    constructor(env: T, tree: Tree) {
+        this._env = env;
+        this._tree = tree;
+    }
+
+    get env() {
+        return this._env;
+    }
+
+    get tree() {
+        return this._tree;
+    }
 
     get status() {
         return this._status;
