@@ -45,7 +45,9 @@ export class TreeRunner<T extends TreeEnv> {
         const { stack, vars } = env;
 
         if (env.debug) {
-            console.debug(`---------------- debug ai: ${this.tree.name} --------------------`);
+            console.debug(
+                `------------------- debug ai: ${this.tree.name} --------------------------`
+            );
         }
 
         this._executing = true;

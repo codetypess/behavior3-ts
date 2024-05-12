@@ -19,6 +19,10 @@
     {
       "path": "test-repeat-until-success.json",
       "desc": ""
+    },
+    {
+      "path": "test-timeout.json",
+      "desc": ""
     }
   ]
 }

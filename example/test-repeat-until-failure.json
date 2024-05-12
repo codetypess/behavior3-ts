@@ -8,7 +8,7 @@
         "id": 2,
         "name": "Log",
         "args": {
-          "message": "Begin test repeat until failure"
+          "message": "-------------> RepeatUntilFailure"
         }
       },
       {
@@ -21,9 +21,7 @@
             "args": {
               "maxLoop": 3
             },
-            "input": [
-              ""
-            ],
+            "input": [""],
             "debug": true,
             "children": [
               {
@@ -58,9 +56,7 @@
                 "args": {
                   "maxLoop": 3
                 },
-                "input": [
-                  ""
-                ],
+                "input": [""],
                 "children": [
                   {
                     "id": 10,
@@ -118,7 +114,7 @@
         "id": 17,
         "name": "Log",
         "args": {
-          "message": "End test repeat until failure"
+          "message": "<------------- RepeatUntilFailure"
         }
       }
     ]

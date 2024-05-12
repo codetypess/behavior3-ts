@@ -21,8 +21,7 @@ export interface Position {
     y: number;
 }
 
-export class RoleTreeEnv extends TreeEnv {
-    declare context: RoleContext;
+export class RoleTreeEnv extends TreeEnv<RoleContext> {
     owner!: Role;
 }
 

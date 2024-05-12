@@ -1,0 +1,165 @@
+{
+  "name": "test-timeout",
+  "root": {
+    "id": 1,
+    "name": "Sequence",
+    "children": [
+      {
+        "id": 2,
+        "name": "Log",
+        "args": {
+          "message": "-------------> Timeout"
+        }
+      },
+      {
+        "id": 3,
+        "name": "AlwaysSuccess",
+        "children": [
+          {
+            "id": 4,
+            "name": "Timeout",
+            "args": {
+              "time": 3
+            },
+            "debug": true,
+            "children": [
+              {
+                "id": 5,
+                "name": "RepeatUntilSuccess",
+                "args": {
+                  "maxLoop": 10
+                },
+                "input": [""],
+                "children": [
+                  {
+                    "id": 6,
+                    "name": "AlwaysFail",
+                    "children": [
+                      {
+                        "id": 7,
+                        "name": "Log",
+                        "args": {
+                          "message": "log timeout"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "name": "AlwaysSuccess",
+        "children": [
+          {
+            "id": 9,
+            "name": "Timeout",
+            "args": {
+              "time": 3
+            },
+            "debug": true,
+            "children": [
+              {
+                "id": 10,
+                "name": "RepeatUntilSuccess",
+                "args": {
+                  "maxLoop": 10
+                },
+                "input": [""],
+                "children": [
+                  {
+                    "id": 11,
+                    "name": "Sequence",
+                    "children": [
+                      {
+                        "id": 12,
+                        "name": "Wait",
+                        "args": {
+                          "time": 1
+                        },
+                        "input": [""]
+                      },
+                      {
+                        "id": 13,
+                        "name": "Log",
+                        "args": {
+                          "message": "log wait"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 14,
+        "name": "AlwaysSuccess",
+        "children": [
+          {
+            "id": 15,
+            "name": "Timeout",
+            "args": {
+              "time": 3
+            },
+            "debug": true,
+            "children": [
+              {
+                "id": 16,
+                "name": "Log",
+                "args": {
+                  "message": "log success"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 17,
+        "name": "AlwaysSuccess",
+        "children": [
+          {
+            "id": 18,
+            "name": "Timeout",
+            "args": {
+              "time": 3
+            },
+            "debug": true,
+            "children": [
+              {
+                "id": 19,
+                "name": "AlwaysFail",
+                "args": {
+                  "message": "log success"
+                },
+                "children": [
+                  {
+                    "id": 20,
+                    "name": "Log",
+                    "args": {
+                      "message": "log failure"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 21,
+        "name": "Log",
+        "args": {
+          "message": "<------------- Timeout"
+        }
+      }
+    ]
+  },
+  "desc": ""
+}

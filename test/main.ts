@@ -50,20 +50,15 @@ monsterAi.run();
 console.log("run end");
 
 console.log("====================test api=============================");
-const testParallel = createTreeRunner("./example/test-parallel.json");
-for (let i = 0; i < 3; i++) {
-    context.time++;
-    testParallel.run();
-}
-console.log("");
-const testRepeatUntilSuccess = createTreeRunner("./example/test-repeat-until-success.json");
-for (let i = 0; i < 7; i++) {
-    context.time++;
-    testRepeatUntilSuccess.run();
-}
-console.log("");
-const testRepeatUntilFailure = createTreeRunner("./example/test-repeat-until-failure.json");
-for (let i = 0; i < 7; i++) {
-    context.time++;
-    testRepeatUntilFailure.run();
-}
+const testTree = (name: string, loopCount: number) => {
+    const tree = createTreeRunner(`./example/${name}.json`);
+    for (let i = 0; i < loopCount; i++) {
+        context.time++;
+        tree.run();
+    }
+    console.log("");
+};
+testTree("test-parallel", 3);
+testTree("test-repeat-until-success", 7);
+testTree("test-repeat-until-failure", 7);
+testTree("test-timeout", 5);

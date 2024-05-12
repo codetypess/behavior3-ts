@@ -20,6 +20,7 @@ import { RepeatUntilSuccess } from "./nodes/decorators/repeat-until-success";
 
 import { Process } from "./process";
 import { ObjectType } from "./tree-env";
+import { Timeout } from "./nodes/decorators/timeout";
 
 export type Constructor<T = unknown> = new (...args: unknown[]) => T;
 
@@ -47,6 +48,7 @@ export class Context {
         this.registerProcess(RepeatUntilSuccess);
         this.registerProcess(Selector);
         this.registerProcess(Sequence);
+        this.registerProcess(Timeout);
         this.registerProcess(Wait);
     }
 
