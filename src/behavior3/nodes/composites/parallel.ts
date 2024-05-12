@@ -33,10 +33,7 @@ export class Parallel extends Process {
 
             if (status === "running") {
                 if (nodes === undefined) {
-                    nodes = [];
-                    for (let j = env.stack.length - level - 1; j >= 0; j--) {
-                        nodes[j] = env.stack.pop()!;
-                    }
+                    nodes = env.stack.splice(level, env.stack.length - level);
                 }
             } else {
                 nodes = EMPTY;

@@ -38,10 +38,10 @@ export class Timeout extends Process {
         if (status === "running") {
             if (last === undefined) {
                 const args = node.args as unknown as NodeArgs;
-                last = { nodes: [], expired: env.context.time + args.time };
-                for (let j = env.stack.length - level - 1; j >= 0; j--) {
-                    last.nodes[j] = env.stack.pop()!;
-                }
+                last = {
+                    nodes: env.stack.splice(level, env.stack.length - level),
+                    expired: env.context.time + args.time,
+                };
             }
             return node.yield(env, last);
         } else {
