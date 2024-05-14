@@ -18,14 +18,25 @@ export class Once extends Process {
             return "failure";
         }
 
-        for (let i = 0; i < node.children.length; i++) {
+        const last = node.resume(env);
+        let i = 0;
+
+        if (typeof last === "number") {
+            if (env.status === "running") {
+                node.error(`unexpected status error`);
+            }
+            i = last + 1;
+        }
+
+        for (; i < node.children.length; i++) {
             const status = node.children[i].run(env);
             if (status === "running") {
-                node.error("this child should not return running status");
+                return node.yield(env, i);
             }
         }
 
         env.set(once, true);
+
         return "success";
     }
 
@@ -36,8 +47,7 @@ export class Once extends Process {
             desc: "只执行一次",
             doc: `
                 + 可以接多个子节点，子节点默认全部执行
-                + 被打断后该节点后的子节点依旧不会执行
-                + 该节点执行后永远返回「成功」`,
+                + 第一次执行完全部子节点时返回「成功」，之后永远返回「失败」`,
         };
     }
 }

@@ -22,8 +22,8 @@ export class Timeout extends Process {
         } else if (env.context.time >= last.expired) {
             return "failure";
         } else {
-            for (let j = last.nodes.length - 1; j >= 0; j--) {
-                const child = last.nodes[j];
+            for (let i = last.nodes.length - 1; i >= 0; i--) {
+                const child = last.nodes[i];
                 env.stack.push(child);
                 status = child.run(env);
                 if (status === "running") {

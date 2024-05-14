@@ -10,14 +10,14 @@ export class Parallel extends Process {
         const level = env.stack.length;
         let count = 0;
 
-        node.children.forEach((child, i) => {
-            let nodes = last.at(i);
+        node.children.forEach((child, idx) => {
+            let nodes = last.at(idx);
             let status: Status | undefined;
             if (nodes === undefined) {
                 status = child.run(env);
             } else if (nodes.length > 0) {
-                for (let j = nodes.length - 1; j >= 0; j--) {
-                    child = nodes[j];
+                for (let i = nodes.length - 1; i >= 0; i--) {
+                    child = nodes[i];
                     env.stack.push(child);
                     status = child.run(env);
                     if (status === "running") {
@@ -40,7 +40,7 @@ export class Parallel extends Process {
                 count++;
             }
 
-            last[i] = nodes;
+            last[idx] = nodes;
         });
 
         if (count === node.children.length) {

@@ -62,3 +62,4 @@ testTree("test-parallel", 3);
 testTree("test-repeat-until-success", 7);
 testTree("test-repeat-until-failure", 7);
 testTree("test-timeout", 5);
+testTree("test-once", 5);

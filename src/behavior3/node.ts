@@ -44,7 +44,7 @@ export interface NodeData {
 }
 
 export interface NodeVars {
-    readonly stack: string;
+    readonly instack: string;
 }
 
 export class Node {
@@ -65,7 +65,7 @@ export class Node {
         this.name = data.name;
         this.id = data.id;
         this.info = `node ${tree.name}.${this.id}.${this.name}`;
-        this.vars = { stack: TreeEnv.makeTempVar(this, "yield") } as NodeVars;
+        this.vars = { instack: TreeEnv.makeTempVar(this, "yield") } as NodeVars;
         this.args = data.args ?? {};
         data.children?.forEach((value) => {
             if (!value.disabled) {
@@ -82,8 +82,8 @@ export class Node {
     }
 
     run(env: TreeEnv) {
-        const stack = this.vars.stack;
-        if (env.get(stack) === undefined) {
+        const instack = this.vars.instack;
+        if (env.get(instack) === undefined) {
             env.stack.push(this);
         }
 
@@ -103,10 +103,10 @@ export class Node {
             data.output?.forEach((varName, i) => {
                 env.set(varName, env.output[i]);
             });
-            env.set(stack, undefined);
+            env.set(instack, undefined);
             env.stack.pop();
-        } else if (env.get(stack) === undefined) {
-            env.set(stack, true);
+        } else if (env.get(instack) === undefined) {
+            env.set(instack, true);
         }
 
         env.__status = status;
@@ -129,12 +129,12 @@ export class Node {
     }
 
     yield(env: TreeEnv, value?: unknown): Status {
-        env.set(this.vars.stack, value ?? true);
+        env.set(this.vars.instack, value ?? true);
         return "running";
     }
 
     resume(env: TreeEnv): unknown {
-        return env.get(this.vars.stack);
+        return env.get(this.vars.instack);
     }
 
     error(msg: string) {

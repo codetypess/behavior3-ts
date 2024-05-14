@@ -1,0 +1,128 @@
+{
+  "name": "test-once",
+  "root": {
+    "id": 1,
+    "name": "Sequence",
+    "children": [
+      {
+        "id": 2,
+        "name": "Log",
+        "args": {
+          "message": "-------------> Once"
+        }
+      },
+      {
+        "id": 3,
+        "name": "AlwaysSuccess",
+        "children": [
+          {
+            "id": 4,
+            "name": "Once",
+            "args": {
+              "time": 3
+            },
+            "debug": true,
+            "children": [
+              {
+                "id": 5,
+                "name": "RepeatUntilSuccess",
+                "args": {
+                  "maxLoop": 2
+                },
+                "input": [
+                  ""
+                ],
+                "children": [
+                  {
+                    "id": 6,
+                    "name": "AlwaysFail",
+                    "children": [
+                      {
+                        "id": 7,
+                        "name": "Log",
+                        "args": {
+                          "message": "log once1"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "name": "AlwaysSuccess",
+        "children": [
+          {
+            "id": 9,
+            "name": "Once",
+            "args": {
+              "time": 3
+            },
+            "debug": true,
+            "children": [
+              {
+                "id": 10,
+                "name": "Log",
+                "args": {
+                  "message": "log once2"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "name": "AlwaysSuccess",
+        "children": [
+          {
+            "id": 12,
+            "name": "Once",
+            "args": {
+              "time": 3
+            },
+            "debug": true,
+            "children": [
+              {
+                "id": 13,
+                "name": "Log",
+                "args": {
+                  "message": "log once3"
+                }
+              },
+              {
+                "id": 14,
+                "name": "Wait",
+                "args": {
+                  "time": 1
+                },
+                "input": [
+                  ""
+                ]
+              },
+              {
+                "id": 15,
+                "name": "Log",
+                "args": {
+                  "message": "log once4"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 16,
+        "name": "Log",
+        "args": {
+          "message": "<------------- Once"
+        }
+      }
+    ]
+  },
+  "desc": ""
+}
