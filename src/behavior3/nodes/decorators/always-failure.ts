@@ -13,7 +13,7 @@ export class AlwaysFail extends Process {
         const isYield = node.resume(env);
         if (typeof isYield === "boolean") {
             if (env.status === "running") {
-                return "running";
+                node.error(`unexpected status error`);
             }
             return "failure";
         }

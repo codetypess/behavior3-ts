@@ -13,10 +13,9 @@ export class Inverter extends Process {
         const isYield = node.resume(env);
         if (typeof isYield === "boolean") {
             if (env.status === "running") {
-                return "running";
-            } else {
-                return this._invert(env.status);
+                node.error(`unexpected status error`);
             }
+            return this._invert(env.status);
         }
         const status = node.children[0].run(env);
         if (status === "running") {
