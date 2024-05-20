@@ -3,6 +3,7 @@ module.exports = {
     plugins: ["@typescript-eslint", "@stylistic/js"],
     parser: "@typescript-eslint/parser",
     rules: {
+        eqeqeq: "error",
         "@typescript-eslint/no-namespace": "off",
         "@typescript-eslint/no-shadow": "error",
         "@typescript-eslint/no-explicit-any": "error",

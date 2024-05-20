@@ -1,0 +1,118 @@
+{
+  "name": "test-sequence",
+  "root": {
+    "id": 1,
+    "name": "Sequence",
+    "children": [
+      {
+        "id": 2,
+        "name": "Assert",
+        "args": {
+          "message": "sequence running"
+        },
+        "children": [
+          {
+            "id": 3,
+            "name": "IsStatus",
+            "args": {
+              "status": "running"
+            },
+            "children": [
+              {
+                "id": 4,
+                "name": "Sequence",
+                "children": [
+                  {
+                    "id": 5,
+                    "name": "Wait",
+                    "args": {
+                      "time": 2
+                    },
+                    "input": [
+                      ""
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "name": "Assert",
+        "args": {
+          "message": "sequence success"
+        },
+        "children": [
+          {
+            "id": 7,
+            "name": "IsStatus",
+            "args": {
+              "status": "success"
+            },
+            "children": [
+              {
+                "id": 8,
+                "name": "Sequence",
+                "children": [
+                  {
+                    "id": 9,
+                    "name": "Log",
+                    "args": {
+                      "message": "hello sequence success"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "name": "Assert",
+        "args": {
+          "message": "sequence failure"
+        },
+        "children": [
+          {
+            "id": 11,
+            "name": "IsStatus",
+            "args": {
+              "status": "failure"
+            },
+            "children": [
+              {
+                "id": 12,
+                "name": "Sequence",
+                "children": [
+                  {
+                    "id": 13,
+                    "name": "AlwaysFail",
+                    "args": {
+                      "time": 2
+                    },
+                    "input": [
+                      ""
+                    ],
+                    "children": [
+                      {
+                        "id": 14,
+                        "name": "Log",
+                        "args": {
+                          "message": "hello sequence failure"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "desc": ""
+}

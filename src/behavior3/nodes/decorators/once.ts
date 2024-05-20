@@ -3,18 +3,18 @@ import { Process, Status } from "../../process";
 import { TreeEnv } from "../../tree-env";
 
 interface NodeVars extends NodeVarsBase {
-    once: string;
+    onceKey: string;
 }
 
 export class Once extends Process {
     override init(node: Node): void {
         const vars = node.vars as NodeVars;
-        vars.once = TreeEnv.makePrivateVar(node, "once");
+        vars.onceKey = TreeEnv.makePrivateVar(node, "ONCE");
     }
 
     override run(node: Node, env: TreeEnv): Status {
-        const once = (node.vars as NodeVars).once;
-        if (env.get(once) === true) {
+        const onceKey = (node.vars as NodeVars).onceKey;
+        if (env.get(onceKey) === true) {
             return "failure";
         }
 
@@ -35,7 +35,7 @@ export class Once extends Process {
             }
         }
 
-        env.set(once, true);
+        env.set(onceKey, true);
 
         return "success";
     }

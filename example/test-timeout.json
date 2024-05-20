@@ -13,10 +13,17 @@
       },
       {
         "id": 3,
+        "name": "Now",
+        "output": [
+          "start_time"
+        ]
+      },
+      {
+        "id": 4,
         "name": "AlwaysSuccess",
         "children": [
           {
-            "id": 4,
+            "id": 5,
             "name": "Timeout",
             "args": {
               "time": 3
@@ -24,19 +31,21 @@
             "debug": true,
             "children": [
               {
-                "id": 5,
+                "id": 6,
                 "name": "RepeatUntilSuccess",
                 "args": {
                   "maxLoop": 10
                 },
-                "input": [""],
+                "input": [
+                  ""
+                ],
                 "children": [
                   {
-                    "id": 6,
+                    "id": 7,
                     "name": "AlwaysFail",
                     "children": [
                       {
-                        "id": 7,
+                        "id": 8,
                         "name": "Log",
                         "args": {
                           "message": "log timeout"
@@ -51,11 +60,34 @@
         ]
       },
       {
-        "id": 8,
+        "id": 9,
+        "name": "Now",
+        "output": [
+          "curr_time"
+        ]
+      },
+      {
+        "id": 10,
+        "name": "Assert",
+        "args": {
+          "message": "timeout error"
+        },
+        "children": [
+          {
+            "id": 11,
+            "name": "Check",
+            "args": {
+              "value": "curr_time - start_time == 3"
+            }
+          }
+        ]
+      },
+      {
+        "id": 12,
         "name": "AlwaysSuccess",
         "children": [
           {
-            "id": 9,
+            "id": 13,
             "name": "Timeout",
             "args": {
               "time": 3
@@ -63,27 +95,31 @@
             "debug": true,
             "children": [
               {
-                "id": 10,
+                "id": 14,
                 "name": "RepeatUntilSuccess",
                 "args": {
                   "maxLoop": 10
                 },
-                "input": [""],
+                "input": [
+                  ""
+                ],
                 "children": [
                   {
-                    "id": 11,
+                    "id": 15,
                     "name": "Sequence",
                     "children": [
                       {
-                        "id": 12,
+                        "id": 16,
                         "name": "Wait",
                         "args": {
                           "time": 1
                         },
-                        "input": [""]
+                        "input": [
+                          ""
+                        ]
                       },
                       {
-                        "id": 13,
+                        "id": 17,
                         "name": "Log",
                         "args": {
                           "message": "log wait"
@@ -98,11 +134,11 @@
         ]
       },
       {
-        "id": 14,
+        "id": 18,
         "name": "AlwaysSuccess",
         "children": [
           {
-            "id": 15,
+            "id": 19,
             "name": "Timeout",
             "args": {
               "time": 3
@@ -110,7 +146,7 @@
             "debug": true,
             "children": [
               {
-                "id": 16,
+                "id": 20,
                 "name": "Log",
                 "args": {
                   "message": "log success"
@@ -121,11 +157,11 @@
         ]
       },
       {
-        "id": 17,
+        "id": 21,
         "name": "AlwaysSuccess",
         "children": [
           {
-            "id": 18,
+            "id": 22,
             "name": "Timeout",
             "args": {
               "time": 3
@@ -133,14 +169,14 @@
             "debug": true,
             "children": [
               {
-                "id": 19,
+                "id": 23,
                 "name": "AlwaysFail",
                 "args": {
                   "message": "log success"
                 },
                 "children": [
                   {
-                    "id": 20,
+                    "id": 24,
                     "name": "Log",
                     "args": {
                       "message": "log failure"
@@ -153,7 +189,7 @@
         ]
       },
       {
-        "id": 21,
+        "id": 25,
         "name": "Log",
         "args": {
           "message": "<------------- Timeout"

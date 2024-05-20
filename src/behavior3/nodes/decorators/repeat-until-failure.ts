@@ -10,8 +10,8 @@ type NodeInput = [number | undefined];
 
 export class RepeatUntilFailure extends Process {
     override init(node: Node) {
-        if (node.children.length == 0) {
-            node.error(`at least one children`);
+        if (node.children.length === 0) {
+            node.error(`${node.tree.name}#${node.id}: at least one children`);
         }
     }
 

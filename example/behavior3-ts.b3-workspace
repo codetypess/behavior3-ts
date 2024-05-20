@@ -25,6 +25,10 @@
       "desc": ""
     },
     {
+      "path": "test-sequence.json",
+      "desc": ""
+    },
+    {
       "path": "test-timeout.json",
       "desc": ""
     }

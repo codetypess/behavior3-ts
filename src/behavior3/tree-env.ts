@@ -4,8 +4,8 @@ import { Status } from "./process";
 
 export type ObjectType = { [k: string]: unknown };
 
-const PRIVATE_PREFIX = "__PRIVATE_VAR";
-const TEMP_PREFIX = "__TEMP_VAR";
+const PREFIX_PRIVATE = "__PRIVATE_VAR";
+const PREFIX_TEMP = "__TEMP_VAR";
 
 export class TreeEnv<T extends Context = Context> {
     // variables of running node
@@ -78,21 +78,21 @@ export class TreeEnv<T extends Context = Context> {
 
     static makePrivateVar(node: Node | string, k?: string) {
         if (typeof node === "string") {
-            return `${PRIVATE_PREFIX}_${node}`;
+            return `${PREFIX_PRIVATE}_${node}`;
         } else {
-            return `${PRIVATE_PREFIX}_NODE#${node.id}_${k}`;
+            return `${PREFIX_PRIVATE}_NODE#${node.id}_${k}`;
         }
     }
 
     static isPrivateVar(k: string) {
-        return k.startsWith(PRIVATE_PREFIX);
+        return k.startsWith(PREFIX_PRIVATE);
     }
 
     static makeTempVar(node: Node, k: string) {
-        return `${TEMP_PREFIX}_NODE#${node.id}_${k}`;
+        return `${PREFIX_TEMP}_NODE#${node.id}_${k}`;
     }
 
     static isTempVar(k: string) {
-        return k.startsWith(TEMP_PREFIX);
+        return k.startsWith(PREFIX_TEMP);
     }
 }

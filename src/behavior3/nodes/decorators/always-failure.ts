@@ -4,8 +4,8 @@ import { TreeEnv } from "../../tree-env";
 
 export class AlwaysFail extends Process {
     override init(node: Node): void {
-        if (node.children.length == 0) {
-            node.error(`at least one children`);
+        if (node.children.length === 0) {
+            node.error(`${node.tree.name}#${node.id}: at least one children`);
         }
     }
 

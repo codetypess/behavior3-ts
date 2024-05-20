@@ -44,7 +44,7 @@ export interface NodeData {
 }
 
 export interface NodeVars {
-    readonly instack: string;
+    readonly yieldKey: string;
 }
 
 export class Node {
@@ -65,7 +65,7 @@ export class Node {
         this.name = data.name;
         this.id = data.id;
         this.info = `node ${tree.name}.${this.id}.${this.name}`;
-        this.vars = { instack: TreeEnv.makeTempVar(this, "yield") } as NodeVars;
+        this.vars = { yieldKey: TreeEnv.makeTempVar(this, "YIELD") } as NodeVars;
         this.args = data.args ?? {};
         data.children?.forEach((value) => {
             if (!value.disabled) {
@@ -82,8 +82,8 @@ export class Node {
     }
 
     run(env: TreeEnv) {
-        const instack = this.vars.instack;
-        if (env.get(instack) === undefined) {
+        const yieldKey = this.vars.yieldKey;
+        if (env.get(yieldKey) === undefined) {
             env.stack.push(this);
         }
 
@@ -99,14 +99,14 @@ export class Node {
         const status = this._process.run(this, env);
         if (env.__interrupted) {
             return "running";
-        } else if (status != "running") {
+        } else if (status !== "running") {
             data.output?.forEach((varName, i) => {
                 env.set(varName, env.output[i]);
             });
-            env.set(instack, undefined);
+            env.set(yieldKey, undefined);
             env.stack.pop();
-        } else if (env.get(instack) === undefined) {
-            env.set(instack, true);
+        } else if (env.get(yieldKey) === undefined) {
+            env.set(yieldKey, true);
         }
 
         env.__status = status;
@@ -129,12 +129,12 @@ export class Node {
     }
 
     yield(env: TreeEnv, value?: unknown): Status {
-        env.set(this.vars.instack, value ?? true);
+        env.set(this.vars.yieldKey, value ?? true);
         return "running";
     }
 
     resume(env: TreeEnv): unknown {
-        return env.get(this.vars.instack);
+        return env.get(this.vars.yieldKey);
     }
 
     error(msg: string) {

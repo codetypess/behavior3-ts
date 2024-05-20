@@ -1,4 +1,3 @@
-import { Context } from "../../context";
 import { Node, NodeDef } from "../../node";
 import { Process, Status } from "../../process";
 import { TreeEnv } from "../../tree-env";
@@ -13,6 +12,12 @@ interface NodeYield {
 }
 
 export class Timeout extends Process {
+    override init(node: Node): void {
+        if (node.children.length === 0) {
+            node.error(`${node.tree.name}#${node.id}: at least one children`);
+        }
+    }
+
     override run(node: Node, env: TreeEnv): Status {
         const level = env.stack.length;
         let last = node.resume(env) as NodeYield | undefined;

@@ -21,8 +21,10 @@ import { RepeatUntilSuccess } from "./nodes/decorators/repeat-until-success";
 import { Process } from "./process";
 import { ObjectType } from "./tree-env";
 import { Timeout } from "./nodes/decorators/timeout";
+import { Assert } from "./nodes/decorators/assert";
+import { IsStatus } from "./nodes/conditions/is-status";
 
-export type Constructor<T = unknown> = new (...args: unknown[]) => T;
+export type Constructor<T> = new (...args: unknown[]) => T;
 
 export class Context {
     protected _processResolvers: Map<string, Process> = new Map();
@@ -33,11 +35,13 @@ export class Context {
     constructor() {
         this.registerProcess(AlwaysFail);
         this.registerProcess(AlwaysSuccess);
+        this.registerProcess(Assert);
         this.registerProcess(Check);
         this.registerProcess(Clear);
         this.registerProcess(Foreach);
         this.registerProcess(Inverter);
         this.registerProcess(IsNull);
+        this.registerProcess(IsStatus);
         this.registerProcess(Log);
         this.registerProcess(Loop);
         this.registerProcess(NotNull);
