@@ -1,4 +1,4 @@
-import { Context, NodeDef, ObjectType, TreeEnv, TreeRunner } from "../src/behavior3";
+import { Context, NodeDef, TreeEnv, TreeRunner } from "../src/behavior3";
 import { Attack } from "./nodes/attack";
 import { FindEnemy } from "./nodes/find-enemy";
 import { GetHp } from "./nodes/get-hp";
@@ -42,6 +42,10 @@ export class RoleContext extends Context {
         this.registerCode("hp > 50", (envars: any) => {
             return envars.hp > 50;
         });
+    }
+
+    override set time(value: number) {
+        this._time = value;
     }
 
     find(func: Callback, count: number) {

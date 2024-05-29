@@ -5,32 +5,30 @@ import { Now } from "./nodes/actions/now";
 import { Wait } from "./nodes/actions/wait";
 import { Foreach } from "./nodes/composites/foreach";
 import { Loop } from "./nodes/composites/loop";
-import { Once } from "./nodes/decorators/once";
 import { Parallel } from "./nodes/composites/parallel";
 import { Selector } from "./nodes/composites/selector";
 import { Sequence } from "./nodes/composites/sequence";
 import { Check } from "./nodes/conditions/check";
 import { IsNull } from "./nodes/conditions/is-null";
+import { IsStatus } from "./nodes/conditions/is-status";
 import { NotNull } from "./nodes/conditions/not-null";
 import { AlwaysFail } from "./nodes/decorators/always-failure";
 import { AlwaysSuccess } from "./nodes/decorators/always-success";
+import { Assert } from "./nodes/decorators/assert";
 import { Inverter } from "./nodes/decorators/inverter";
+import { Once } from "./nodes/decorators/once";
 import { RepeatUntilFailure } from "./nodes/decorators/repeat-until-failure";
 import { RepeatUntilSuccess } from "./nodes/decorators/repeat-until-success";
-
+import { Timeout } from "./nodes/decorators/timeout";
 import { Process } from "./process";
 import { ObjectType } from "./tree-env";
-import { Timeout } from "./nodes/decorators/timeout";
-import { Assert } from "./nodes/decorators/assert";
-import { IsStatus } from "./nodes/conditions/is-status";
 
 export type Constructor<T> = new (...args: unknown[]) => T;
 
 export class Context {
     protected _processResolvers: Map<string, Process> = new Map();
     protected _evaluators: Map<string, Evaluator> = new Map();
-
-    time: number = 0;
+    protected _time: number = 0;
 
     constructor() {
         this.registerProcess(AlwaysFail);
@@ -54,6 +52,10 @@ export class Context {
         this.registerProcess(Sequence);
         this.registerProcess(Timeout);
         this.registerProcess(Wait);
+    }
+
+    get time() {
+        return this._time;
     }
 
     compileCode(code: string) {
