@@ -26,7 +26,7 @@ import { ObjectType } from "./tree-env";
 
 export type Constructor<T> = new (...args: unknown[]) => T;
 
-export type Callback<A extends any[] = any[]> = (...any: A) => void;
+export type Callback<A extends unknown[] = unknown[]> = (...args: A) => void;
 
 export class Context {
     protected _processResolvers: Map<string, Process> = new Map();
