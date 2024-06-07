@@ -10,6 +10,10 @@ export class Once extends Process {
     override init(node: Node): void {
         const vars = node.vars as NodeVars;
         vars.onceKey = TreeEnv.makePrivateVar(node, "ONCE");
+
+        if (node.children.length === 0) {
+            node.error(`${node.tree.name}#${node.id}: at least one children`);
+        }
     }
 
     override run(node: Node, env: TreeEnv): Status {
@@ -18,25 +22,20 @@ export class Once extends Process {
             return "failure";
         }
 
-        const last = node.resume(env);
-        let i = 0;
-
-        if (typeof last === "number") {
+        const isYield = node.resume(env);
+        if (typeof isYield === "boolean") {
             if (env.status === "running") {
                 node.error(`unexpected status error`);
             }
-            i = last + 1;
+            env.set(onceKey, true);
+            return "success";
         }
 
-        for (; i < node.children.length; i++) {
-            const status = node.children[i].run(env);
-            if (status === "running") {
-                return node.yield(env, i);
-            }
+        const status = node.children[0].run(env);
+        if (status === "running") {
+            return node.yield(env);
         }
-
         env.set(onceKey, true);
-
         return "success";
     }
 
@@ -46,7 +45,7 @@ export class Once extends Process {
             type: "Decorator",
             desc: "只执行一次",
             doc: `
-                + 可以接多个子节点，子节点默认全部执行
+                + 只能有一个子节点，多个仅执行第一个
                 + 第一次执行完全部子节点时返回「成功」，之后永远返回「失败」`,
         };
     }

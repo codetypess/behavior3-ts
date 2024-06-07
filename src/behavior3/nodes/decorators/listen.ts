@@ -54,6 +54,14 @@ export class Listen extends Process {
                             name: "行为树执行完成后",
                             value: TreeEvent.AFTER_RUN,
                         },
+                        {
+                            name: "行为树执行成功后",
+                            value: TreeEvent.AFTER_RUN_SUCCESS,
+                        },
+                        {
+                            name: "行为树执行失败后",
+                            value: TreeEvent.AFTER_RUN_FAILURE,
+                        },
                     ],
                 },
                 {

@@ -66,8 +66,12 @@ export class TreeRunner<T extends TreeEnv> {
                 this.tree.dispatch(TreeEvent.BEFORE_RUN);
                 this._status = this.tree.root.run(env);
             }
-            if (this._status !== "running") {
+            if (this._status === "success") {
                 this.tree.dispatch(TreeEvent.AFTER_RUN);
+                this.tree.dispatch(TreeEvent.AFTER_RUN_SUCCESS);
+            } else if (this._status === "failure") {
+                this.tree.dispatch(TreeEvent.AFTER_RUN);
+                this.tree.dispatch(TreeEvent.AFTER_RUN_FAILURE);
             }
         }
 
