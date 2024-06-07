@@ -1,4 +1,4 @@
-import { Context } from "./context";
+import { Callback, Context } from "./context";
 import { Node } from "./node";
 import { Status } from "./process";
 
@@ -13,6 +13,7 @@ export class TreeEnv<T extends Context = Context> {
     readonly output: unknown[] = [];
     __status: Status = "success";
     __interrupted: boolean = false;
+    __handlers: Map<string, Callback[]> = new Map();
 
     protected _context: T;
     protected _values: ObjectType = {};
@@ -22,6 +23,15 @@ export class TreeEnv<T extends Context = Context> {
 
     constructor(context: T) {
         this._context = context;
+    }
+
+    on(event: string, callback: Callback) {
+        let handlers = this.__handlers.get(event);
+        if (!handlers) {
+            handlers = [];
+            this.__handlers.set(event, handlers);
+        }
+        handlers.push(callback);
     }
 
     get context() {
@@ -65,6 +75,7 @@ export class TreeEnv<T extends Context = Context> {
     clear() {
         this.__interrupted = false;
         this.__status = "success";
+        this.__handlers.clear();
         this._stack.length = 0;
         this._values = {};
         this.debug = false;

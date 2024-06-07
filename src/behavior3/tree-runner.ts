@@ -27,13 +27,23 @@ export class TreeRunner<T extends TreeEnv> {
         return this._status;
     }
 
+    dispatch(event: string, ...args: unknown[]) {
+        const handlers = this.env.__handlers.get(event);
+        if (handlers) {
+            handlers.forEach((handler) => {
+                handler(...args);
+            });
+        }
+    }
+
     clear() {
+        this.interrupt();
         this.env.clear();
     }
 
     interrupt() {
         if (this._status === "running") {
-            this.tree.dispatch(TreeEvent.INTERRUPTED);
+            this.dispatch(TreeEvent.INTERRUPTED);
             this.env.__interrupted = true;
             if (!this._executing) {
                 this.run();
@@ -63,15 +73,15 @@ export class TreeRunner<T extends TreeEnv> {
                     }
                 }
             } else {
-                this.tree.dispatch(TreeEvent.BEFORE_RUN);
+                this.dispatch(TreeEvent.BEFORE_RUN);
                 this._status = this.tree.root.run(env);
             }
             if (this._status === "success") {
-                this.tree.dispatch(TreeEvent.AFTER_RUN);
-                this.tree.dispatch(TreeEvent.AFTER_RUN_SUCCESS);
+                this.dispatch(TreeEvent.AFTER_RUN);
+                this.dispatch(TreeEvent.AFTER_RUN_SUCCESS);
             } else if (this._status === "failure") {
-                this.tree.dispatch(TreeEvent.AFTER_RUN);
-                this.tree.dispatch(TreeEvent.AFTER_RUN_FAILURE);
+                this.dispatch(TreeEvent.AFTER_RUN);
+                this.dispatch(TreeEvent.AFTER_RUN_FAILURE);
             }
         }
 

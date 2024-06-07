@@ -18,7 +18,7 @@ export class Listen extends Process {
     override run(node: Node, env: TreeEnv): Status {
         const args = node.args as unknown as NodeArgs;
         const event = args.event ?? args.builtin;
-        node.tree.on(event, node, () => {
+        env.on(event, () => {
             const level = env.stack.length;
             const status = node.children[0].run(env);
             if (status === "running") {
