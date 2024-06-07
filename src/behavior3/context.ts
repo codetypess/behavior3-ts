@@ -16,6 +16,7 @@ import { AlwaysFail } from "./nodes/decorators/always-failure";
 import { AlwaysSuccess } from "./nodes/decorators/always-success";
 import { Assert } from "./nodes/decorators/assert";
 import { Inverter } from "./nodes/decorators/inverter";
+import { Listen } from "./nodes/decorators/listen";
 import { Once } from "./nodes/decorators/once";
 import { RepeatUntilFailure } from "./nodes/decorators/repeat-until-failure";
 import { RepeatUntilSuccess } from "./nodes/decorators/repeat-until-success";
@@ -24,6 +25,8 @@ import { Process } from "./process";
 import { ObjectType } from "./tree-env";
 
 export type Constructor<T> = new (...args: unknown[]) => T;
+
+export type Callback<A extends any[] = any[]> = (...any: A) => void;
 
 export class Context {
     protected _processResolvers: Map<string, Process> = new Map();
@@ -40,6 +43,7 @@ export class Context {
         this.registerProcess(Inverter);
         this.registerProcess(IsNull);
         this.registerProcess(IsStatus);
+        this.registerProcess(Listen);
         this.registerProcess(Log);
         this.registerProcess(Loop);
         this.registerProcess(NotNull);

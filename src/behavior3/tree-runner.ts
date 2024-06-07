@@ -1,5 +1,5 @@
 import { Status } from "./process";
-import { Tree } from "./tree";
+import { Tree, TreeEvent } from "./tree";
 import { TreeEnv } from "./tree-env";
 
 export type TreeStatus = Status | "interrupted";
@@ -33,6 +33,7 @@ export class TreeRunner<T extends TreeEnv> {
 
     interrupt() {
         if (this._status === "running") {
+            this.tree.dispatch(TreeEvent.INTERRUPTED);
             this.env.__interrupted = true;
             if (!this._executing) {
                 this.run();
@@ -62,7 +63,11 @@ export class TreeRunner<T extends TreeEnv> {
                     }
                 }
             } else {
+                this.tree.dispatch(TreeEvent.BEFORE_RUN);
                 this._status = this.tree.root.run(env);
+            }
+            if (this._status !== "running") {
+                this.tree.dispatch(TreeEvent.AFTER_RUN);
             }
         }
 
