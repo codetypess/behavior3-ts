@@ -1,12 +1,14 @@
+import { TargetType } from "../../context";
 import { Node, NodeDef } from "../../node";
 import { Process, Status } from "../../process";
-import { TreeEvent } from "../../tree";
 import { TreeEnv } from "../../tree-env";
 
 interface NodeArgs {
-    builtin: string;
-    event?: string;
+    event: string;
 }
+
+type NodeInput = [TargetType | TargetType[] | undefined];
+type NodeOutput = [string?];
 
 export class Listen extends Process {
     override init(node: Node): void {
@@ -16,10 +18,13 @@ export class Listen extends Process {
     }
 
     override run(node: Node, env: TreeEnv): Status {
-        const args = node.args as unknown as NodeArgs;
-        const event = args.event ?? args.builtin;
-        env.on(event, () => {
+        const [target] = env.input as NodeInput;
+        const callback = (...args: unknown[]) => {
             const level = env.stack.length;
+            const [argsKey] = node.data.output as unknown as NodeOutput;
+            if (argsKey) {
+                env.set(argsKey, args);
+            }
             const status = node.children[0].run(env);
             if (status === "running") {
                 while (env.stack.length > level) {
@@ -27,7 +32,20 @@ export class Listen extends Process {
                     env.set(child.vars.yieldKey, undefined);
                 }
             }
-        });
+        };
+        const args = node.args as unknown as NodeArgs;
+        if (target !== undefined) {
+            if (target instanceof Array) {
+                target.forEach((v) => {
+                    env.context.on(args.event, v, callback, env);
+                });
+            } else {
+                env.context.on(args.event, target, callback, env);
+            }
+        } else {
+            env.context.on(args.event, callback, env);
+        }
+
         return "success";
     }
 
@@ -35,39 +53,14 @@ export class Listen extends Process {
         return {
             name: "Listen",
             type: "Decorator",
-            desc: "侦听行为树事件",
+            desc: "侦听事件",
+            input: ["目标对象?"],
+            output: ["事件参数?"],
             args: [
                 {
-                    name: "builtin",
-                    type: "enum",
-                    desc: "事件",
-                    options: [
-                        {
-                            name: "行为树被中断",
-                            value: TreeEvent.INTERRUPTED,
-                        },
-                        {
-                            name: "行为树开始执行前",
-                            value: TreeEvent.BEFORE_RUN,
-                        },
-                        {
-                            name: "行为树执行完成后",
-                            value: TreeEvent.AFTER_RUN,
-                        },
-                        {
-                            name: "行为树执行成功后",
-                            value: TreeEvent.AFTER_RUN_SUCCESS,
-                        },
-                        {
-                            name: "行为树执行失败后",
-                            value: TreeEvent.AFTER_RUN_FAILURE,
-                        },
-                    ],
-                },
-                {
                     name: "event",
-                    type: "string?",
-                    desc: "自定义事件",
+                    type: "string",
+                    desc: "事件",
                 },
             ],
             doc: `

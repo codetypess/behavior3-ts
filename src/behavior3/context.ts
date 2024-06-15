@@ -17,21 +17,26 @@ import { AlwaysSuccess } from "./nodes/decorators/always-success";
 import { Assert } from "./nodes/decorators/assert";
 import { Inverter } from "./nodes/decorators/inverter";
 import { Listen } from "./nodes/decorators/listen";
+import { ListenTree } from "./nodes/decorators/listen-tree";
 import { Once } from "./nodes/decorators/once";
 import { RepeatUntilFailure } from "./nodes/decorators/repeat-until-failure";
 import { RepeatUntilSuccess } from "./nodes/decorators/repeat-until-success";
 import { Timeout } from "./nodes/decorators/timeout";
 import { Process } from "./process";
-import { ObjectType } from "./tree-env";
 
 export type Constructor<T> = new (...args: unknown[]) => T;
-
 export type Callback<A extends unknown[] = unknown[]> = (...args: A) => void;
+export type ObjectType = { [k: string]: unknown };
+export type TargetType = object | string | number;
+
+const DEFAULT_TARGET: TargetType = {};
 
 export class Context {
     protected _processResolvers: Map<string, Process> = new Map();
     protected _evaluators: Map<string, Evaluator> = new Map();
     protected _time: number = 0;
+
+    protected _listenerMap: Map<string, Map<TargetType, Map<Callback, object>>> = new Map();
 
     constructor() {
         this.registerProcess(AlwaysFail);
@@ -44,6 +49,7 @@ export class Context {
         this.registerProcess(IsNull);
         this.registerProcess(IsStatus);
         this.registerProcess(Listen);
+        this.registerProcess(ListenTree);
         this.registerProcess(Log);
         this.registerProcess(Loop);
         this.registerProcess(NotNull);
@@ -60,6 +66,81 @@ export class Context {
 
     get time() {
         return this._time;
+    }
+
+    on(event: string, callback: Callback, caller: object): void;
+
+    on(event: string, target: TargetType, callback: Callback, caller: object): void;
+
+    on(
+        event: string,
+        callbackOrTarget: TargetType | Callback,
+        callerOrCallback: Callback,
+        caller?: object
+    ) {
+        let target: TargetType;
+        let callback: Callback;
+        if (typeof callbackOrTarget === "function") {
+            callback = callbackOrTarget as Callback;
+            caller = callerOrCallback as object;
+            target = DEFAULT_TARGET;
+        } else {
+            target = callbackOrTarget as TargetType;
+            callback = callerOrCallback as Callback;
+        }
+
+        let listenerMap = this._listenerMap.get(event);
+        if (!listenerMap) {
+            listenerMap = new Map();
+            this._listenerMap.set(event, listenerMap);
+        }
+        let targetListeners = listenerMap.get(target);
+        if (!targetListeners) {
+            targetListeners = new Map();
+            listenerMap.set(target, targetListeners);
+        }
+        targetListeners.set(callback, caller!);
+    }
+
+    dispatch(event: string, ...args: unknown[]) {
+        this.dispatchTarget(DEFAULT_TARGET, event, ...args);
+    }
+
+    dispatchTarget(target: TargetType, event: string, ...args: unknown[]) {
+        const listeners = this._listenerMap.get(event)?.get(target);
+        if (listeners) {
+            for (const [callback, caller] of listeners) {
+                callback.call(caller, ...args);
+            }
+        }
+    }
+
+    off(event: string, caller: object) {
+        this._listenerMap.get(event)?.forEach((targetListeners, target, listeners) => {
+            targetListeners.forEach((value, key) => {
+                if (value === caller) {
+                    targetListeners.delete(key);
+                }
+            });
+            if (targetListeners.size === 0) {
+                listeners.delete(target);
+            }
+        });
+    }
+
+    offCaller(caller: object) {
+        this._listenerMap.forEach((listeners) => {
+            listeners.forEach((targetListeners, target) => {
+                targetListeners.forEach((value, key) => {
+                    if (value === caller) {
+                        targetListeners.delete(key);
+                    }
+                });
+                if (targetListeners.size === 0) {
+                    listeners.delete(target);
+                }
+            });
+        });
     }
 
     compileCode(code: string) {

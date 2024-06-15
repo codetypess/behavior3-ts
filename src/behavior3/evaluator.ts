@@ -1,4 +1,4 @@
-import { ObjectType } from "./tree-env";
+import { ObjectType } from "./context";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Evaluator = (envars: any) => unknown;

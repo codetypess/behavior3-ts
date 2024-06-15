@@ -144,6 +144,25 @@
   {
     "name": "Listen",
     "type": "Decorator",
+    "desc": "侦听事件",
+    "input": [
+      "目标对象?"
+    ],
+    "output": [
+      "事件参数?"
+    ],
+    "args": [
+      {
+        "name": "event",
+        "type": "string",
+        "desc": "事件"
+      }
+    ],
+    "doc": "+ 当事件触发时，执行第一个子节点，多个仅执行第一个\n+ 如果子节点返回 「运行中」，会中断执行并清理执行栈"
+  },
+  {
+    "name": "ListenTree",
+    "type": "Decorator",
     "desc": "侦听行为树事件",
     "args": [
       {
@@ -172,11 +191,6 @@
             "value": "afterRunFailure"
           }
         ]
-      },
-      {
-        "name": "event",
-        "type": "string?",
-        "desc": "自定义事件"
       }
     ],
     "doc": "+ 当事件触发时，执行第一个子节点，多个仅执行第一个\n+ 如果子节点返回 「运行中」，会中断执行并清理执行栈"

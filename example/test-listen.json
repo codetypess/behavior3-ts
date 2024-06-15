@@ -1,0 +1,106 @@
+{
+  "name": "test-listen",
+  "root": {
+    "id": 1,
+    "name": "Sequence",
+    "children": [
+      {
+        "id": 2,
+        "name": "Log",
+        "args": {
+          "message": "-------------> Listen"
+        }
+      },
+      {
+        "id": 3,
+        "name": "AlwaysSuccess",
+        "args": {
+          "message": "<------------- Listen"
+        },
+        "children": [
+          {
+            "id": 4,
+            "name": "Once",
+            "children": [
+              {
+                "id": 5,
+                "name": "Sequence",
+                "children": [
+                  {
+                    "id": 6,
+                    "name": "Listen",
+                    "args": {
+                      "event": "hello"
+                    },
+                    "input": [
+                      ""
+                    ],
+                    "output": [
+                      "args"
+                    ],
+                    "children": [
+                      {
+                        "id": 7,
+                        "name": "Log",
+                        "args": {
+                          "message": "hello!!!"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "id": 8,
+                    "name": "Listen",
+                    "args": {
+                      "event": "testOff"
+                    },
+                    "input": [
+                      ""
+                    ],
+                    "output": [
+                      ""
+                    ],
+                    "children": [
+                      {
+                        "id": 9,
+                        "name": "Log",
+                        "args": {
+                          "message": "off test!"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "id": 10,
+                    "name": "ListenTree",
+                    "args": {
+                      "builtin": "afterRun"
+                    },
+                    "children": [
+                      {
+                        "id": 11,
+                        "name": "Log",
+                        "args": {
+                          "message": "after run"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 12,
+        "name": "Log",
+        "args": {
+          "message": "<------------- Listen"
+        }
+      }
+    ]
+  },
+  "export": true,
+  "desc": ""
+}

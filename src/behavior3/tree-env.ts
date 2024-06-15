@@ -1,8 +1,7 @@
-import { Callback, Context } from "./context";
+import { Context, ObjectType } from "./context";
 import { Node } from "./node";
 import { Status } from "./process";
-
-export type ObjectType = { [k: string]: unknown };
+import { TreeRunner } from "./tree-runner";
 
 const PREFIX_PRIVATE = "__PRIVATE_VAR";
 const PREFIX_TEMP = "__TEMP_VAR";
@@ -11,9 +10,14 @@ export class TreeEnv<T extends Context = Context> {
     // variables of running node
     readonly input: unknown[] = [];
     readonly output: unknown[] = [];
+
+    /** @private */
     __status: Status = "success";
+    /** @private */
     __interrupted: boolean = false;
-    __handlers: Map<string, Callback[]> = new Map();
+    /** @private */
+    __treeRunner?: TreeRunner<TreeEnv<T>>;
+    /** @private */
 
     protected _context: T;
     protected _values: ObjectType = {};
@@ -25,17 +29,12 @@ export class TreeEnv<T extends Context = Context> {
         this._context = context;
     }
 
-    on(event: string, callback: Callback) {
-        let handlers = this.__handlers.get(event);
-        if (!handlers) {
-            handlers = [];
-            this.__handlers.set(event, handlers);
-        }
-        handlers.push(callback);
-    }
-
     get context() {
         return this._context;
+    }
+
+    get treeRunner() {
+        return this.__treeRunner!;
     }
 
     get status() {
@@ -75,7 +74,6 @@ export class TreeEnv<T extends Context = Context> {
     clear() {
         this.__interrupted = false;
         this.__status = "success";
-        this.__handlers.clear();
         this._stack.length = 0;
         this._values = {};
         this.debug = false;

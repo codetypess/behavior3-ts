@@ -1,3 +1,4 @@
+import { Callback, Context } from "./context";
 import { Status } from "./process";
 import { Tree, TreeEvent } from "./tree";
 import { TreeEnv } from "./tree-env";
@@ -7,11 +8,13 @@ export type TreeStatus = Status | "interrupted";
 export class TreeRunner<T extends TreeEnv> {
     protected _executing: boolean = false;
     protected _status: TreeStatus = "success";
+    protected _handlers: Map<string, Callback[]> = new Map();
     protected _env: T;
     protected _tree: Tree;
 
     constructor(env: T, tree: Tree) {
         this._env = env;
+        this._env.__treeRunner = this;
         this._tree = tree;
     }
 
@@ -27,8 +30,17 @@ export class TreeRunner<T extends TreeEnv> {
         return this._status;
     }
 
+    on(event: string, callback: Callback) {
+        let handlers = this._handlers.get(event);
+        if (!handlers) {
+            handlers = [];
+            this._handlers.set(event, handlers);
+        }
+        handlers.push(callback);
+    }
+
     dispatch(event: string, ...args: unknown[]) {
-        const handlers = this.env.__handlers.get(event);
+        const handlers = this._handlers.get(event);
         if (handlers) {
             handlers.forEach((handler) => {
                 handler(...args);
@@ -38,7 +50,9 @@ export class TreeRunner<T extends TreeEnv> {
 
     clear() {
         this.interrupt();
-        this.env.clear();
+        this._env.clear();
+        this._env.context.offCaller(this._env);
+        this._handlers.clear();
     }
 
     interrupt() {

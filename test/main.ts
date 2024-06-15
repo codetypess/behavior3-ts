@@ -50,11 +50,18 @@ monsterAi.run();
 console.log("run end");
 
 console.log("====================test api=============================");
-const testTree = (name: string, loopCount: number) => {
-    const tree = createTreeRunner(`./example/${name}.json`);
+const testTree = (
+    name: string,
+    loopCount: number,
+    onTick?: (i: number, runner: TreeRunner<RoleTreeEnv>) => void
+) => {
+    const runner = createTreeRunner(`./example/${name}.json`);
     for (let i = 0; i < loopCount; i++) {
         context.time++;
-        tree.run();
+        runner.run();
+        if (onTick) {
+            onTick(i, runner);
+        }
     }
     console.log("");
 };
@@ -64,3 +71,17 @@ testTree("test-repeat-until-failure", 7);
 testTree("test-timeout", 5);
 testTree("test-once", 5);
 testTree("test-sequence", 1);
+testTree("test-listen", 3, (i, runner) => {
+    if (i === 0) {
+        context.dispatch("hello", "world");
+        context.dispatch("testOff");
+        context.off("testOff", runner.env);
+    } else if (i === 1) {
+        context.dispatch("hello", "world");
+        context.dispatch("testOff");
+        context.offCaller(runner.env);
+    } else {
+        context.dispatch("hello", "world");
+        context.dispatch("testOff");
+    }
+});
