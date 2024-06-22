@@ -36,6 +36,8 @@ export class Foreach extends Process {
                         last = [i, j];
                     }
                     return node.yield(env, last);
+                } else if (status === "failure") {
+                    return "failure";
                 }
             }
             j = 0;
@@ -55,6 +57,7 @@ export class Foreach extends Process {
                 + 每次执行子节点前会设置当前遍历到的变量
                 + 会执行所有子节点
                 + 当子节点返回「运行中」时，返回「运行中」状态
+                + 当子节点返回「失败」时，退出遍历并返回「失败」状态
                 + 执行完所有子节点后，返回「成功」`,
         };
     }

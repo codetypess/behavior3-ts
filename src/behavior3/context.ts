@@ -1,4 +1,5 @@
 import { Evaluator, ExpressionEvaluator } from "./evaluator";
+import { Calculate } from "./nodes/actions/calculate";
 import { Clear } from "./nodes/actions/clear";
 import { Log } from "./nodes/actions/log";
 import { Now } from "./nodes/actions/now";
@@ -43,6 +44,7 @@ export class Context {
         this.registerProcess(AlwaysSuccess);
         this.registerProcess(Assert);
         this.registerProcess(Check);
+        this.registerProcess(Calculate);
         this.registerProcess(Clear);
         this.registerProcess(Foreach);
         this.registerProcess(Inverter);

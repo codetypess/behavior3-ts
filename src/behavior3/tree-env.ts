@@ -79,6 +79,8 @@ export class TreeEnv<T extends Context = Context> {
         this.debug = false;
         this.input.length = 0;
         this.output.length = 0;
+
+        this.context.offCaller(this);
     }
 
     static makePrivateVar(k: string): string;

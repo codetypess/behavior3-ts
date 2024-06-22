@@ -8,7 +8,7 @@ interface NodeArgs {
 }
 
 type NodeInput = [TargetType | TargetType[] | undefined];
-type NodeOutput = [string?];
+type NodeOutput = [string?, string?];
 
 export class Listen extends Process {
     override init(node: Node): void {
@@ -19,31 +19,37 @@ export class Listen extends Process {
 
     override run(node: Node, env: TreeEnv): Status {
         const [target] = env.input as NodeInput;
-        const callback = (...args: unknown[]) => {
-            const level = env.stack.length;
-            const [argsKey] = node.data.output as unknown as NodeOutput;
-            if (argsKey) {
-                env.set(argsKey, args);
-            }
-            const status = node.children[0].run(env);
-            if (status === "running") {
-                while (env.stack.length > level) {
-                    const child = env.stack.pop()!;
-                    env.set(child.vars.yieldKey, undefined);
+
+        const callback = (eventTarget?: TargetType) => {
+            return (...args: unknown[]) => {
+                const level = env.stack.length;
+                const [eventArgsKey, eventTargetKey] = node.data.output as unknown as NodeOutput;
+                if (eventTargetKey) {
+                    env.set(eventTargetKey, eventTarget);
                 }
-            }
+                if (eventArgsKey) {
+                    env.set(eventArgsKey, args);
+                }
+                const status = node.children[0].run(env);
+                if (status === "running") {
+                    while (env.stack.length > level) {
+                        const child = env.stack.pop()!;
+                        env.set(child.vars.yieldKey, undefined);
+                    }
+                }
+            };
         };
         const args = node.args as unknown as NodeArgs;
         if (target !== undefined) {
             if (target instanceof Array) {
                 target.forEach((v) => {
-                    env.context.on(args.event, v, callback, env);
+                    env.context.on(args.event, v, callback(v), env);
                 });
             } else {
-                env.context.on(args.event, target, callback, env);
+                env.context.on(args.event, target, callback(target), env);
             }
         } else {
-            env.context.on(args.event, callback, env);
+            env.context.on(args.event, callback(undefined), env);
         }
 
         return "success";
@@ -55,7 +61,7 @@ export class Listen extends Process {
             type: "Decorator",
             desc: "侦听事件",
             input: ["目标对象?"],
-            output: ["事件参数?"],
+            output: ["事件参数?", "事件目标?"],
             args: [
                 {
                     name: "event",

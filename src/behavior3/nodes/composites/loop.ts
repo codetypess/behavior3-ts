@@ -42,6 +42,8 @@ export class Loop extends Process {
                         last = [i, j];
                     }
                     return node.yield(env, last);
+                } else if (status === "failure") {
+                    return "failure";
                 }
             }
             j = 0;
@@ -56,6 +58,12 @@ export class Loop extends Process {
             desc: "循环执行",
             input: ["循环次数?"],
             args: [{ name: "count", type: "int", desc: "循环次数" }],
+            doc: `
+                + 对所有的子节点循环执行指定次数
+                + 当子节点返回「运行中」时，返回「运行中」状态
+                + 当子节点返回「失败」时，退出遍历并返回「失败」状态
+                + 执行完所有子节点后，返回「成功」
+            `,
         };
     }
 }

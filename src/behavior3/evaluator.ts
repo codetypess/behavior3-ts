@@ -10,6 +10,7 @@ const enum TokenType {
     GT,
     GE,
     EQ,
+    NEQ,
     LT,
     LE,
     ADD,
@@ -28,7 +29,7 @@ export class ExpressionEvaluator {
 
     constructor(expression: string) {
         expression = expression.replace(/\s/g, "");
-        const tokens = expression.match(/\d+\.\d+|\w+|\d+|>=|<=|==|>|<|[-+*/().]/g);
+        const tokens = expression.match(/\d+\.\d+|\w+|\d+|>=|<=|==|!=|>|<|[-+*/().]/g);
         if (!tokens) {
             throw new Error("Invalid expression");
         }
@@ -60,6 +61,8 @@ export class ExpressionEvaluator {
                         return this._toNumber(a) >= this._toNumber(b);
                     case TokenType.EQ:
                         return this._toNumber(a) === this._toNumber(b);
+                    case TokenType.NEQ:
+                        return this._toNumber(a) !== this._toNumber(b);
                     case TokenType.LT:
                         return this._toNumber(a) < this._toNumber(b);
                     case TokenType.LE:
@@ -120,6 +123,7 @@ export class ExpressionEvaluator {
             case "<":
             case "<=":
             case "==":
+            case "!=":
             case ">":
             case ">=":
                 return 1;
@@ -144,6 +148,8 @@ export class ExpressionEvaluator {
                 return { type: TokenType.LE };
             case "==":
                 return { type: TokenType.EQ };
+            case "!=":
+                return { type: TokenType.NEQ };
             case ">":
                 return { type: TokenType.GT };
             case ">=":
