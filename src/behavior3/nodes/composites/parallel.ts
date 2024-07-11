@@ -11,7 +11,7 @@ export class Parallel extends Process {
         let count = 0;
 
         node.children.forEach((child, idx) => {
-            let nodes = last.at(idx);
+            let nodes = last[idx];
             let status: Status | undefined;
             if (nodes === undefined) {
                 status = child.run(env);

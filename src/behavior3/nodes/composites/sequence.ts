@@ -13,7 +13,7 @@ export class Sequence extends Process {
             } else if (env.status === "failure") {
                 return "failure";
             } else {
-                node.error(`unexpected status error`);
+                node.error(`unexpected status error: ${env.status}`);
             }
         }
 

@@ -1,4 +1,4 @@
-import { Callback, Context } from "./context";
+import { Callback } from "./context";
 import { Status } from "./process";
 import { Tree, TreeEvent } from "./tree";
 import { TreeEnv } from "./tree-env";
@@ -77,13 +77,13 @@ export class TreeRunner<T extends TreeEnv> {
 
         if (!env.__interrupted) {
             if (stack.length > 0) {
-                let node = stack.at(-1);
+                let node = stack[stack.length - 1];
                 while (node) {
                     this._status = node.run(env);
                     if (this._status === "running") {
                         break;
                     } else {
-                        node = stack.at(-1);
+                        node = stack[stack.length - 1];
                     }
                 }
             } else {

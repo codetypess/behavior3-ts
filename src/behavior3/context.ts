@@ -70,6 +70,10 @@ export class Context {
         return this._time;
     }
 
+    get processResolvers(): Map<string, Process> {
+        return this._processResolvers;
+    }
+
     on(event: string, callback: Callback, caller: object): void;
 
     on(event: string, target: TargetType, callback: Callback, caller: object): void;

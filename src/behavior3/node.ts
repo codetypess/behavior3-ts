@@ -121,7 +121,9 @@ export class Node {
             const indent = env.debug ? " ".repeat(env.stack.length) : "";
             console.debug(
                 `[DEBUG] behavior3 -> ${indent}${this.name}: tree:${this.tree.name}, ` +
-                    `node:${this.id}, status:${status}, vars:{${varStr}}`
+                    `node:${this.id}, status:${status}, vars:{${varStr}} args:{${JSON.stringify(
+                        data.args
+                    )}}`
             );
         }
 

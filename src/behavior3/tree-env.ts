@@ -17,7 +17,6 @@ export class TreeEnv<T extends Context = Context> {
     __interrupted: boolean = false;
     /** @private */
     __treeRunner?: TreeRunner<TreeEnv<T>>;
-    /** @private */
 
     protected _context: T;
     protected _values: ObjectType = {};

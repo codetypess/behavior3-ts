@@ -60,9 +60,9 @@ export class ExpressionEvaluator {
                     case TokenType.GE:
                         return this._toNumber(a) >= this._toNumber(b);
                     case TokenType.EQ:
-                        return this._toNumber(a) === this._toNumber(b);
+                        return a === b;
                     case TokenType.NEQ:
-                        return this._toNumber(a) !== this._toNumber(b);
+                        return a !== b;
                     case TokenType.LT:
                         return this._toNumber(a) < this._toNumber(b);
                     case TokenType.LE:
