@@ -17,14 +17,9 @@ export class Calculate extends Process {
 
     override run(node: Node, env: TreeEnv): Status {
         const args = node.args as unknown as NodeArgs;
-        try {
-            const value = env.eval(args.value);
-            env.output.push(value);
-            return "success";
-        } catch (e) {
-            console.error(e);
-            return "failure";
-        }
+        const value = env.eval(args.value);
+        env.output.push(value);
+        return "success";
     }
 
     override get descriptor(): NodeDef {
@@ -35,7 +30,8 @@ export class Calculate extends Process {
             args: [{ name: "value", type: "code", desc: "计算公式" }],
             output: ["计算结果"],
             doc: `
-                + 做简单的数值公式计算，返回结果到输出`,
+                + 做简单的数值公式计算，返回结果到输出
+            `,
         };
     }
 }

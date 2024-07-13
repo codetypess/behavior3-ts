@@ -8,7 +8,8 @@
         "id": 2,
         "name": "Log",
         "args": {
-          "message": "-------------> RepeatUntilFailure"
+          "message": "-------------> RepeatUntilFailure",
+          "level": "info"
         }
       },
       {
@@ -21,7 +22,9 @@
             "args": {
               "maxLoop": 3
             },
-            "input": [""],
+            "input": [
+              ""
+            ],
             "debug": true,
             "children": [
               {
@@ -32,7 +35,8 @@
                     "id": 6,
                     "name": "Log",
                     "args": {
-                      "message": "[1] run repeat until failure!!!"
+                      "message": "[1] run repeat until failure!!!",
+                      "level": "info"
                     }
                   }
                 ]
@@ -56,7 +60,9 @@
                 "args": {
                   "maxLoop": 3
                 },
-                "input": [""],
+                "input": [
+                  ""
+                ],
                 "children": [
                   {
                     "id": 10,
@@ -77,7 +83,8 @@
                             "id": 13,
                             "name": "Log",
                             "args": {
-                              "message": "wait 1s"
+                              "message": "wait 1s",
+                              "level": "info"
                             }
                           }
                         ]
@@ -90,7 +97,8 @@
                             "id": 15,
                             "name": "Log",
                             "args": {
-                              "message": "[2] run repeat until failure!!!"
+                              "message": "[2] run repeat until failure!!!",
+                              "level": "info"
                             }
                           }
                         ]
@@ -103,7 +111,8 @@
                 "id": 16,
                 "name": "Log",
                 "args": {
-                  "message": "DO NOT LOG THIS!!!"
+                  "message": "DO NOT LOG THIS!!!",
+                  "level": "info"
                 }
               }
             ]
@@ -114,10 +123,12 @@
         "id": 17,
         "name": "Log",
         "args": {
-          "message": "<------------- RepeatUntilFailure"
+          "message": "<------------- RepeatUntilFailure",
+          "level": "info"
         }
       }
     ]
   },
+  "export": true,
   "desc": ""
 }

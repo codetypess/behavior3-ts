@@ -25,14 +25,16 @@
                     "id": 5,
                     "name": "Log",
                     "args": {
-                      "message": "B: test sequeue1"
+                      "message": "B: test sequeue1",
+                      "level": "info"
                     }
                   },
                   {
                     "id": 6,
                     "name": "Log",
                     "args": {
-                      "message": "B: test sequeue2"
+                      "message": "B: test sequeue2",
+                      "level": "info"
                     }
                   }
                 ]
@@ -54,7 +56,8 @@
                     "id": 9,
                     "name": "Log",
                     "args": {
-                      "message": "A: test sequeue1"
+                      "message": "A: test sequeue1",
+                      "level": "info"
                     }
                   },
                   {
@@ -66,7 +69,8 @@
                         "id": 11,
                         "name": "Log",
                         "args": {
-                          "message": "A: test fail"
+                          "message": "A: test fail",
+                          "level": "info"
                         }
                       }
                     ]
@@ -75,7 +79,8 @@
                     "id": 12,
                     "name": "Log",
                     "args": {
-                      "message": "A: test sequeue2"
+                      "message": "A: test sequeue2",
+                      "level": "info"
                     }
                   }
                 ]
@@ -101,7 +106,8 @@
                         "id": 16,
                         "name": "Log",
                         "args": {
-                          "message": "C: test fail"
+                          "message": "C: test fail",
+                          "level": "info"
                         }
                       }
                     ]
@@ -110,14 +116,16 @@
                     "id": 17,
                     "name": "Log",
                     "args": {
-                      "message": "C: test sequeue1"
+                      "message": "C: test sequeue1",
+                      "level": "info"
                     }
                   },
                   {
                     "id": 18,
                     "name": "Log",
                     "args": {
-                      "message": "C: test sequeue2"
+                      "message": "C: test sequeue2",
+                      "level": "info"
                     }
                   }
                 ]
@@ -138,7 +146,8 @@
                     "id": 21,
                     "name": "Log",
                     "args": {
-                      "message": "D: test sequeue1"
+                      "message": "D: test sequeue1",
+                      "level": "info"
                     }
                   },
                   {
@@ -150,7 +159,8 @@
                         "id": 23,
                         "name": "Log",
                         "args": {
-                          "message": "D: test fail"
+                          "message": "D: test fail",
+                          "level": "info"
                         }
                       }
                     ]
@@ -159,7 +169,8 @@
                     "id": 24,
                     "name": "Log",
                     "args": {
-                      "message": "D: test sequeue2"
+                      "message": "D: test sequeue2",
+                      "level": "info"
                     }
                   }
                 ]
@@ -183,14 +194,18 @@
               "w": 100,
               "h": 50
             },
-            "output": ["enemy"],
+            "output": [
+              "enemy"
+            ],
             "debug": true
           },
           {
             "id": 27,
             "name": "Attack",
             "args": {},
-            "input": ["enemy"]
+            "input": [
+              "enemy"
+            ]
           },
           {
             "id": 28,
@@ -216,13 +231,17 @@
               "x": 0,
               "y": 0
             },
-            "output": ["enemy"]
+            "output": [
+              "enemy"
+            ]
           },
           {
             "id": 31,
             "name": "MoveToTarget",
             "args": {},
-            "input": ["enemy"]
+            "input": [
+              "enemy"
+            ]
           }
         ]
       },
@@ -236,7 +255,9 @@
             "id": 33,
             "name": "GetHp",
             "args": {},
-            "output": ["hp"]
+            "output": [
+              "hp"
+            ]
           },
           {
             "id": 34,
@@ -261,5 +282,6 @@
       }
     ]
   },
+  "export": true,
   "desc": "英雄测试AI"
 }

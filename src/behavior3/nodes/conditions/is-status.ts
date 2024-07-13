@@ -9,9 +9,7 @@ interface NodeArgs {
 
 export class IsStatus extends Process {
     override init(node: Node): void {
-        if (node.children.length === 0) {
-            node.error(`${node.tree.name}#${node.id}: at least one children`);
-        }
+        this._checkOneChild(node);
     }
 
     override run(node: Node, env: TreeEnv<Context>): Status {
@@ -46,8 +44,8 @@ export class IsStatus extends Process {
             ],
             doc: `
                 + 只能有一个子节点，多个仅执行第一个
-                + 只有当子节点的执行状态与指定状态相同时才返回「成功」，其余返回失败
-                + 若子节点返回「运行中」状态，将中断子节点并清理子节点的执行栈`,
+                + 只有当子节点的执行状态与指定状态相同时才返回\`成功\`，其余返回失败
+                + 若子节点返回\`运行中\`状态，将中断子节点并清理子节点的执行栈`,
         };
     }
 }

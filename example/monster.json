@@ -20,7 +20,9 @@
                 "id": 4,
                 "name": "GetHp",
                 "args": {},
-                "output": ["hp"]
+                "output": [
+                  "hp"
+                ]
               },
               {
                 "id": 5,
@@ -34,7 +36,8 @@
                 "name": "Log",
                 "desc": "攻击",
                 "args": {
-                  "message": "Attack!"
+                  "message": "Attack!",
+                  "level": "info"
                 }
               },
               {
@@ -51,9 +54,9 @@
             "name": "Log",
             "desc": "逃跑",
             "args": {
-              "message": "Run!"
-            },
-            "children": []
+              "message": "Run!",
+              "level": "info"
+            }
           }
         ]
       },
@@ -62,11 +65,18 @@
         "name": "Log",
         "desc": "test",
         "args": {
-          "message": "if true"
+          "message": "if true",
+          "level": "info"
         },
-        "children": []
+        "children": [
+          {
+            "id": 10,
+            "name": "Log"
+          }
+        ]
       }
     ]
   },
+  "export": true,
   "desc": "怪物测试AI"
 }

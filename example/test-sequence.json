@@ -60,7 +60,8 @@
                     "id": 9,
                     "name": "Log",
                     "args": {
-                      "message": "hello sequence success"
+                      "message": "hello sequence success",
+                      "level": "info"
                     }
                   }
                 ]
@@ -101,7 +102,8 @@
                         "id": 14,
                         "name": "Log",
                         "args": {
-                          "message": "hello sequence failure"
+                          "message": "hello sequence failure",
+                          "level": "info"
                         }
                       }
                     ]
@@ -114,5 +116,6 @@
       }
     ]
   },
+  "export": true,
   "desc": ""
 }

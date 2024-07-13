@@ -8,7 +8,8 @@
         "id": 2,
         "name": "Log",
         "args": {
-          "message": "-------------> Once"
+          "message": "-------------> Once",
+          "level": "info"
         }
       },
       {
@@ -41,7 +42,8 @@
                         "id": 7,
                         "name": "Log",
                         "args": {
-                          "message": "log once1"
+                          "message": "log once1",
+                          "level": "info"
                         }
                       }
                     ]
@@ -68,7 +70,8 @@
                 "id": 10,
                 "name": "Log",
                 "args": {
-                  "message": "log once2"
+                  "message": "log once2",
+                  "level": "info"
                 }
               }
             ]
@@ -91,7 +94,8 @@
                 "id": 13,
                 "name": "Log",
                 "args": {
-                  "message": "log once3"
+                  "message": "log once3",
+                  "level": "info"
                 }
               },
               {
@@ -108,7 +112,8 @@
                 "id": 15,
                 "name": "Log",
                 "args": {
-                  "message": "log once4"
+                  "message": "log once4",
+                  "level": "info"
                 }
               }
             ]
@@ -119,10 +124,12 @@
         "id": 16,
         "name": "Log",
         "args": {
-          "message": "<------------- Once"
+          "message": "<------------- Once",
+          "level": "info"
         }
       }
     ]
   },
+  "export": true,
   "desc": ""
 }

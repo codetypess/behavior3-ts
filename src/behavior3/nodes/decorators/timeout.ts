@@ -13,9 +13,7 @@ interface NodeYield {
 
 export class Timeout extends Process {
     override init(node: Node): void {
-        if (node.children.length === 0) {
-            node.error(`${node.tree.name}#${node.id}: at least one children`);
-        }
+        this._checkOneChild(node);
     }
 
     override run(node: Node, env: TreeEnv): Status {
@@ -62,7 +60,7 @@ export class Timeout extends Process {
             args: [{ name: "time", type: "float", desc: "超时时间" }],
             doc: `
                 + 只能有一个子节点，多个仅执行第一个
-                + 当子节点执行超时或返回「失败」时，返回「失败」
+                + 当子节点执行超时或返回\`失败\`时，返回\`失败\`
                 + 其余情况返回子节点的执行状态
             `,
         };

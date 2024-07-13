@@ -9,9 +9,7 @@ interface NodeArgs {
 
 export class ListenTree extends Process {
     override init(node: Node): void {
-        if (node.children.length === 0) {
-            node.error(`${node.tree.name}#${node.id}: at least one children`);
-        }
+        this._checkOneChild(node);
     }
 
     override run(node: Node, env: TreeEnv): Status {
@@ -65,7 +63,7 @@ export class ListenTree extends Process {
             ],
             doc: `
                 + 当事件触发时，执行第一个子节点，多个仅执行第一个
-                + 如果子节点返回 「运行中」，会中断执行并清理执行栈`,
+                + 如果子节点返回 \`运行中\`，会中断执行并清理执行栈`,
         };
     }
 }

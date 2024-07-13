@@ -10,9 +10,7 @@ type NodeInput = [number | undefined];
 
 export class RepeatUntilSuccess extends Process {
     override init(node: Node) {
-        if (node.children.length === 0) {
-            node.error(`${node.tree.name}#${node.id}: at least one children`);
-        }
+        this._checkOneChild(node);
     }
 
     override run(node: Node, env: TreeEnv): Status {
@@ -51,8 +49,8 @@ export class RepeatUntilSuccess extends Process {
             args: [{ name: "maxLoop", type: "int?", desc: "最大循环次数" }],
             doc: `
                 + 只能有一个子节点，多个仅执行第一个
-                + 只有当子节点返回「成功」时，才返回「成功」，其它情况返回「运行中」状态
-                + 如果设定了尝试次数，超过指定次数则返回「失败」`,
+                + 只有当子节点返回\`成功\`时，才返回\`成功\`，其它情况返回\`运行中\`状态
+                + 如果设定了尝试次数，超过指定次数则返回\`失败\``,
         };
     }
 }

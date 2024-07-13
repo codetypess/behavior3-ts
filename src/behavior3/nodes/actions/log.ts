@@ -47,6 +47,7 @@ export class Log extends Process {
                     name: "level",
                     type: "enum",
                     desc: "日志级别",
+                    default: LogLevel.INFO,
                     options: [
                         {
                             name: "INFO",

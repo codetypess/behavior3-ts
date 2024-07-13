@@ -8,9 +8,7 @@ interface NodeArgs {
 
 export class Assert extends Process {
     override init(node: Node): void {
-        if (node.children.length === 0) {
-            node.error(`${node.tree.name}#${node.id}: at least one children`);
-        }
+        this._checkOneChild(node);
     }
 
     override run(node: Node, env: TreeEnv): Status {
@@ -52,8 +50,9 @@ export class Assert extends Process {
             ],
             doc: `
                 + 只能有一个子节点，多个仅执行第一个
-                + 当子节点返回「失败」时，抛出异常
-                + 其余情况返回子节点的执行状态`,
+                + 当子节点返回\`失败\`时，抛出异常
+                + 其余情况返回子节点的执行状态
+            `,
         };
     }
 }

@@ -4,9 +4,7 @@ import { TreeEnv } from "../../tree-env";
 
 export class AlwaysFail extends Process {
     override init(node: Node): void {
-        if (node.children.length === 0) {
-            node.error(`${node.tree.name}#${node.id}: at least one children`);
-        }
+        this._checkOneChild(node);
     }
 
     override run(node: Node, env: TreeEnv): Status {
@@ -31,7 +29,8 @@ export class AlwaysFail extends Process {
             desc: "始终返回失败",
             doc: `
                 + 只能有一个子节点，多个仅执行第一个
-                + 不管子节点是否成功都返回「失败」`,
+                + 不管子节点是否成功都返回\`失败\`
+            `,
         };
     }
 }

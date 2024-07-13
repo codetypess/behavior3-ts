@@ -8,7 +8,8 @@
         "id": 2,
         "name": "Log",
         "args": {
-          "message": "-------------> Parallel"
+          "message": "-------------> Parallel",
+          "level": "info"
         }
       },
       {
@@ -30,7 +31,8 @@
                 "id": 6,
                 "name": "Log",
                 "args": {
-                  "message": "wait 1s"
+                  "message": "wait 1s",
+                  "level": "info"
                 }
               }
             ]
@@ -39,7 +41,8 @@
             "id": 7,
             "name": "Log",
             "args": {
-              "message": "run parallel!!!"
+              "message": "run parallel!!!",
+              "level": "info"
             }
           },
           {
@@ -61,7 +64,8 @@
                     "id": 11,
                     "name": "Log",
                     "args": {
-                      "message": "wait 2s"
+                      "message": "wait 2s",
+                      "level": "info"
                     }
                   }
                 ]
@@ -70,7 +74,8 @@
                 "id": 12,
                 "name": "Log",
                 "args": {
-                  "message": "wait 2s complete!!!"
+                  "message": "wait 2s complete!!!",
+                  "level": "info"
                 }
               }
             ]
@@ -81,10 +86,12 @@
         "id": 13,
         "name": "Log",
         "args": {
-          "message": "<------------- Parallel"
+          "message": "<------------- Parallel",
+          "level": "info"
         }
       }
     ]
   },
+  "export": true,
   "desc": ""
 }

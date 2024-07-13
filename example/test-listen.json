@@ -8,7 +8,8 @@
         "id": 2,
         "name": "Log",
         "args": {
-          "message": "-------------> Listen"
+          "message": "-------------> Listen",
+          "level": "info"
         }
       },
       {
@@ -43,7 +44,8 @@
                         "id": 7,
                         "name": "Log",
                         "args": {
-                          "message": "hello!!!"
+                          "message": "hello!!!",
+                          "level": "info"
                         }
                       }
                     ]
@@ -65,7 +67,8 @@
                         "id": 9,
                         "name": "Log",
                         "args": {
-                          "message": "off test!"
+                          "message": "off test!",
+                          "level": "info"
                         }
                       }
                     ]
@@ -81,7 +84,8 @@
                         "id": 11,
                         "name": "Log",
                         "args": {
-                          "message": "after run"
+                          "message": "after run",
+                          "level": "info"
                         }
                       }
                     ]
@@ -96,7 +100,8 @@
         "id": 12,
         "name": "Log",
         "args": {
-          "message": "<------------- Listen"
+          "message": "<------------- Listen",
+          "level": "info"
         }
       }
     ]

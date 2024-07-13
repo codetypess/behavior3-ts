@@ -4,9 +4,7 @@ import { TreeEnv } from "../../tree-env";
 
 export class Inverter extends Process {
     override init(node: Node): void {
-        if (node.children.length === 0) {
-            node.error(`${node.tree.name}#${node.id}: at least one children`);
-        }
+        this._checkOneChild(node);
     }
 
     override run(node: Node, env: TreeEnv): Status {
@@ -35,9 +33,9 @@ export class Inverter extends Process {
             desc: "反转子节点运行结果",
             doc: `
                 + 只能有一个子节点，多个仅执行第一个
-                + 当子节点返回「成功」时返回「失败」
-                + 当子节点返回「失败」时返回「成功」
-                + 其余返回「运行中」`,
+                + 当子节点返回\`成功\`时返回\`失败\`
+                + 当子节点返回\`失败\`时返回\`成功\`
+            `,
         };
     }
 }
