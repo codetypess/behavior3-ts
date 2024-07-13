@@ -37,6 +37,7 @@ export type Constructor<T> = new (...args: unknown[]) => T;
 export type Callback<A extends unknown[] = unknown[]> = (...args: A) => void;
 export type ObjectType = { [k: string]: unknown };
 export type TargetType = object | string | number;
+export type TagType = unknown;
 
 const DEFAULT_TARGET: TargetType = {};
 
@@ -45,7 +46,7 @@ export class Context {
     protected _evaluators: Map<string, Evaluator> = new Map();
     protected _time: number = 0;
 
-    protected _listenerMap: Map<string, Map<TargetType, Map<Callback, object>>> = new Map();
+    protected _listenerMap: Map<string, Map<TargetType, Map<Callback, TagType>>> = new Map();
 
     constructor() {
         this.registerProcess(AlwaysFail);
@@ -90,25 +91,25 @@ export class Context {
         return this._processResolvers;
     }
 
-    on(event: string, callback: Callback, caller: object): void;
+    on(event: string, callback: Callback, tag: TagType): void;
 
-    on(event: string, target: TargetType, callback: Callback, caller: object): void;
+    on(event: string, target: TargetType, callback: Callback, tag: TagType): void;
 
     on(
         event: string,
         callbackOrTarget: TargetType | Callback,
-        callerOrCallback: Callback,
-        caller?: object
+        tagOrCallback: Callback,
+        tag?: TagType
     ) {
         let target: TargetType;
         let callback: Callback;
         if (typeof callbackOrTarget === "function") {
             callback = callbackOrTarget as Callback;
-            caller = callerOrCallback as object;
+            tag = tagOrCallback as object;
             target = DEFAULT_TARGET;
         } else {
             target = callbackOrTarget as TargetType;
-            callback = callerOrCallback as Callback;
+            callback = tagOrCallback as Callback;
         }
 
         let listenerMap = this._listenerMap.get(event);
@@ -121,7 +122,7 @@ export class Context {
             targetListeners = new Map();
             listenerMap.set(target, targetListeners);
         }
-        targetListeners.set(callback, caller!);
+        targetListeners.set(callback, tag!);
     }
 
     dispatch(event: string, ...args: unknown[]) {
@@ -131,16 +132,16 @@ export class Context {
     dispatchTarget(target: TargetType, event: string, ...args: unknown[]) {
         const listeners = this._listenerMap.get(event)?.get(target);
         if (listeners) {
-            for (const [callback, caller] of listeners) {
-                callback.call(caller, ...args);
+            for (const [callback] of listeners) {
+                callback(...args);
             }
         }
     }
 
-    off(event: string, caller: object) {
+    off(event: string, tag: TagType) {
         this._listenerMap.get(event)?.forEach((targetListeners, target, listeners) => {
             targetListeners.forEach((value, key) => {
-                if (value === caller) {
+                if (value === tag) {
                     targetListeners.delete(key);
                 }
             });
@@ -150,11 +151,11 @@ export class Context {
         });
     }
 
-    offCaller(caller: object) {
+    offAll(tag: TagType) {
         this._listenerMap.forEach((listeners) => {
             listeners.forEach((targetListeners, target) => {
                 targetListeners.forEach((value, key) => {
-                    if (value === caller) {
+                    if (value === tag) {
                         targetListeners.delete(key);
                     }
                 });

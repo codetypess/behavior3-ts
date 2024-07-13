@@ -79,7 +79,7 @@ testTree("test-listen", 3, (i, runner) => {
     } else if (i === 1) {
         context.dispatch("hello", "world");
         context.dispatch("testOff");
-        context.offCaller(runner.env);
+        context.offAll(runner.env);
     } else {
         context.dispatch("hello", "world");
         context.dispatch("testOff");

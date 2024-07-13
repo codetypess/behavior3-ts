@@ -8,13 +8,11 @@ export type TreeStatus = Status | "interrupted";
 export class TreeRunner<T extends TreeEnv> {
     protected _executing: boolean = false;
     protected _status: TreeStatus = "success";
-    protected _handlers: Map<string, Callback[]> = new Map();
     protected _env: T;
     protected _tree: Tree;
 
     constructor(env: T, tree: Tree) {
         this._env = env;
-        this._env.__treeRunner = this;
         this._tree = tree;
     }
 
@@ -30,34 +28,20 @@ export class TreeRunner<T extends TreeEnv> {
         return this._status;
     }
 
-    on(event: string, callback: Callback) {
-        let handlers = this._handlers.get(event);
-        if (!handlers) {
-            handlers = [];
-            this._handlers.set(event, handlers);
-        }
-        handlers.push(callback);
-    }
-
-    dispatch(event: string, ...args: unknown[]) {
-        const handlers = this._handlers.get(event);
-        if (handlers) {
-            handlers.forEach((handler) => {
-                handler(...args);
-            });
-        }
+    private _dispatch(event: string, ...args: unknown[]) {
+        const env = this._env;
+        env.context.dispatchTarget(env, event, ...args);
     }
 
     clear() {
         this.interrupt();
         this._env.clear();
-        this._env.context.offCaller(this._env);
-        this._handlers.clear();
+        this._env.context.offAll(this._env);
     }
 
     interrupt() {
         if (this._status === "running") {
-            this.dispatch(TreeEvent.INTERRUPTED);
+            this._dispatch(TreeEvent.INTERRUPTED);
             this.env.__interrupted = true;
             if (!this._executing) {
                 this.run();
@@ -87,15 +71,15 @@ export class TreeRunner<T extends TreeEnv> {
                     }
                 }
             } else {
-                this.dispatch(TreeEvent.BEFORE_RUN);
+                this._dispatch(TreeEvent.BEFORE_RUN);
                 this._status = this.tree.root.run(env);
             }
             if (this._status === "success") {
-                this.dispatch(TreeEvent.AFTER_RUN);
-                this.dispatch(TreeEvent.AFTER_RUN_SUCCESS);
+                this._dispatch(TreeEvent.AFTER_RUN);
+                this._dispatch(TreeEvent.AFTER_RUN_SUCCESS);
             } else if (this._status === "failure") {
-                this.dispatch(TreeEvent.AFTER_RUN);
-                this.dispatch(TreeEvent.AFTER_RUN_FAILURE);
+                this._dispatch(TreeEvent.AFTER_RUN);
+                this._dispatch(TreeEvent.AFTER_RUN_FAILURE);
             }
         }
 

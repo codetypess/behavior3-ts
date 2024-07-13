@@ -14,16 +14,21 @@ export class ListenTree extends Process {
 
     override run(node: Node, env: TreeEnv): Status {
         const args = node.args as unknown as NodeArgs;
-        env.treeRunner.on(args.builtin, () => {
-            const level = env.stack.length;
-            const status = node.children[0].run(env);
-            if (status === "running") {
-                while (env.stack.length > level) {
-                    const child = env.stack.pop()!;
-                    env.set(child.vars.yieldKey, undefined);
+        env.context.on(
+            args.builtin,
+            env,
+            () => {
+                const level = env.stack.length;
+                const status = node.children[0].run(env);
+                if (status === "running") {
+                    while (env.stack.length > level) {
+                        const child = env.stack.pop()!;
+                        env.set(child.vars.yieldKey, undefined);
+                    }
                 }
-            }
-        });
+            },
+            env
+        );
         return "success";
     }
 

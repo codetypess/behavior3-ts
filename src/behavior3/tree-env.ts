@@ -15,8 +15,6 @@ export class TreeEnv<T extends Context = Context> {
     __status: Status = "success";
     /** @private */
     __interrupted: boolean = false;
-    /** @private */
-    __treeRunner?: TreeRunner<TreeEnv<T>>;
 
     protected _context: T;
     protected _values: ObjectType = {};
@@ -30,10 +28,6 @@ export class TreeEnv<T extends Context = Context> {
 
     get context() {
         return this._context;
-    }
-
-    get treeRunner() {
-        return this.__treeRunner!;
     }
 
     get status() {
@@ -79,7 +73,7 @@ export class TreeEnv<T extends Context = Context> {
         this.input.length = 0;
         this.output.length = 0;
 
-        this.context.offCaller(this);
+        this.context.offAll(this);
     }
 
     static makePrivateVar(k: string): string;
