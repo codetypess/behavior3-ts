@@ -13,165 +13,171 @@
         "children": [
           {
             "id": 3,
-            "name": "AlwaysFail",
-            "args": {},
+            "name": "Parallel",
             "children": [
               {
                 "id": 4,
-                "name": "Sequence",
+                "name": "AlwaysFail",
                 "args": {},
                 "children": [
                   {
                     "id": 5,
-                    "name": "Log",
-                    "args": {
-                      "message": "B: test sequeue1",
-                      "level": "info"
-                    }
-                  },
-                  {
-                    "id": 6,
-                    "name": "Log",
-                    "args": {
-                      "message": "B: test sequeue2",
-                      "level": "info"
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "id": 7,
-            "name": "AlwaysFail",
-            "args": {},
-            "children": [
-              {
-                "id": 8,
-                "name": "Sequence",
-                "args": {},
-                "debug": true,
-                "children": [
-                  {
-                    "id": 9,
-                    "name": "Log",
-                    "args": {
-                      "message": "A: test sequeue1",
-                      "level": "info"
-                    }
-                  },
-                  {
-                    "id": 10,
-                    "name": "AlwaysFail",
+                    "name": "Sequence",
                     "args": {},
                     "children": [
                       {
-                        "id": 11,
+                        "id": 6,
                         "name": "Log",
                         "args": {
-                          "message": "A: test fail",
+                          "message": "B: test sequeue1",
+                          "level": "info"
+                        }
+                      },
+                      {
+                        "id": 7,
+                        "name": "Log",
+                        "args": {
+                          "message": "B: test sequeue2",
                           "level": "info"
                         }
                       }
                     ]
-                  },
-                  {
-                    "id": 12,
-                    "name": "Log",
-                    "args": {
-                      "message": "A: test sequeue2",
-                      "level": "info"
-                    }
                   }
                 ]
-              }
-            ]
-          },
-          {
-            "id": 13,
-            "name": "AlwaysFail",
-            "args": {},
-            "children": [
+              },
+              {
+                "id": 8,
+                "name": "AlwaysFail",
+                "args": {},
+                "children": [
+                  {
+                    "id": 9,
+                    "name": "Sequence",
+                    "args": {},
+                    "debug": true,
+                    "children": [
+                      {
+                        "id": 10,
+                        "name": "Log",
+                        "args": {
+                          "message": "A: test sequeue1",
+                          "level": "info"
+                        }
+                      },
+                      {
+                        "id": 11,
+                        "name": "AlwaysFail",
+                        "args": {},
+                        "children": [
+                          {
+                            "id": 12,
+                            "name": "Log",
+                            "args": {
+                              "message": "A: test fail",
+                              "level": "info"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "id": 13,
+                        "name": "Log",
+                        "args": {
+                          "message": "A: test sequeue2",
+                          "level": "info"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
               {
                 "id": 14,
-                "name": "Selector",
+                "name": "AlwaysFail",
                 "args": {},
                 "children": [
                   {
                     "id": 15,
-                    "name": "AlwaysFail",
+                    "name": "Selector",
                     "args": {},
                     "children": [
                       {
                         "id": 16,
+                        "name": "AlwaysFail",
+                        "args": {},
+                        "children": [
+                          {
+                            "id": 17,
+                            "name": "Log",
+                            "args": {
+                              "message": "C: test fail",
+                              "level": "info"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "id": 18,
                         "name": "Log",
                         "args": {
-                          "message": "C: test fail",
+                          "message": "C: test sequeue1",
+                          "level": "info"
+                        }
+                      },
+                      {
+                        "id": 19,
+                        "name": "Log",
+                        "args": {
+                          "message": "C: test sequeue2",
                           "level": "info"
                         }
                       }
                     ]
-                  },
-                  {
-                    "id": 17,
-                    "name": "Log",
-                    "args": {
-                      "message": "C: test sequeue1",
-                      "level": "info"
-                    }
-                  },
-                  {
-                    "id": 18,
-                    "name": "Log",
-                    "args": {
-                      "message": "C: test sequeue2",
-                      "level": "info"
-                    }
                   }
                 ]
-              }
-            ]
-          },
-          {
-            "id": 19,
-            "name": "AlwaysFail",
-            "args": {},
-            "children": [
+              },
               {
                 "id": 20,
-                "name": "Parallel",
+                "name": "AlwaysFail",
                 "args": {},
                 "children": [
                   {
                     "id": 21,
-                    "name": "Log",
-                    "args": {
-                      "message": "D: test sequeue1",
-                      "level": "info"
-                    }
-                  },
-                  {
-                    "id": 22,
-                    "name": "AlwaysFail",
+                    "name": "Parallel",
                     "args": {},
                     "children": [
                       {
-                        "id": 23,
+                        "id": 22,
                         "name": "Log",
                         "args": {
-                          "message": "D: test fail",
+                          "message": "D: test sequeue1",
+                          "level": "info"
+                        }
+                      },
+                      {
+                        "id": 23,
+                        "name": "AlwaysFail",
+                        "args": {},
+                        "children": [
+                          {
+                            "id": 24,
+                            "name": "Log",
+                            "args": {
+                              "message": "D: test fail",
+                              "level": "info"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "id": 25,
+                        "name": "Log",
+                        "args": {
+                          "message": "D: test sequeue2",
                           "level": "info"
                         }
                       }
                     ]
-                  },
-                  {
-                    "id": 24,
-                    "name": "Log",
-                    "args": {
-                      "message": "D: test sequeue2",
-                      "level": "info"
-                    }
                   }
                 ]
               }
@@ -180,13 +186,13 @@
         ]
       },
       {
-        "id": 25,
+        "id": 26,
         "name": "Sequence",
         "desc": "攻击",
         "args": {},
         "children": [
           {
-            "id": 26,
+            "id": 27,
             "name": "FindEnemy",
             "args": {
               "x": 0,
@@ -200,7 +206,7 @@
             "debug": true
           },
           {
-            "id": 27,
+            "id": 28,
             "name": "Attack",
             "args": {},
             "input": [
@@ -208,7 +214,7 @@
             ]
           },
           {
-            "id": 28,
+            "id": 29,
             "name": "Wait",
             "args": {
               "time": 10
@@ -217,13 +223,13 @@
         ]
       },
       {
-        "id": 29,
+        "id": 30,
         "name": "Sequence",
         "desc": "移动",
         "args": {},
         "children": [
           {
-            "id": 30,
+            "id": 31,
             "name": "FindEnemy",
             "args": {
               "w": 1000,
@@ -236,7 +242,7 @@
             ]
           },
           {
-            "id": 31,
+            "id": 32,
             "name": "MoveToTarget",
             "args": {},
             "input": [
@@ -246,13 +252,13 @@
         ]
       },
       {
-        "id": 32,
+        "id": 33,
         "name": "Sequence",
         "desc": "逃跑",
         "args": {},
         "children": [
           {
-            "id": 33,
+            "id": 34,
             "name": "GetHp",
             "args": {},
             "output": [
@@ -260,14 +266,14 @@
             ]
           },
           {
-            "id": 34,
+            "id": 35,
             "name": "Check",
             "args": {
               "value": "hp > 50"
             }
           },
           {
-            "id": 35,
+            "id": 36,
             "name": "MoveToPos",
             "args": {
               "x": 0,
@@ -277,7 +283,7 @@
         ]
       },
       {
-        "id": 36,
+        "id": 37,
         "name": "Idle"
       }
     ]

@@ -92,36 +92,42 @@
             "children": [
               {
                 "id": 13,
-                "name": "Log",
-                "args": {
-                  "message": "log once3",
-                  "level": "info"
-                }
-              },
-              {
-                "id": 14,
-                "name": "Wait",
-                "args": {
-                  "time": 1
-                },
-                "input": [
-                  ""
+                "name": "Sequence",
+                "children": [
+                  {
+                    "id": 14,
+                    "name": "Log",
+                    "args": {
+                      "message": "log once3",
+                      "level": "info"
+                    }
+                  },
+                  {
+                    "id": 15,
+                    "name": "Wait",
+                    "args": {
+                      "time": 1
+                    },
+                    "input": [
+                      ""
+                    ]
+                  },
+                  {
+                    "id": 16,
+                    "name": "Log",
+                    "args": {
+                      "message": "log once4",
+                      "level": "info"
+                    }
+                  }
                 ]
-              },
-              {
-                "id": 15,
-                "name": "Log",
-                "args": {
-                  "message": "log once4",
-                  "level": "info"
-                }
               }
             ]
           }
         ]
       },
       {
-        "id": 16,
+        "id": 17,
         "name": "Log",
         "args": {
           "message": "<------------- Once",
