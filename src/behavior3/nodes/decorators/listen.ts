@@ -1,11 +1,32 @@
 import { TargetType } from "../../context";
 import { Node, NodeDef } from "../../node";
 import { Process, Status } from "../../process";
+import { TreeEvent } from "../../tree";
 import { TreeEnv } from "../../tree-env";
 
 interface NodeArgs {
     event: string;
 }
+
+const builtinEventOptions = [
+    { name: "行为树被中断", value: TreeEvent.INTERRUPTED },
+    {
+        name: "行为树开始执行前",
+        value: TreeEvent.BEFORE_RUN,
+    },
+    {
+        name: "行为树执行完成后",
+        value: TreeEvent.AFTER_RUN,
+    },
+    {
+        name: "行为树执行成功后",
+        value: TreeEvent.AFTER_RUN_SUCCESS,
+    },
+    {
+        name: "行为树执行失败后",
+        value: TreeEvent.AFTER_RUN_FAILURE,
+    },
+];
 
 type NodeInput = [TargetType | TargetType[] | undefined];
 type NodeOutput = [string?, string?];
@@ -15,18 +36,30 @@ export class Listen extends Process {
         this._checkOneChild(node);
     }
 
+    protected _isBuiltinEvent(event: string): boolean {
+        return !!builtinEventOptions.find((e) => e.value === event);
+    }
+
     override run(node: Node, env: TreeEnv): Status {
-        const [target] = env.input as NodeInput;
+        let [target] = env.input as NodeInput;
+        const args = node.args as unknown as NodeArgs;
+
+        if (this._isBuiltinEvent(args.event)) {
+            if (target !== undefined) {
+                node.warn(`invalid target ${target} for builtin event ${args.event}`);
+            }
+            target = env as unknown as TargetType;
+        }
 
         const callback = (eventTarget?: TargetType) => {
-            return (...args: unknown[]) => {
+            return (...eventArgs: unknown[]) => {
                 const level = env.stack.length;
                 const [eventArgsKey, eventTargetKey] = node.data.output as unknown as NodeOutput;
                 if (eventTargetKey) {
                     env.set(eventTargetKey, eventTarget);
                 }
                 if (eventArgsKey) {
-                    env.set(eventArgsKey, args);
+                    env.set(eventArgsKey, eventArgs);
                 }
                 const status = node.children[0].run(env);
                 if (status === "running") {
@@ -37,7 +70,6 @@ export class Listen extends Process {
                 }
             };
         };
-        const args = node.args as unknown as NodeArgs;
         if (target !== undefined) {
             if (target instanceof Array) {
                 target.forEach((v) => {
@@ -63,8 +95,9 @@ export class Listen extends Process {
             args: [
                 {
                     name: "event",
-                    type: "string",
+                    type: "enum",
                     desc: "事件",
+                    options: builtinEventOptions.slice(),
                 },
             ],
             doc: `

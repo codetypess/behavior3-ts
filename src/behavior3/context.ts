@@ -26,7 +26,6 @@ import { AlwaysSuccess } from "./nodes/decorators/always-success";
 import { Assert } from "./nodes/decorators/assert";
 import { Inverter } from "./nodes/decorators/inverter";
 import { Listen } from "./nodes/decorators/listen";
-import { ListenTree } from "./nodes/decorators/listen-tree";
 import { Once } from "./nodes/decorators/once";
 import { RepeatUntilFailure } from "./nodes/decorators/repeat-until-failure";
 import { RepeatUntilSuccess } from "./nodes/decorators/repeat-until-success";
@@ -65,7 +64,6 @@ export class Context {
         this.registerProcess(IsStatus);
         this.registerProcess(Let);
         this.registerProcess(Listen);
-        this.registerProcess(ListenTree);
         this.registerProcess(Log);
         this.registerProcess(Loop);
         this.registerProcess(NotNull);

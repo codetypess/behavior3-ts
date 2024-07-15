@@ -8,11 +8,11 @@ export interface TreeData {
 }
 
 export const enum TreeEvent {
-    INTERRUPTED = "interrupted",
-    BEFORE_RUN = "beforeRun",
-    AFTER_RUN = "afterRun",
-    AFTER_RUN_SUCCESS = "afterRunSuccess",
-    AFTER_RUN_FAILURE = "afterRunFailure",
+    INTERRUPTED = "treeInterrupted",
+    BEFORE_RUN = "beforeRunTree",
+    AFTER_RUN = "afterRunTree",
+    AFTER_RUN_SUCCESS = "afterRunTreeSuccess",
+    AFTER_RUN_FAILURE = "afterRunTreeFailure",
 }
 
 export class Tree {
