@@ -38,15 +38,29 @@
           {
             "id": 8,
             "name": "AlwaysSuccess"
+          },
+          {
+            "id": 9,
+            "name": "Wait",
+            "args": {
+              "time": 1
+            },
+            "input": [
+              ""
+            ]
+          },
+          {
+            "id": 10,
+            "name": "AlwaysFail"
           }
         ]
       },
       {
-        "id": 9,
+        "id": 11,
         "name": "RepeatUntilSuccess",
         "children": [
           {
-            "id": 10,
+            "id": 12,
             "name": "Clear"
           }
         ]
