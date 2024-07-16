@@ -36,6 +36,7 @@ export class Log extends Process {
         return {
             name: "Log",
             type: "Action",
+            status: ["success"],
             desc: "打印日志",
             args: [
                 {

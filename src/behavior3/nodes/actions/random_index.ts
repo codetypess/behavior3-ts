@@ -25,6 +25,7 @@ export class RandomIndex extends Process {
         return {
             name: "RandomIndex",
             type: "Action",
+            status: ["success", "failure"],
             desc: "随机返回输入的其中一个!",
             input: ["输入目标"],
             output: ["随机目标"],

@@ -12,6 +12,7 @@ export class Clear extends Process {
         return {
             name: "Clear",
             type: "Action",
+            status: ["success"],
             desc: "清除变量",
             output: ["清除的变量名"],
         };

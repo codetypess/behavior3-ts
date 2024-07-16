@@ -26,6 +26,7 @@ export class AlwaysFail extends Process {
         return {
             name: "AlwaysFail",
             type: "Decorator",
+            status: ["failure", "?running"],
             desc: "始终返回失败",
             doc: `
                 + 只能有一个子节点，多个仅执行第一个

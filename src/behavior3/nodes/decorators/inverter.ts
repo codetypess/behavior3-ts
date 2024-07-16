@@ -30,6 +30,7 @@ export class Inverter extends Process {
         return {
             name: "Inverter",
             type: "Decorator",
+            status: ["!success", "!failure", "?running"],
             desc: "反转子节点运行结果",
             doc: `
                 + 只能有一个子节点，多个仅执行第一个

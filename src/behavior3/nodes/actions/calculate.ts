@@ -26,6 +26,7 @@ export class Calculate extends Process {
         return {
             name: "Calculate",
             type: "Action",
+            status: ["success"],
             desc: "简单的数值公式计算",
             args: [{ name: "value", type: "code", desc: "计算公式" }],
             output: ["计算结果"],

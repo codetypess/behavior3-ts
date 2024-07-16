@@ -1,0 +1,25 @@
+{
+  "name": "test-status",
+  "root": {
+    "id": 1,
+    "name": "Sequence",
+    "children": [
+      {
+        "id": 2,
+        "name": "Clear"
+      },
+      {
+        "id": 3,
+        "name": "RepeatUntilFailure",
+        "children": [
+          {
+            "id": 4,
+            "name": "Clear"
+          }
+        ]
+      }
+    ]
+  },
+  "export": true,
+  "desc": ""
+}

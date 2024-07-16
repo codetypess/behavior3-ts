@@ -18,6 +18,7 @@ export class Includes extends Process {
         return {
             name: "Includes",
             type: "Condition",
+            status: ["success", "failure"],
             desc: "判断元素是否在数组中",
             input: ["数组", "元素"],
             doc: `

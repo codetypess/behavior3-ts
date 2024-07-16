@@ -29,6 +29,7 @@ export class IsStatus extends Process {
         return {
             name: "IsStatus",
             type: "Condition",
+            status: ["success", "failure"],
             desc: "检查子节点状态",
             args: [
                 {

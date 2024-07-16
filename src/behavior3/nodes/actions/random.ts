@@ -28,6 +28,7 @@ export class Random extends Process {
         return {
             name: "Random",
             type: "Action",
+            status: ["success"],
             desc: "返回一个随机数",
             input: ["最小值?", "最大值?"],
             args: [

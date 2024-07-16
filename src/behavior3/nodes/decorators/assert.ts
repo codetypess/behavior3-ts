@@ -41,6 +41,7 @@ export class Assert extends Process {
             name: "Assert",
             type: "Decorator",
             desc: "断言",
+            status: ["success"],
             args: [
                 {
                     name: "message",

@@ -12,6 +12,7 @@ export class Now extends Process {
         return {
             name: "Now",
             type: "Action",
+            status: ["success"],
             desc: "获取当前时间",
             output: ["当前时间"],
         };

@@ -41,6 +41,7 @@ export class Once extends Process {
         return {
             name: "Once",
             type: "Decorator",
+            status: ["success", "failure", "?running"],
             desc: "只执行一次",
             doc: `
                 + 只能有一个子节点，多个仅执行第一个

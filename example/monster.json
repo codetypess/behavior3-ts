@@ -71,7 +71,22 @@
         "children": [
           {
             "id": 10,
-            "name": "Log"
+            "name": "Log",
+            "children": [
+              {
+                "id": 11,
+                "name": "Sequence",
+                "children": [
+                  {
+                    "id": 12,
+                    "name": "AlwaysSuccess",
+                    "input": [
+                      ""
+                    ]
+                  }
+                ]
+              }
+            ]
           }
         ]
       }

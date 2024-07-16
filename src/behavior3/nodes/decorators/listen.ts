@@ -89,6 +89,7 @@ export class Listen extends Process {
         return {
             name: "Listen",
             type: "Decorator",
+            status: ["success"],
             desc: "侦听事件",
             input: ["目标对象?"],
             output: ["事件参数?", "事件目标?"],
