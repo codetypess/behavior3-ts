@@ -6,7 +6,10 @@
     "children": [
       {
         "id": 2,
-        "name": "Clear"
+        "name": "Clear",
+        "output": [
+          "ccc"
+        ]
       },
       {
         "id": 3,
@@ -14,6 +17,36 @@
         "children": [
           {
             "id": 4,
+            "name": "Sequence",
+            "children": [
+              {
+                "id": 5,
+                "name": "AlwaysFail"
+              },
+              {
+                "id": 6,
+                "name": "Clear"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "name": "Selector",
+        "children": [
+          {
+            "id": 8,
+            "name": "AlwaysSuccess"
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "name": "RepeatUntilSuccess",
+        "children": [
+          {
+            "id": 10,
             "name": "Clear"
           }
         ]

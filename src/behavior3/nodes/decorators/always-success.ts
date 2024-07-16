@@ -26,7 +26,7 @@ export class AlwaysSuccess extends Process {
         return {
             name: "AlwaysSuccess",
             type: "Decorator",
-            status: ["success", "?running"],
+            status: ["success", "|running"],
             desc: "始终返回成功",
             doc: `
                 + 只能有一个子节点，多个仅执行第一个

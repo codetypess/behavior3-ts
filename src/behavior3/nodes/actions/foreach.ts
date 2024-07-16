@@ -42,7 +42,7 @@ export class Foreach extends Process {
         return {
             name: "ForEach",
             type: "Action",
-            status: ["success", "running", "failure"],
+            status: ["success", "|running", "|failure"],
             desc: "遍历数组",
             input: ["数组"],
             output: ["变量"],

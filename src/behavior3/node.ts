@@ -9,7 +9,10 @@ export interface NodeDef {
     icon?: string;
     color?: string;
     input?: string[];
-    status?: Exclude<`${Status}` | `!${Status}` | `?${Status}`, "!running">[];
+    status?: Exclude<
+        `${Status}` | `!${Status}` | `|${Status}` | `&${Status}`,
+        "!running" | "&running"
+    >[];
     args?: {
         name: string;
         type:

@@ -67,28 +67,7 @@
         "args": {
           "message": "if true",
           "level": "info"
-        },
-        "children": [
-          {
-            "id": 10,
-            "name": "Log",
-            "children": [
-              {
-                "id": 11,
-                "name": "Sequence",
-                "children": [
-                  {
-                    "id": 12,
-                    "name": "AlwaysSuccess",
-                    "input": [
-                      ""
-                    ]
-                  }
-                ]
-              }
-            ]
-          }
-        ]
+        }
       }
     ]
   },

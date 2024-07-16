@@ -4,7 +4,7 @@
     "type": "Decorator",
     "status": [
       "failure",
-      "?running"
+      "|running"
     ],
     "desc": "始终返回失败",
     "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 不管子节点是否成功都返回`失败`\n"
@@ -14,7 +14,7 @@
     "type": "Decorator",
     "status": [
       "success",
-      "?running"
+      "|running"
     ],
     "desc": "始终返回成功",
     "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 不管子节点是否成功都返回`成功`\n"
@@ -112,7 +112,8 @@
     "type": "Action",
     "status": [
       "success",
-      "failure"
+      "failure",
+      "|running"
     ],
     "desc": "返回满足条件的元素",
     "input": [
@@ -151,8 +152,8 @@
     "type": "Action",
     "status": [
       "success",
-      "running",
-      "failure"
+      "|running",
+      "|failure"
     ],
     "desc": "遍历数组",
     "input": [
@@ -220,7 +221,7 @@
     "status": [
       "!success",
       "!failure",
-      "?running"
+      "|running"
     ],
     "desc": "反转子节点运行结果",
     "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 当子节点返回`成功`时返回`失败`\n+ 当子节点返回`失败`时返回`成功`\n"
@@ -371,8 +372,8 @@
     "type": "Action",
     "status": [
       "success",
-      "running",
-      "failure"
+      "|running",
+      "|failure"
     ],
     "desc": "循环执行",
     "input": [
@@ -441,7 +442,7 @@
     "status": [
       "success",
       "failure",
-      "?running"
+      "|running"
     ],
     "desc": "只执行一次",
     "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 第一次执行完全部子节点时返回`成功`，之后永远返回`失败`"
@@ -451,7 +452,7 @@
     "type": "Composite",
     "status": [
       "success",
-      "?running"
+      "|running"
     ],
     "desc": "并行执行",
     "doc": "+ 并行执行所有子节点\n+ 当有子节点返回`运行中`时，返回`运行中`状态\n+ 执行完所有子节点后，返回`成功`"
@@ -523,8 +524,8 @@
     "type": "Decorator",
     "status": [
       "!success",
-      "failure",
-      "?running"
+      "!failure",
+      "|running"
     ],
     "desc": "一直尝试直到子节点返回失败",
     "input": [
@@ -543,9 +544,9 @@
     "name": "RepeatUntilSuccess",
     "type": "Decorator",
     "status": [
-      "?success",
-      "failure",
-      "?running"
+      "|success",
+      "|failure",
+      "|running"
     ],
     "desc": "一直尝试直到子节点返回成功",
     "input": [
@@ -565,9 +566,9 @@
     "type": "Composite",
     "desc": "选择执行",
     "status": [
-      "?success",
-      "?failure",
-      "?running"
+      "|success",
+      "|failure",
+      "|running"
     ],
     "doc": "+ 一直往下执行，直到有子节点返回`成功`则返回`成功`\n+ 若全部节点返回`失败`则返回`失败`"
   },
@@ -575,9 +576,9 @@
     "name": "Sequence",
     "type": "Composite",
     "status": [
-      "?success",
-      "?failure",
-      "?running"
+      "&success",
+      "|failure",
+      "|running"
     ],
     "desc": "顺序执行",
     "doc": "+ 一直往下执行，只有当所有子节点都返回`成功`, 才返回`成功`\n+ 若子节点返回`失败`，则直接返回`失败`状态\n+ 其余情况返回`运行中`状态\n"
@@ -587,8 +588,8 @@
     "type": "Decorator",
     "desc": "超时",
     "status": [
-      "?success",
-      "?running",
+      "|success",
+      "|running",
       "failure"
     ],
     "args": [

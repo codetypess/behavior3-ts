@@ -58,7 +58,7 @@ export class Filter extends Process {
         return {
             name: "Filter",
             type: "Action",
-            status: ["success", "failure"],
+            status: ["success", "failure", "|running"],
             desc: "返回满足条件的元素",
             input: ["输入数组"],
             output: ["变量", "新数组"],

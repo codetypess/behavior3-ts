@@ -44,7 +44,7 @@ export class RepeatUntilFailure extends Process {
         return {
             name: "RepeatUntilFailure",
             type: "Decorator",
-            status: ["!success", "failure", "?running"],
+            status: ["!success", "!failure", "|running"],
             desc: "一直尝试直到子节点返回失败",
             input: ["最大循环次数?"],
             args: [{ name: "maxLoop", type: "int?", desc: "最大循环次数" }],
