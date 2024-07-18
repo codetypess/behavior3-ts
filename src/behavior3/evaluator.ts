@@ -52,32 +52,36 @@ export class ExpressionEvaluator {
                 switch (type) {
                     case TokenType.DOT: {
                         const obj = this._toObject(a);
-                        stack.push(this._toNumber(obj[b]));
+                        stack.push(this._toValue(obj[b]));
                         break;
                     }
                     case TokenType.GT:
-                        return this._toNumber(a) > this._toNumber(b);
+                        return this._toValue(a) > this._toValue(b);
                     case TokenType.GE:
-                        return this._toNumber(a) >= this._toNumber(b);
+                        return this._toValue(a) >= this._toValue(b);
                     case TokenType.EQ:
-                        return a === b;
+                        return (
+                            this._toValue<unknown>(a, false) === this._toValue<unknown>(b, false)
+                        );
                     case TokenType.NEQ:
-                        return a !== b;
+                        return (
+                            this._toValue<unknown>(a, false) !== this._toValue<unknown>(b, false)
+                        );
                     case TokenType.LT:
-                        return this._toNumber(a) < this._toNumber(b);
+                        return this._toValue(a) < this._toValue(b);
                     case TokenType.LE:
-                        return this._toNumber(a) <= this._toNumber(b);
+                        return this._toValue(a) <= this._toValue(b);
                     case TokenType.ADD:
-                        stack.push(this._toNumber(a) + this._toNumber(b));
+                        stack.push(this._toValue(a) + this._toValue(b));
                         break;
                     case TokenType.SUB:
-                        stack.push(this._toNumber(a) - this._toNumber(b));
+                        stack.push(this._toValue(a) - this._toValue(b));
                         break;
                     case TokenType.MUL:
-                        stack.push(this._toNumber(a) * this._toNumber(b));
+                        stack.push(this._toValue(a) * this._toValue(b));
                         break;
                     case TokenType.DIV:
-                        stack.push(this._toNumber(a) / this._toNumber(b));
+                        stack.push(this._toValue(a) / this._toValue(b));
                         break;
                 }
             }
@@ -101,20 +105,19 @@ export class ExpressionEvaluator {
         }
     }
 
-    private _toNumber(token: unknown) {
+    private _toValue<T = number>(token: unknown, isNumber: boolean = true): T {
         if (typeof token === "number") {
-            return token;
+            return token as T;
         } else if (typeof token === "string") {
             const value = this._args?.[token];
-            if (typeof value === "number") {
-                return value;
-            } else if (value === undefined) {
+            if (value === undefined) {
                 throw new Error(`value indexed by '${token}' is not found`);
-            } else {
+            } else if (isNumber && typeof value !== "number") {
                 throw new Error(`value indexed by '${token}' is not a number'`);
             }
+            return value as T;
         } else {
-            throw new Error(`token '${token}' is not a number`);
+            throw new Error(`token '${token}' type not support!`);
         }
     }
 
