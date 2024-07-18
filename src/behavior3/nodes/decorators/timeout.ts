@@ -23,6 +23,9 @@ export class Timeout extends Process {
         if (last === undefined) {
             status = node.children[0].run(env);
         } else if (env.context.time >= last.expired) {
+            last.nodes.forEach((child) => {
+                env.set(child.vars.yieldKey, undefined);
+            });
             return "failure";
         } else {
             for (let i = last.nodes.length - 1; i >= 0; i--) {

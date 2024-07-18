@@ -7,7 +7,6 @@ import { Filter } from "./nodes/actions/filter";
 import { Foreach } from "./nodes/actions/foreach";
 import { Let } from "./nodes/actions/let";
 import { Log } from "./nodes/actions/log";
-import { Loop } from "./nodes/actions/loop";
 import { Now } from "./nodes/actions/now";
 import { Push } from "./nodes/actions/push";
 import { Random } from "./nodes/actions/random";
@@ -24,8 +23,10 @@ import { NotNull } from "./nodes/conditions/not-null";
 import { AlwaysFail } from "./nodes/decorators/always-failure";
 import { AlwaysSuccess } from "./nodes/decorators/always-success";
 import { Assert } from "./nodes/decorators/assert";
+import { Delay } from "./nodes/decorators/delay";
 import { Inverter } from "./nodes/decorators/inverter";
 import { Listen } from "./nodes/decorators/listen";
+import { Loop } from "./nodes/decorators/loop";
 import { Once } from "./nodes/decorators/once";
 import { RepeatUntilFailure } from "./nodes/decorators/repeat-until-failure";
 import { RepeatUntilSuccess } from "./nodes/decorators/repeat-until-success";
@@ -38,12 +39,11 @@ export type ObjectType = { [k: string]: unknown };
 export type TargetType = object | string | number;
 export type TagType = unknown;
 
-const DEFAULT_TARGET: TargetType = {};
-
 export class Context {
     protected _processResolvers: Map<string, Process> = new Map();
     protected _evaluators: Map<string, Evaluator> = new Map();
     protected _time: number = 0;
+    protected _delays: Map<Callback, [TagType, number]> = new Map();
 
     protected _listenerMap: Map<string, Map<TargetType, Map<Callback, TagType>>> = new Map();
 
@@ -54,11 +54,12 @@ export class Context {
         this.registerProcess(Calculate);
         this.registerProcess(Check);
         this.registerProcess(Clear);
+        this.registerProcess(Concat);
+        this.registerProcess(Delay);
         this.registerProcess(Filter);
         this.registerProcess(Foreach);
         this.registerProcess(Includes);
         this.registerProcess(Index);
-        this.registerProcess(Concat);
         this.registerProcess(Inverter);
         this.registerProcess(IsNull);
         this.registerProcess(IsStatus);
@@ -89,6 +90,21 @@ export class Context {
         return this._processResolvers;
     }
 
+    delay(time: number, callback: Callback, tag: TagType) {
+        const expired = time + this._time;
+        this._delays.set(callback, [tag, expired]);
+    }
+
+    update(dt: number): void {
+        this._time += dt;
+        this._delays.forEach(([_, expired], callback) => {
+            if (expired <= this._time) {
+                this._delays.delete(callback);
+                callback();
+            }
+        });
+    }
+
     on(event: string, callback: Callback, tag: TagType): void;
 
     on(event: string, target: TargetType, callback: Callback, tag: TagType): void;
@@ -104,7 +120,7 @@ export class Context {
         if (typeof callbackOrTarget === "function") {
             callback = callbackOrTarget as Callback;
             tag = tagOrCallback as object;
-            target = DEFAULT_TARGET;
+            target = this as TargetType;
         } else {
             target = callbackOrTarget as TargetType;
             callback = tagOrCallback as Callback;
@@ -123,17 +139,13 @@ export class Context {
         targetListeners.set(callback, tag!);
     }
 
-    dispatch(event: string, ...args: unknown[]) {
-        this.dispatchTarget(DEFAULT_TARGET, event, ...args);
-    }
-
-    dispatchTarget(target: TargetType, event: string, ...args: unknown[]) {
-        const listeners = this._listenerMap.get(event)?.get(target);
-        if (listeners) {
-            for (const [callback] of listeners) {
+    dispatch(event: string, target?: TargetType | this, ...args: unknown[]) {
+        this._listenerMap
+            .get(event)
+            ?.get(target ?? this)
+            ?.forEach((_, callback) => {
                 callback(...args);
-            }
-        }
+            });
     }
 
     off(event: string, tag: TagType) {
@@ -161,6 +173,12 @@ export class Context {
                     listeners.delete(target);
                 }
             });
+        });
+
+        this._delays.forEach(([value], callback) => {
+            if (value === tag) {
+                this._delays.delete(callback);
+            }
         });
     }
 

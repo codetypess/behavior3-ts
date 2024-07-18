@@ -30,7 +30,7 @@ export class TreeRunner<T extends TreeEnv> {
 
     private _dispatch(event: string, ...args: unknown[]) {
         const env = this._env;
-        env.context.dispatchTarget(env, event, ...args);
+        env.context.dispatch(event, env, ...args);
     }
 
     clear() {

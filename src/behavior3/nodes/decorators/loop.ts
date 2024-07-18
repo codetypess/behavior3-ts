@@ -45,7 +45,7 @@ export class Loop extends Process {
     override get descriptor(): NodeDef {
         return {
             name: "Loop",
-            type: "Action",
+            type: "Decorator",
             status: ["success", "|running", "|failure"],
             desc: "循环执行",
             input: ["循环次数?"],
