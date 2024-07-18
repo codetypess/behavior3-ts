@@ -30,6 +30,7 @@ export class Invert extends Process {
         return {
             name: "Invert",
             type: "Decorator",
+            children: 1,
             status: ["!success", "!failure", "|running"],
             desc: "反转子节点运行结果",
             doc: `

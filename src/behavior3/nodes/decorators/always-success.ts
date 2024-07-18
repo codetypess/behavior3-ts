@@ -26,6 +26,7 @@ export class AlwaysSuccess extends Process {
         return {
             name: "AlwaysSuccess",
             type: "Decorator",
+            children: 1,
             status: ["success", "|running"],
             desc: "始终返回成功",
             doc: `

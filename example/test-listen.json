@@ -33,8 +33,12 @@
                     "args": {
                       "event": "hello"
                     },
-                    "input": [""],
-                    "output": ["args"],
+                    "input": [
+                      ""
+                    ],
+                    "output": [
+                      "args"
+                    ],
                     "children": [
                       {
                         "id": 7,
@@ -52,8 +56,12 @@
                     "args": {
                       "event": "testOff"
                     },
-                    "input": [""],
-                    "output": [""],
+                    "input": [
+                      ""
+                    ],
+                    "output": [
+                      ""
+                    ],
                     "children": [
                       {
                         "id": 9,
@@ -69,8 +77,15 @@
                     "id": 10,
                     "name": "Listen",
                     "args": {
-                      "builtin": "afterRunTree"
+                      "event": "afterRunTree"
                     },
+                    "input": [
+                      ""
+                    ],
+                    "output": [
+                      "",
+                      ""
+                    ],
                     "children": [
                       {
                         "id": 11,

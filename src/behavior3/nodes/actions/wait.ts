@@ -40,6 +40,7 @@ export class Wait extends Process {
         return {
             name: "Wait",
             type: "Action",
+            children: 0,
             status: ["success", "running"],
             desc: "等待",
             input: ["等待时间?"],

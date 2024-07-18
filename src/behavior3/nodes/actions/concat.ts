@@ -18,6 +18,7 @@ export class Concat extends Process {
         return {
             name: "Concat",
             type: "Action",
+            children: 0,
             status: ["success", "failure"],
             desc: "将两个输入合并为一个数组，并返回新数组",
             input: ["数组1", "数组2"],

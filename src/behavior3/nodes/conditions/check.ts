@@ -25,6 +25,7 @@ export class Check extends Process {
         return {
             name: "Check",
             type: "Condition",
+            children: 0,
             status: ["success", "failure"],
             desc: "检查True或False",
             args: [{ name: "value", type: "code", desc: "值" }],

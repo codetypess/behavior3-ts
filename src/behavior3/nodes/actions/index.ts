@@ -51,6 +51,7 @@ export class Index extends Process {
         return {
             name: "Index",
             type: "Action",
+            children: 0,
             status: ["success", "failure"],
             desc: "索引输入的数组或对象",
             args: [{ name: "idx", type: "string", desc: "索引" }],

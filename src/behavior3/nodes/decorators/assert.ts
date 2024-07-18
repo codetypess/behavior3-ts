@@ -40,8 +40,9 @@ export class Assert extends Process {
         return {
             name: "Assert",
             type: "Decorator",
-            desc: "断言",
+            children: 1,
             status: ["success"],
+            desc: "断言",
             args: [
                 {
                     name: "message",

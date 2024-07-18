@@ -18,6 +18,7 @@ export class Push extends Process {
         return {
             name: "Push",
             type: "Action",
+            children: 0,
             status: ["success", "failure"],
             desc: "向数组中添加元素",
             input: ["数组", "元素"],

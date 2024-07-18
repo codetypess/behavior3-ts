@@ -15,6 +15,7 @@ export class Let extends Process {
         return {
             name: "Let",
             type: "Action",
+            children: 0,
             status: ["success"],
             desc: "定义新的变量名",
             input: ["变量名"],

@@ -33,6 +33,7 @@ export class Selector extends Process {
         return {
             name: "Selector",
             type: "Composite",
+            children: -1,
             desc: "选择执行",
             status: ["|success", "&failure", "|running"],
             doc: `

@@ -41,6 +41,7 @@ export class Once extends Process {
         return {
             name: "Once",
             type: "Decorator",
+            children: 1,
             status: ["success", "failure", "|running"],
             desc: "只执行一次",
             doc: `

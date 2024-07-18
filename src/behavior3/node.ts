@@ -13,6 +13,12 @@ export interface NodeDef {
         `${Status}` | `!${Status}` | `|${Status}` | `&${Status}`,
         "!running" | "&running"
     >[];
+    /** Allowed number of children
+     * + -1: unlimited
+     * + 0: no children
+     * + 1: exactly one child
+     */
+    children?: -1 | 0 | 1;
     args?: {
         name: string;
         type:

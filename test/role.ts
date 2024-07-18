@@ -55,7 +55,22 @@ export class RoleContext extends Context {
     exportNodeDefs() {
         const defs: NodeDef[] = [];
         for (const v of this._processResolvers.values()) {
-            defs.push(v.descriptor);
+            const descriptor = v.descriptor;
+            defs.push(descriptor);
+            if (descriptor.name === "Listen") {
+                descriptor.args?.[0].options?.push(
+                    ...[
+                        {
+                            name: "testOff",
+                            value: "testOff",
+                        },
+                        {
+                            name: "hello",
+                            value: "hello",
+                        },
+                    ]
+                );
+            }
         }
         defs.sort((a, b) => a.name.localeCompare(b.name));
         let str = JSON.stringify(defs, null, 2);

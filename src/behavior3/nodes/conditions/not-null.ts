@@ -18,6 +18,7 @@ export class NotNull extends Process {
         return {
             name: "NotNull",
             type: "Condition",
+            children: 0,
             status: ["success", "failure"],
             desc: "判断变量是否存在",
             input: ["判断的变量"],

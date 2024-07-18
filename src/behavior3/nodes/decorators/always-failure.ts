@@ -26,6 +26,7 @@ export class AlwaysFail extends Process {
         return {
             name: "AlwaysFail",
             type: "Decorator",
+            children: 1,
             status: ["failure", "|running"],
             desc: "始终返回失败",
             doc: `

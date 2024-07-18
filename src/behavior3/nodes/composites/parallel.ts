@@ -55,6 +55,7 @@ export class Parallel extends Process {
             name: "Parallel",
             type: "Composite",
             status: ["success", "|running"],
+            children: -1,
             desc: "并行执行",
             doc: `
                 + 并行执行所有子节点

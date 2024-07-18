@@ -44,6 +44,7 @@ export class RepeatUntilSuccess extends Process {
         return {
             name: "RepeatUntilSuccess",
             type: "Decorator",
+            children: 1,
             status: ["|success", "|failure", "|running"],
             desc: "一直尝试直到子节点返回成功",
             input: ["最大循环次数?"],

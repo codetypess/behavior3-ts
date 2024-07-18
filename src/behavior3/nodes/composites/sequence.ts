@@ -33,6 +33,7 @@ export class Sequence extends Process {
         return {
             name: "Sequence",
             type: "Composite",
+            children: -1,
             status: ["&success", "|failure", "|running"],
             desc: "顺序执行",
             doc: `

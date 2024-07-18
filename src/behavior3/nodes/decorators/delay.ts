@@ -38,6 +38,7 @@ export class Delay extends Process {
         return {
             name: "Delay",
             type: "Decorator",
+            children: 1,
             status: ["success"],
             desc: "延时执行子节点",
             input: ["延时时间?"],

@@ -59,8 +59,9 @@ export class Timeout extends Process {
         return {
             name: "Timeout",
             type: "Decorator",
-            desc: "超时",
+            children: 1,
             status: ["|success", "|running", "failure"],
+            desc: "超时",
             args: [{ name: "time", type: "float", desc: "超时时间" }],
             doc: `
                 + 只能有一个子节点，多个仅执行第一个

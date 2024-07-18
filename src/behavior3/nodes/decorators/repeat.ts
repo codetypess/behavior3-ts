@@ -46,6 +46,7 @@ export class Repeat extends Process {
         return {
             name: "Repeat",
             type: "Decorator",
+            children: 1,
             status: ["success", "|running", "|failure"],
             desc: "循环执行",
             input: ["循环次数?"],
