@@ -17,7 +17,7 @@ export class Includes extends Process {
     override get descriptor(): NodeDef {
         return {
             name: "Includes",
-            type: "Condition",
+            type: "Action",
             status: ["success", "failure"],
             desc: "判断元素是否在数组中",
             input: ["数组", "元素"],

@@ -168,7 +168,7 @@
   },
   {
     "name": "ForEach",
-    "type": "Action",
+    "type": "Decorator",
     "status": [
       "success",
       "|running",
@@ -198,7 +198,7 @@
   },
   {
     "name": "Includes",
-    "type": "Condition",
+    "type": "Action",
     "status": [
       "success",
       "failure"
@@ -235,7 +235,7 @@
     "doc": "+ 合法元素不包括 `undefined` 和 `null`\n+ 只有索引到有合法元素时候才会返回`成功`，否则返回`失败`\n"
   },
   {
-    "name": "Inverter",
+    "name": "Invert",
     "type": "Decorator",
     "status": [
       "!success",
@@ -387,27 +387,6 @@
     ]
   },
   {
-    "name": "Loop",
-    "type": "Decorator",
-    "status": [
-      "success",
-      "|running",
-      "|failure"
-    ],
-    "desc": "循环执行",
-    "input": [
-      "循环次数?"
-    ],
-    "args": [
-      {
-        "name": "count",
-        "type": "int",
-        "desc": "循环次数"
-      }
-    ],
-    "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 当子节点返回`失败`时，退出遍历并返回`失败`状态\n+ 执行完所有子节点后，返回`成功`\n"
-  },
-  {
     "name": "MoveToPos",
     "type": "Action",
     "desc": "移动到位置",
@@ -537,6 +516,27 @@
       "随机目标"
     ],
     "doc": "+ 合法元素不包括 `undefined` 和 `null`\n+ 在输入数组中，随机返回其中一个\n+ 当输入数组为空时，或者没有合法元素，返回`失败`\n"
+  },
+  {
+    "name": "Repeat",
+    "type": "Decorator",
+    "status": [
+      "success",
+      "|running",
+      "|failure"
+    ],
+    "desc": "循环执行",
+    "input": [
+      "循环次数?"
+    ],
+    "args": [
+      {
+        "name": "count",
+        "type": "int",
+        "desc": "循环次数"
+      }
+    ],
+    "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 当子节点返回`失败`时，退出遍历并返回`失败`状态\n+ 执行完所有子节点后，返回`成功`\n"
   },
   {
     "name": "RepeatUntilFailure",

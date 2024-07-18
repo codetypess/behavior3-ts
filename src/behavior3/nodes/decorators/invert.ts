@@ -2,7 +2,7 @@ import { Node, NodeDef } from "../../node";
 import { Process, Status } from "../../process";
 import { TreeEnv } from "../../tree-env";
 
-export class Inverter extends Process {
+export class Invert extends Process {
     override init(node: Node): void {
         this._checkOneChild(node);
     }
@@ -28,7 +28,7 @@ export class Inverter extends Process {
 
     override get descriptor(): NodeDef {
         return {
-            name: "Inverter",
+            name: "Invert",
             type: "Decorator",
             status: ["!success", "!failure", "|running"],
             desc: "反转子节点运行结果",
