@@ -1,10 +1,59 @@
 import { Context, ObjectType } from "./context";
 import { Node } from "./node";
 import { Status } from "./process";
-import { TreeRunner } from "./tree-runner";
 
 const PREFIX_PRIVATE = "__PRIVATE_VAR";
 const PREFIX_TEMP = "__TEMP_VAR";
+
+export class Stack {
+    private _nodes: Node[] = [];
+    private _env: TreeEnv;
+
+    constructor(env: TreeEnv) {
+        this._env = env;
+    }
+
+    get length() {
+        return this._nodes.length;
+    }
+
+    top(): Node | undefined {
+        return this._nodes[this._nodes.length - 1];
+    }
+
+    get(index: number) {
+        return this._nodes[index] as Node | undefined;
+    }
+
+    push(node: Node) {
+        this._nodes.push(node);
+    }
+
+    pop(clear: boolean = true): Node | undefined {
+        const node = this._nodes.pop();
+        if (clear && node) {
+            this._env.set(node.__yield, undefined);
+        }
+        return node;
+    }
+
+    popTo(index: number) {
+        const nodes = this._nodes;
+        while (nodes.length > index) {
+            nodes.pop();
+        }
+    }
+
+    clear() {
+        this.popTo(0);
+    }
+
+    take(start: number, count: number) {
+        const stack = new Stack(this._env);
+        stack._nodes = this._nodes.splice(start, count);
+        return stack;
+    }
+}
 
 export class TreeEnv<T extends Context = Context> {
     // variables of running node
@@ -18,7 +67,7 @@ export class TreeEnv<T extends Context = Context> {
 
     protected _context: T;
     protected _values: ObjectType = {};
-    protected _stack: Node[] = [];
+    protected _stack: Stack = new Stack(this);
 
     debug: boolean = false;
 
@@ -67,7 +116,7 @@ export class TreeEnv<T extends Context = Context> {
     clear() {
         this.__interrupted = false;
         this.__status = "success";
-        this._stack.length = 0;
+        this._stack.clear();
         this._values = {};
         this.debug = false;
         this.input.length = 0;

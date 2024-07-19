@@ -1,4 +1,4 @@
-import { Node, NodeDef, NodeVars as NodeVarsBase } from "../../node";
+import { Node, NodeDef } from "../../node";
 import { Process, Status } from "../../process";
 import { TreeEnv } from "../../tree-env";
 
@@ -8,17 +8,18 @@ type NodeArgs = {
     idx: string;
 };
 
-interface NodeVars extends NodeVarsBase {
-    index: number;
-    key: string;
+interface NodeVars {
+    readonly index: number;
+    readonly key: string;
 }
 
 export class Index extends Process {
-    override init(node: Node): void {
-        const vars = node.vars as NodeVars;
+    override init(node: Node): NodeVars {
         const args = node.args as NodeArgs;
-        vars.key = args.idx;
-        vars.index = parseInt(args.idx);
+        return {
+            key: args.idx,
+            index: parseInt(args.idx),
+        };
     }
 
     override run(node: Node, env: TreeEnv): Status {

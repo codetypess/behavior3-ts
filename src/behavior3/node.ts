@@ -16,7 +16,8 @@ export interface NodeDef {
     /** Allowed number of children
      * + -1: unlimited
      * + 0: no children
-     * + 1: exactly one child
+     * + 1: exactly one
+     * + 3: exactly three child (ifelse)
      */
     children?: -1 | 0 | 1 | 3;
     args?: {
@@ -54,12 +55,8 @@ export interface NodeData {
     children: ReadonlyArray<NodeData>;
 }
 
-export interface NodeVars {
-    readonly yieldKey: string;
-}
-
 export class Node {
-    readonly vars: NodeVars;
+    readonly vars: unknown;
     readonly tree: Tree;
     readonly name: string;
     readonly id: number;
@@ -69,6 +66,8 @@ export class Node {
     readonly children: Node[] = [];
 
     private _process: Process;
+
+    readonly __yield: string;
 
     constructor(data: NodeData, tree: Tree) {
         this.data = data;
@@ -80,7 +79,7 @@ export class Node {
         this.name = data.name;
         this.id = data.id;
         this.info = `node ${tree.name}.${this.id}.${this.name}`;
-        this.vars = { yieldKey: TreeEnv.makeTempVar(this, "YIELD") } as NodeVars;
+        this.__yield = TreeEnv.makeTempVar(this, "YIELD");
         this.args = data.args;
 
         data.children?.forEach((value) => {
@@ -94,7 +93,7 @@ export class Node {
             throw new Error(`behavior3: process '${this.name}' not found`);
         }
         this._process = process;
-        this._process.init?.(this);
+        this.vars = this._process.init?.(this) ?? {};
 
         const descriptor = process.descriptor;
         if (
@@ -113,7 +112,7 @@ export class Node {
     }
 
     run(env: TreeEnv) {
-        const yieldKey = this.vars.yieldKey;
+        const yieldKey = this.__yield;
         if (env.get(yieldKey) === undefined) {
             env.stack.push(this);
         }
@@ -134,7 +133,6 @@ export class Node {
             data.output?.forEach((varName, i) => {
                 env.set(varName, env.output[i]);
             });
-            env.set(yieldKey, undefined);
             env.stack.pop();
         } else if (env.get(yieldKey) === undefined) {
             env.set(yieldKey, true);
@@ -162,12 +160,12 @@ export class Node {
     }
 
     yield(env: TreeEnv, value?: unknown): Status {
-        env.set(this.vars.yieldKey, value ?? true);
+        env.set(this.__yield, value ?? true);
         return "running";
     }
 
     resume(env: TreeEnv): unknown {
-        return env.get(this.vars.yieldKey);
+        return env.get(this.__yield);
     }
 
     error(msg: string) {

@@ -1,13 +1,13 @@
 import { Node, NodeDef } from "../../node";
 import { Process, Status } from "../../process";
-import { TreeEnv } from "../../tree-env";
+import { Stack, TreeEnv } from "../../tree-env";
 
 interface NodeArgs {
     readonly time: number;
 }
 
 interface NodeYield {
-    nodes: Node[];
+    stack: Stack;
     expired: number;
 }
 
@@ -19,20 +19,18 @@ export class Timeout extends Process {
         if (last === undefined) {
             status = node.children[0].run(env);
         } else if (env.context.time >= last.expired) {
-            last.nodes.forEach((child) => {
-                env.set(child.vars.yieldKey, undefined);
-            });
+            last.stack.clear();
             return "failure";
         } else {
-            for (let i = last.nodes.length - 1; i >= 0; i--) {
-                const child = last.nodes[i];
+            for (let i = last.stack.length - 1; i >= 0; i--) {
+                const child = last.stack.get(i)!;
                 env.stack.push(child);
                 status = child.run(env);
                 if (status === "running") {
-                    env.stack.pop();
+                    env.stack.pop(false);
                     break;
                 } else {
-                    last.nodes.pop();
+                    last.stack.pop();
                 }
             }
         }
@@ -41,7 +39,7 @@ export class Timeout extends Process {
             if (last === undefined) {
                 const args = node.args as unknown as NodeArgs;
                 last = {
-                    nodes: env.stack.splice(level, env.stack.length - level),
+                    stack: env.stack.take(level, env.stack.length - level),
                     expired: env.context.time + args.time,
                 };
             }

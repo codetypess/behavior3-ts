@@ -40,8 +40,8 @@ export class IfElse extends Process {
             name: "IfElse",
             type: "Composite",
             children: 3,
-            status: ["success", "failure", "|running"],
-            desc: "条件执行，if-else",
+            status: ["|success", "|failure", "|running"],
+            desc: "条件执行",
             doc: `
                 + 必须有三个子节点
                 + 第一个子节点为条件节点

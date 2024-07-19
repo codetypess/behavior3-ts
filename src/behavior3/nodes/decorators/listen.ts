@@ -59,10 +59,7 @@ export class Listen extends Process {
                 }
                 const status = node.children[0].run(env);
                 if (status === "running") {
-                    while (env.stack.length > level) {
-                        const child = env.stack.pop()!;
-                        env.set(child.vars.yieldKey, undefined);
-                    }
+                    env.stack.popTo(level);
                 }
             };
         };

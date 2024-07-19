@@ -1,4 +1,3 @@
-import { Callback } from "./context";
 import { Status } from "./process";
 import { Tree, TreeEvent } from "./tree";
 import { TreeEnv } from "./tree-env";
@@ -61,13 +60,13 @@ export class TreeRunner<T extends TreeEnv> {
 
         if (!env.__interrupted) {
             if (stack.length > 0) {
-                let node = stack[stack.length - 1];
+                let node = stack.top();
                 while (node) {
                     this._status = node.run(env);
                     if (this._status === "running") {
                         break;
                     } else {
-                        node = stack[stack.length - 1];
+                        node = stack.top();
                     }
                 }
             } else {
@@ -85,7 +84,7 @@ export class TreeRunner<T extends TreeEnv> {
 
         if (env.__interrupted) {
             this._status = "interrupted";
-            stack.length = 0;
+            stack.clear();
             for (const key in vars) {
                 if (TreeEnv.isTempVar(key)) {
                     delete vars[key];

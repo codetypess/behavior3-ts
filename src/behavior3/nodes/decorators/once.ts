@@ -1,15 +1,16 @@
-import { Node, NodeDef, NodeVars as NodeVarsBase } from "../../node";
+import { Node, NodeDef } from "../../node";
 import { Process, Status } from "../../process";
 import { TreeEnv } from "../../tree-env";
 
-interface NodeVars extends NodeVarsBase {
-    onceKey: string;
+interface NodeVars {
+    readonly onceKey: string;
 }
 
 export class Once extends Process {
-    override init(node: Node): void {
-        const vars = node.vars as NodeVars;
-        vars.onceKey = TreeEnv.makePrivateVar(node, "ONCE");
+    override init(node: Node): NodeVars {
+        return {
+            onceKey: TreeEnv.makePrivateVar(node, "ONCE"),
+        };
     }
 
     override run(node: Node, env: TreeEnv): Status {

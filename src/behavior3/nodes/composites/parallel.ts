@@ -1,30 +1,30 @@
 import { Node, NodeDef } from "../../node";
 import { Process, Status } from "../../process";
-import { TreeEnv } from "../../tree-env";
+import { Stack, TreeEnv } from "../../tree-env";
 
-const EMPTY: Node[] = [];
+const EMPTY = new Stack(null!);
 
 export class Parallel extends Process {
     override run(node: Node, env: TreeEnv): Status {
-        const last = (node.resume(env) as Node[][]) ?? [];
+        const last = (node.resume(env) as Stack[]) ?? [];
         const level = env.stack.length;
         let count = 0;
 
         node.children.forEach((child, idx) => {
-            let nodes = last[idx];
+            let stack = last[idx];
             let status: Status | undefined;
-            if (nodes === undefined) {
+            if (stack === undefined) {
                 status = child.run(env);
-            } else if (nodes.length > 0) {
-                for (let i = nodes.length - 1; i >= 0; i--) {
-                    child = nodes[i];
+            } else if (stack.length > 0) {
+                for (let i = stack.length - 1; i >= 0; i--) {
+                    child = stack.get(i)!;
                     env.stack.push(child);
                     status = child.run(env);
                     if (status === "running") {
-                        env.stack.pop();
+                        env.stack.pop(false);
                         break;
                     } else {
-                        nodes.pop();
+                        stack.pop();
                     }
                 }
             } else {
@@ -32,15 +32,15 @@ export class Parallel extends Process {
             }
 
             if (status === "running") {
-                if (nodes === undefined) {
-                    nodes = env.stack.splice(level, env.stack.length - level);
+                if (stack === undefined) {
+                    stack = env.stack.take(level, env.stack.length - level);
                 }
             } else {
-                nodes = EMPTY;
+                stack = EMPTY;
                 count++;
             }
 
-            last[idx] = nodes;
+            last[idx] = stack;
         });
 
         if (count === node.children.length) {
