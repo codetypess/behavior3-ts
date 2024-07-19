@@ -9,7 +9,7 @@ export class IfElse extends Process {
         if (childStatus === "running") {
             return node.yield(env, i);
         } else {
-            return status;
+            return childStatus;
         }
     }
 
