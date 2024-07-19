@@ -12,6 +12,7 @@ import { Push } from "./nodes/actions/push";
 import { Random } from "./nodes/actions/random";
 import { RandomIndex } from "./nodes/actions/random_index";
 import { Wait } from "./nodes/actions/wait";
+import { IfElse } from "./nodes/composites/ifelse";
 import { Parallel } from "./nodes/composites/parallel";
 import { Selector } from "./nodes/composites/selector";
 import { Sequence } from "./nodes/composites/sequence";
@@ -58,6 +59,7 @@ export class Context {
         this.registerProcess(Delay);
         this.registerProcess(Filter);
         this.registerProcess(Foreach);
+        this.registerProcess(IfElse);
         this.registerProcess(Includes);
         this.registerProcess(Index);
         this.registerProcess(Invert);

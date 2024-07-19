@@ -9,10 +9,6 @@ interface NodeArgs {
 type NodeInput = [number | undefined];
 
 export class Repeat extends Process {
-    override init(node: Node): void {
-        this._checkOneChild(node);
-    }
-
     override run(node: Node, env: TreeEnv): Status {
         let [count] = env.input as NodeInput;
         const args = node.args as unknown as NodeArgs;
@@ -53,8 +49,8 @@ export class Repeat extends Process {
             args: [{ name: "count", type: "int", desc: "循环次数" }],
             doc: `
                 + 只能有一个子节点，多个仅执行第一个
-                + 当子节点返回\`失败\`时，退出遍历并返回\`失败\`状态
-                + 执行完所有子节点后，返回\`成功\`
+                + 当子节点返回\`failure\`时，退出遍历并返回\`failure\`状态
+                + 执行完所有子节点后，返回\`success\`
             `,
         };
     }

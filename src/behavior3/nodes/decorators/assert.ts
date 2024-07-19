@@ -7,10 +7,6 @@ interface NodeArgs {
 }
 
 export class Assert extends Process {
-    override init(node: Node): void {
-        this._checkOneChild(node);
-    }
-
     override run(node: Node, env: TreeEnv): Status {
         const args = node.args as unknown as NodeArgs;
         const isYield = node.resume(env);
@@ -52,7 +48,7 @@ export class Assert extends Process {
             ],
             doc: `
                 + 只能有一个子节点，多个仅执行第一个
-                + 当子节点返回\`失败\`时，抛出异常
+                + 当子节点返回\`failure\`时，抛出异常
                 + 其余情况返回子节点的执行状态
             `,
         };

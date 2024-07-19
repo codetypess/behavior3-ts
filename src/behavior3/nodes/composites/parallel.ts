@@ -59,8 +59,8 @@ export class Parallel extends Process {
             desc: "并行执行",
             doc: `
                 + 并行执行所有子节点
-                + 当有子节点返回\`运行中\`时，返回\`运行中\`状态
-                + 执行完所有子节点后，返回\`成功\``,
+                + 当有子节点返回\`running\`时，返回\`running\`状态
+                + 执行完所有子节点后，返回\`success\``,
         };
     }
 }

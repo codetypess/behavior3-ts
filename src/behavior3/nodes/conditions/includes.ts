@@ -23,8 +23,8 @@ export class Includes extends Process {
             desc: "判断元素是否在数组中",
             input: ["数组", "元素"],
             doc: `
-                + 若输入的元素不合法，返回\`失败\`
-                + 只有数组包含元素时返回\`成功\`，否则返回\`失败\`
+                + 若输入的元素不合法，返回\`failure\`
+                + 只有数组包含元素时返回\`success\`，否则返回\`failure\`
             `,
         };
     }

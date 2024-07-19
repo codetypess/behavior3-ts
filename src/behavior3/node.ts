@@ -18,7 +18,7 @@ export interface NodeDef {
      * + 0: no children
      * + 1: exactly one child
      */
-    children?: -1 | 0 | 1;
+    children?: -1 | 0 | 1 | 3;
     args?: {
         name: string;
         type:
@@ -82,6 +82,7 @@ export class Node {
         this.info = `node ${tree.name}.${this.id}.${this.name}`;
         this.vars = { yieldKey: TreeEnv.makeTempVar(this, "YIELD") } as NodeVars;
         this.args = data.args;
+
         data.children?.forEach((value) => {
             if (!value.disabled) {
                 this.children.push(new Node(value, tree));
@@ -93,7 +94,22 @@ export class Node {
             throw new Error(`behavior3: process '${this.name}' not found`);
         }
         this._process = process;
-        this._process.init(this);
+        this._process.init?.(this);
+
+        const descriptor = process.descriptor;
+        if (
+            descriptor.children !== undefined &&
+            descriptor.children !== -1 &&
+            descriptor.children !== descriptor.children
+        ) {
+            if (descriptor.children === 0) {
+                this.warn(`no children is required`);
+            } else if (this.children.length < descriptor.children) {
+                this.error(`at least ${descriptor.children} children are required`);
+            } else {
+                this.warn(`exactly ${descriptor.children} children`);
+            }
+        }
     }
 
     run(env: TreeEnv) {

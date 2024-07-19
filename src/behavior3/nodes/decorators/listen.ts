@@ -32,10 +32,6 @@ type NodeInput = [TargetType | TargetType[] | undefined];
 type NodeOutput = [string?, string?];
 
 export class Listen extends Process {
-    override init(node: Node): void {
-        this._checkOneChild(node);
-    }
-
     protected _isBuiltinEvent(event: string): boolean {
         return !!builtinEventOptions.find((e) => e.value === event);
     }
@@ -104,7 +100,7 @@ export class Listen extends Process {
             ],
             doc: `
                 + 当事件触发时，执行第一个子节点，多个仅执行第一个
-                + 如果子节点返回 \`运行中\`，会中断执行并清理执行栈`,
+                + 如果子节点返回 \`running\`，会中断执行并清理执行栈`,
         };
     }
 }

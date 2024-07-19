@@ -5,7 +5,7 @@ import { Node, NodeDef } from "./node";
 export type Status = "success" | "failure" | "running";
 
 export abstract class Process {
-    init(node: Node): void {}
+    init?(node: Node): void;
 
     protected _checkOneChild(node: Node) {
         if (node.children.length !== 1) {

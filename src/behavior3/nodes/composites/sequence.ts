@@ -37,9 +37,9 @@ export class Sequence extends Process {
             status: ["&success", "|failure", "|running"],
             desc: "顺序执行",
             doc: `
-                + 一直往下执行，只有当所有子节点都返回\`成功\`, 才返回\`成功\`
-                + 若子节点返回\`失败\`，则直接返回\`失败\`状态
-                + 其余情况返回\`运行中\`状态
+                + 一直往下执行，只有当所有子节点都返回\`success\`, 才返回\`success\`
+                + 若子节点返回\`failure\`，则直接返回\`failure\`状态
+                + 其余情况返回\`running\`状态
             `,
         };
     }

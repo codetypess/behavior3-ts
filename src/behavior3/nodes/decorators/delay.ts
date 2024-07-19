@@ -9,10 +9,6 @@ interface NodeArgs {
 type NodeInput = [number?];
 
 export class Delay extends Process {
-    override init(node: Node): void {
-        this._checkOneChild(node);
-    }
-
     override run(node: Node, env: TreeEnv): Status {
         let [delay] = env.input as NodeInput;
         const args = node.args as unknown as NodeArgs;
@@ -51,7 +47,7 @@ export class Delay extends Process {
             ],
             doc: `
                 + 当延时触发时，执行第一个子节点，多个仅执行第一个
-                + 如果子节点返回 \`运行中\`，会中断执行并清理执行栈`,
+                + 如果子节点返回 \`running\`，会中断执行并清理执行栈`,
         };
     }
 }

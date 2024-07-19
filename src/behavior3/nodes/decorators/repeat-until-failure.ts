@@ -9,10 +9,6 @@ interface NodeArgs {
 type NodeInput = [number | undefined];
 
 export class RepeatUntilFailure extends Process {
-    override init(node: Node) {
-        this._checkOneChild(node);
-    }
-
     override run(node: Node, env: TreeEnv): Status {
         let [maxLoop] = env.input as NodeInput;
         const args = node.args as unknown as NodeArgs;
@@ -51,8 +47,8 @@ export class RepeatUntilFailure extends Process {
             args: [{ name: "maxLoop", type: "int?", desc: "最大循环次数" }],
             doc: `
                 + 只能有一个子节点，多个仅执行第一个
-                + 只有当子节点返回\`失败\`时，才返回\`成功\`，其它情况返回\`运行中\`状态
-                + 如果设定了尝试次数，超过指定次数则返回\`失败\``,
+                + 只有当子节点返回\`failure\`时，才返回\`success\`，其它情况返回\`running\`状态
+                + 如果设定了尝试次数，超过指定次数则返回\`failure\``,
         };
     }
 }

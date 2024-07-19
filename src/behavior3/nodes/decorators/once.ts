@@ -10,8 +10,6 @@ export class Once extends Process {
     override init(node: Node): void {
         const vars = node.vars as NodeVars;
         vars.onceKey = TreeEnv.makePrivateVar(node, "ONCE");
-
-        this._checkOneChild(node);
     }
 
     override run(node: Node, env: TreeEnv): Status {
@@ -46,7 +44,7 @@ export class Once extends Process {
             desc: "只执行一次",
             doc: `
                 + 只能有一个子节点，多个仅执行第一个
-                + 第一次执行完全部子节点时返回\`成功\`，之后永远返回\`失败\``,
+                + 第一次执行完全部子节点时返回\`success\`，之后永远返回\`failure\``,
         };
     }
 }
