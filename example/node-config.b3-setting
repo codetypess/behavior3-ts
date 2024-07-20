@@ -136,7 +136,7 @@
   },
   {
     "name": "Filter",
-    "type": "Action",
+    "type": "Decorator",
     "children": 1,
     "status": [
       "success",
@@ -177,7 +177,7 @@
   },
   {
     "name": "ForEach",
-    "type": "Action",
+    "type": "Decorator",
     "children": 1,
     "status": [
       "success",
@@ -211,8 +211,8 @@
     "type": "Composite",
     "children": 3,
     "status": [
-      "success",
-      "failure",
+      "|success",
+      "|failure",
       "|running"
     ],
     "desc": "条件执行",

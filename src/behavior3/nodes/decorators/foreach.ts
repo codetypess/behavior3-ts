@@ -37,7 +37,7 @@ export class Foreach extends Process {
     override get descriptor(): NodeDef {
         return {
             name: "ForEach",
-            type: "Action",
+            type: "Decorator",
             children: 1,
             status: ["success", "|running", "|failure"],
             desc: "遍历数组",

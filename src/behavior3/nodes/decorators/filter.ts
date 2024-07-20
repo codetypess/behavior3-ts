@@ -53,7 +53,7 @@ export class Filter extends Process {
     override get descriptor(): NodeDef {
         return {
             name: "Filter",
-            type: "Action",
+            type: "Decorator",
             children: 1,
             status: ["success", "failure", "|running"],
             desc: "返回满足条件的元素",

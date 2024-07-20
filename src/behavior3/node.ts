@@ -4,6 +4,13 @@ import { TreeEnv } from "./tree-env";
 
 export interface NodeDef {
     name: string;
+    /**
+     * Recommended type used for the node definition:
+     * + `Action`: No children allowed, returns `success`, `failure` or `running`.
+     * + `Decorator`: Only one child allowed, returns `success`, `failure` or `running`.
+     * + `Composite`: Contains more than one child, returns `success`, `failure` or `running`.
+     * + `Condition`: No children allowed, no output, returns `success` or `failure`.
+     */
     type: "Action" | "Decorator" | "Condition" | "Composite";
     desc: string;
     icon?: string;
