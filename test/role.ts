@@ -1,8 +1,10 @@
 import { Context, NodeDef, TreeEnv, TreeRunner } from "../src/behavior3";
+import { Assert } from "./nodes/assert";
 import { Attack } from "./nodes/attack";
 import { FindEnemy } from "./nodes/find-enemy";
 import { GetHp } from "./nodes/get-hp";
 import { Idle } from "./nodes/idle";
+import { IsStatus } from "./nodes/is-status";
 import { MoveToPos } from "./nodes/move-to-pos";
 import { MoveToTarget } from "./nodes/move-to-target";
 
@@ -30,10 +32,12 @@ export class RoleContext extends Context {
 
     constructor() {
         super();
+        this.registerProcess(Assert);
         this.registerProcess(Attack);
         this.registerProcess(FindEnemy);
         this.registerProcess(GetHp);
         this.registerProcess(Idle);
+        this.registerProcess(IsStatus);
         this.registerProcess(MoveToPos);
         this.registerProcess(MoveToTarget);
 

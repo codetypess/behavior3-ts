@@ -1,6 +1,6 @@
-import { Node, NodeDef } from "../../node";
-import { Process, Status } from "../../process";
-import { TreeEnv } from "../../tree-env";
+import { Node, NodeDef } from "../../src/behavior3/node";
+import { Process, Status } from "../../src/behavior3/process";
+import { TreeEnv } from "../../src/behavior3/tree-env";
 
 interface NodeArgs {
     message: string;

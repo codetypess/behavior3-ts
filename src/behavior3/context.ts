@@ -8,7 +8,7 @@ import { Log } from "./nodes/actions/log";
 import { Now } from "./nodes/actions/now";
 import { Push } from "./nodes/actions/push";
 import { Random } from "./nodes/actions/random";
-import { RandomIndex } from "./nodes/actions/random_index";
+import { RandomIndex } from "./nodes/actions/random-index";
 import { Wait } from "./nodes/actions/wait";
 import { IfElse } from "./nodes/composites/ifelse";
 import { Parallel } from "./nodes/composites/parallel";
@@ -17,11 +17,9 @@ import { Sequence } from "./nodes/composites/sequence";
 import { Check } from "./nodes/conditions/check";
 import { Includes } from "./nodes/conditions/includes";
 import { IsNull } from "./nodes/conditions/is-null";
-import { IsStatus } from "./nodes/conditions/is-status";
 import { NotNull } from "./nodes/conditions/not-null";
 import { AlwaysFail } from "./nodes/decorators/always-failure";
 import { AlwaysSuccess } from "./nodes/decorators/always-success";
-import { Assert } from "./nodes/decorators/assert";
 import { Delay } from "./nodes/decorators/delay";
 import { Filter } from "./nodes/decorators/filter";
 import { Foreach } from "./nodes/decorators/foreach";
@@ -51,7 +49,6 @@ export class Context {
     constructor() {
         this.registerProcess(AlwaysFail);
         this.registerProcess(AlwaysSuccess);
-        this.registerProcess(Assert);
         this.registerProcess(Calculate);
         this.registerProcess(Check);
         this.registerProcess(Clear);
@@ -64,7 +61,6 @@ export class Context {
         this.registerProcess(Index);
         this.registerProcess(Invert);
         this.registerProcess(IsNull);
-        this.registerProcess(IsStatus);
         this.registerProcess(Let);
         this.registerProcess(Listen);
         this.registerProcess(Log);
