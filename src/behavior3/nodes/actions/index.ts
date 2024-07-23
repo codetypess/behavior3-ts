@@ -27,14 +27,14 @@ export class Index extends Process {
         const vars = node.vars as NodeVars;
         let value = undefined;
         if (arr instanceof Array) {
-            const index = this._checkOneof(node, env, 0, vars.index);
+            const index = this._checkOneof(node, env, 1, vars.index);
             if (typeof index !== "number" || isNaN(index)) {
                 node.warn(`invalid index: ${vars.key}`);
             } else {
                 value = arr[index];
             }
         } else if (typeof arr === "object" && arr !== null) {
-            const key = this._checkOneof(node, env, 0, vars.key);
+            const key = this._checkOneof(node, env, 1, vars.key);
             value = arr[key];
         }
 
