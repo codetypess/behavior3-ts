@@ -6,13 +6,10 @@ interface NodeArgs {
     delay: number;
 }
 
-type NodeInput = [number?];
-
 export class Delay extends Process {
     override run(node: Node, env: TreeEnv): Status {
-        let [delay] = env.input as NodeInput;
         const args = node.args as unknown as NodeArgs;
-        delay = delay ?? args.delay;
+        const delay = this._checkOneof(node, env, 0, args.delay, 0);
         env.context.delay(
             delay,
             () => {
@@ -38,8 +35,9 @@ export class Delay extends Process {
             args: [
                 {
                     name: "delay",
-                    type: "float",
+                    type: "float?",
                     desc: "延时时间",
+                    oneof: "延时时间",
                 },
             ],
             doc: `

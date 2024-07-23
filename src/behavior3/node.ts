@@ -16,15 +16,32 @@ export interface NodeDef {
     icon?: string;
     color?: string;
     input?: string[];
-    status?: Exclude<
-        `${Status}` | `!${Status}` | `|${Status}` | `&${Status}`,
-        "!running" | "&running"
-    >[];
+    /**
+     * + `!success`  !(child_success|child_success|...)
+     * + `!failure`  !(child_failure|child_failure|...)
+     * + `|success`  child_success|child_success|...
+     * + `|failure`  child_failure|child_failure|...
+     * + `|running`  child_running|child_running|...
+     * + `&success`  child_success&child_success&...
+     * + `&failure`  child_failure&child_failure&...
+     */
+    status?: (
+        | "success"
+        | "failure"
+        | "running"
+        | "!success"
+        | "!failure"
+        | "|success"
+        | "|failure"
+        | "|running"
+        | "&success"
+        | "&failure"
+    )[];
     /** Allowed number of children
      * + -1: unlimited
      * + 0: no children
      * + 1: exactly one
-     * + 3: exactly three child (ifelse)
+     * + 3: exactly three children (ifelse)
      */
     children?: -1 | 0 | 1 | 3;
     args?: {
@@ -36,13 +53,17 @@ export interface NodeDef {
             | "int?"
             | "float"
             | "float?"
-            | "enum"
-            | "enum?"
             | "string"
             | "string?"
+            | "json"
+            | "json?"
+            | "enum"
+            | "enum?"
             | "code"
             | "code?";
         desc: string;
+        /** Input `value`, only one is allowed between `value` and this arg.*/
+        oneof?: string;
         default?: unknown;
         options?: { name: string; value: unknown }[];
     }[];

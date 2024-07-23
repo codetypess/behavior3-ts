@@ -6,14 +6,10 @@ interface NodeArgs {
     readonly maxLoop?: number;
 }
 
-type NodeInput = [number | undefined];
-
 export class RepeatUntilFailure extends Process {
     override run(node: Node, env: TreeEnv): Status {
-        let [maxLoop] = env.input as NodeInput;
         const args = node.args as unknown as NodeArgs;
-        maxLoop = maxLoop ?? args.maxLoop ?? Number.MAX_SAFE_INTEGER;
-
+        const maxLoop = this._checkOneof(node, env, 0, args.maxLoop, Number.MAX_SAFE_INTEGER);
         let count = node.resume(env) as number | undefined;
 
         if (typeof count === "number") {
@@ -44,7 +40,14 @@ export class RepeatUntilFailure extends Process {
             status: ["!success", "!failure", "|running"],
             desc: "一直尝试直到子节点返回失败",
             input: ["最大循环次数?"],
-            args: [{ name: "maxLoop", type: "int?", desc: "最大循环次数" }],
+            args: [
+                {
+                    name: "maxLoop",
+                    type: "int?",
+                    desc: "最大循环次数",
+                    oneof: "最大循环次数",
+                },
+            ],
             doc: `
                 + 只能有一个子节点，多个仅执行第一个
                 + 只有当子节点返回\`failure\`时，才返回\`success\`，其它情况返回\`running\`状态

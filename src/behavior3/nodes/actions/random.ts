@@ -2,20 +2,18 @@ import { Node, NodeDef } from "../../node";
 import { Process, Status } from "../../process";
 import { TreeEnv } from "../../tree-env";
 
-type NodeInput = [number?, number?];
-
 interface NodeArgs {
-    min: number;
-    max: number;
+    min?: number;
+    max?: number;
     floor?: boolean;
 }
 
 export class Random extends Process {
     override run(node: Node, env: TreeEnv): Status {
-        let [min, max] = env.input as NodeInput;
         const args = node.args as unknown as NodeArgs;
-        min = min ?? args.min;
-        max = max ?? args.max;
+        const MAX_INT = Number.MAX_SAFE_INTEGER;
+        const min = this._checkOneof(node, env, 0, args.min, MAX_INT);
+        const max = this._checkOneof(node, env, 1, args.max, MAX_INT);
         let value = min + Math.random() * (max - min);
         if (args.floor) {
             value = Math.floor(value);
@@ -33,9 +31,23 @@ export class Random extends Process {
             desc: "返回一个随机数",
             input: ["最小值?", "最大值?"],
             args: [
-                { name: "min", type: "float", desc: "最小值" },
-                { name: "max", type: "float", desc: "最大值" },
-                { name: "floor", type: "boolean?", desc: "是否向下取整" },
+                {
+                    name: "min",
+                    type: "float?",
+                    desc: "最小值",
+                    oneof: "最小值",
+                },
+                {
+                    name: "max",
+                    type: "float?",
+                    desc: "最大值",
+                    oneof: "最大值",
+                },
+                {
+                    name: "floor",
+                    type: "boolean?",
+                    desc: "是否向下取整",
+                },
             ],
             output: ["随机数"],
         };

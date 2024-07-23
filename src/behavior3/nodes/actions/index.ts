@@ -23,21 +23,19 @@ export class Index extends Process {
     }
 
     override run(node: Node, env: TreeEnv): Status {
-        const [arr, key] = env.input as Input;
+        const [arr] = env.input as Input;
         const vars = node.vars as NodeVars;
         let value = undefined;
         if (arr instanceof Array) {
-            let index = key ?? vars.index;
-            if (typeof index !== "number") {
-                index = parseInt(index);
-            }
-            if (isNaN(index)) {
+            const index = this._checkOneof(node, env, 0, vars.index);
+            if (typeof index !== "number" || isNaN(index)) {
                 node.warn(`invalid index: ${vars.key}`);
             } else {
                 value = arr[index];
             }
         } else if (typeof arr === "object" && arr !== null) {
-            value = arr[key ?? vars.key];
+            const key = this._checkOneof(node, env, 0, vars.key);
+            value = arr[key];
         }
 
         if (value !== undefined && value !== null) {
@@ -55,7 +53,14 @@ export class Index extends Process {
             children: 0,
             status: ["success", "failure"],
             desc: "索引输入的数组或对象",
-            args: [{ name: "idx", type: "string", desc: "索引" }],
+            args: [
+                {
+                    name: "idx",
+                    type: "string?",
+                    desc: "索引",
+                    oneof: "索引",
+                },
+            ],
             input: ["输入目标", "索引?"],
             output: ["输出目标"],
             doc: `

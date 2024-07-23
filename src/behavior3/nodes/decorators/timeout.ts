@@ -3,7 +3,7 @@ import { Process, Status } from "../../process";
 import { Stack, TreeEnv } from "../../tree-env";
 
 interface NodeArgs {
-    readonly time: number;
+    readonly time?: number;
 }
 
 interface NodeYield {
@@ -37,10 +37,11 @@ export class Timeout extends Process {
 
         if (status === "running") {
             if (last === undefined) {
-                const args = node.args as unknown as NodeArgs;
+                const arg = node.args as unknown as NodeArgs;
+                const time = this._checkOneof(node, env, 0, arg.time, 0);
                 last = {
                     stack: env.stack.take(level, env.stack.length - level),
-                    expired: env.context.time + args.time,
+                    expired: env.context.time + time,
                 };
             }
             return node.yield(env, last);
@@ -56,7 +57,15 @@ export class Timeout extends Process {
             children: 1,
             status: ["|success", "|running", "failure"],
             desc: "超时",
-            args: [{ name: "time", type: "float", desc: "超时时间" }],
+            input: ["超时时间?"],
+            args: [
+                {
+                    name: "time",
+                    type: "float?",
+                    desc: "超时时间",
+                    oneof: "超时时间",
+                },
+            ],
             doc: `
                 + 只能有一个子节点，多个仅执行第一个
                 + 当子节点执行超时或返回\`failure\`时，返回\`failure\`

@@ -1,7 +1,7 @@
 import { Evaluator, ExpressionEvaluator } from "./evaluator";
 import { Index } from "./nodes/actions";
+import { Assign } from "./nodes/actions/assign";
 import { Calculate } from "./nodes/actions/calculate";
-import { Clear } from "./nodes/actions/clear";
 import { Concat } from "./nodes/actions/concat";
 import { Let } from "./nodes/actions/let";
 import { Log } from "./nodes/actions/log";
@@ -51,7 +51,6 @@ export class Context {
         this.registerProcess(AlwaysSuccess);
         this.registerProcess(Calculate);
         this.registerProcess(Check);
-        this.registerProcess(Clear);
         this.registerProcess(Concat);
         this.registerProcess(Delay);
         this.registerProcess(Filter);
@@ -78,6 +77,7 @@ export class Context {
         this.registerProcess(Sequence);
         this.registerProcess(Timeout);
         this.registerProcess(Wait);
+        this.registerProcess(Assign);
     }
 
     get time() {

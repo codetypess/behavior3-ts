@@ -7,8 +7,6 @@ interface NodeArgs {
     readonly random?: number;
 }
 
-type NodeInput = [number | undefined];
-
 export class Wait extends Process {
     override init(node: Node): void {
         const args = node.args as unknown as NodeArgs;
@@ -26,9 +24,8 @@ export class Wait extends Process {
                 return "running";
             }
         } else {
-            let [time] = env.input as NodeInput;
             const args = node.args as unknown as NodeArgs;
-            time = time ?? args.time;
+            let time = this._checkOneof(node, env, 0, args.time, 0);
             if (args.random) {
                 time += (Math.random() - 0.5) * args.random;
             }
@@ -45,8 +42,17 @@ export class Wait extends Process {
             desc: "等待",
             input: ["等待时间?"],
             args: [
-                { name: "time", type: "float", desc: "等待时间" },
-                { name: "random", type: "float?", desc: "随机范围" },
+                {
+                    name: "time",
+                    type: "float?",
+                    desc: "等待时间",
+                    oneof: "等待时间",
+                },
+                {
+                    name: "random",
+                    type: "float?",
+                    desc: "随机范围",
+                },
             ],
         };
     }
