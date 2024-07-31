@@ -20,6 +20,7 @@ import { IsNull } from "./nodes/conditions/is-null";
 import { NotNull } from "./nodes/conditions/not-null";
 import { AlwaysFail } from "./nodes/decorators/always-failure";
 import { AlwaysSuccess } from "./nodes/decorators/always-success";
+import { Assert } from "./nodes/decorators/assert";
 import { Delay } from "./nodes/decorators/delay";
 import { Filter } from "./nodes/decorators/filter";
 import { Foreach } from "./nodes/decorators/foreach";
@@ -48,6 +49,7 @@ export class Context {
 
     constructor() {
         this.registerProcess(AlwaysFail);
+        this.registerProcess(Assert);
         this.registerProcess(AlwaysSuccess);
         this.registerProcess(Calculate);
         this.registerProcess(Check);

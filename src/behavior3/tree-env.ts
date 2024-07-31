@@ -21,37 +21,30 @@ export class Stack {
         return this._nodes[this._nodes.length - 1];
     }
 
-    get(index: number) {
-        return this._nodes[index] as Node | undefined;
-    }
-
     push(node: Node) {
         this._nodes.push(node);
     }
 
-    pop(clear: boolean = true): Node | undefined {
+    pop(): Node | undefined {
         const node = this._nodes.pop();
-        if (clear && node) {
+        if (node) {
             this._env.set(node.__yield, undefined);
         }
         return node;
     }
 
     popTo(index: number) {
-        const nodes = this._nodes;
-        while (nodes.length > index) {
-            nodes.pop();
+        while (this._nodes.length > index) {
+            this.pop();
         }
+    }
+
+    move(dest: Stack, start: number, count: number) {
+        dest._nodes.push(...this._nodes.splice(start, count));
     }
 
     clear() {
         this.popTo(0);
-    }
-
-    take(start: number, count: number) {
-        const stack = new Stack(this._env);
-        stack._nodes = this._nodes.splice(start, count);
-        return stack;
     }
 }
 

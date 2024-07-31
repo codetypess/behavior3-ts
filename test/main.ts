@@ -1,3 +1,4 @@
+import assert from "assert";
 import { Tree, TreeRunner } from "../src/behavior3";
 import { RoleContext, RoleTreeEnv } from "./role";
 
@@ -52,36 +53,46 @@ console.log("run end");
 console.log("====================test api=============================");
 const testTree = (
     name: string,
-    loopCount: number,
-    onTick?: (i: number, runner: TreeRunner<RoleTreeEnv>) => void
+    onTick?: (i: number, runner: TreeRunner<RoleTreeEnv>) => boolean
 ) => {
     const runner = createTreeRunner(`./example/${name}.json`);
-    for (let i = 0; i < loopCount; i++) {
+    let i = 0;
+    while (i < 100) {
         context.time++;
         runner.run();
         if (onTick) {
-            onTick(i, runner);
+            if (!onTick(i, runner)) {
+                break;
+            }
+        } else if (runner.status === "success") {
+            break;
         }
+        i++;
     }
+    assert(runner.status === "success", `tree ${name} failed`);
     console.log("");
 };
-testTree("test-parallel", 3);
-testTree("test-repeat-until-success", 7);
-testTree("test-repeat-until-failure", 7);
-testTree("test-timeout", 5);
-testTree("test-once", 5);
-testTree("test-sequence", 1);
-testTree("test-listen", 3, (i, runner) => {
+testTree("test-sequence");
+testTree("test-parallel");
+testTree("test-repeat-until-success");
+testTree("test-repeat-until-failure");
+testTree("test-timeout");
+testTree("test-once");
+testTree("test-listen", (i, runner) => {
     if (i === 0) {
         context.dispatch("hello", "world");
         context.dispatch("testOff");
         context.off("testOff", runner.env);
+        return true;
     } else if (i === 1) {
         context.dispatch("hello", "world");
         context.dispatch("testOff");
         context.offAll(runner.env);
+        return true;
     } else {
         context.dispatch("hello", "world");
         context.dispatch("testOff");
+        return false;
     }
 });
+console.log("====================test api end======================");

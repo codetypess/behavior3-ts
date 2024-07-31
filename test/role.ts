@@ -1,5 +1,4 @@
 import { Context, NodeDef, TreeEnv, TreeRunner } from "../src/behavior3";
-import { Assert } from "./nodes/assert";
 import { Attack } from "./nodes/attack";
 import { FindEnemy } from "./nodes/find-enemy";
 import { GetHp } from "./nodes/get-hp";
@@ -32,7 +31,6 @@ export class RoleContext extends Context {
 
     constructor() {
         super();
-        this.registerProcess(Assert);
         this.registerProcess(Attack);
         this.registerProcess(FindEnemy);
         this.registerProcess(GetHp);
@@ -46,6 +44,10 @@ export class RoleContext extends Context {
         this.registerCode("hp > 50", (envars: any) => {
             return envars.hp > 50;
         });
+    }
+
+    override get time() {
+        return this._time;
     }
 
     override set time(value: number) {

@@ -16,15 +16,12 @@ export class Parallel extends Process {
             if (stack === undefined) {
                 status = child.run(env);
             } else if (stack.length > 0) {
-                for (let i = stack.length - 1; i >= 0; i--) {
-                    child = stack.get(i)!;
-                    env.stack.push(child);
+                stack.move(env.stack, 0, stack.length);
+                while (env.stack.length > level) {
+                    child = env.stack.top()!;
                     status = child.run(env);
                     if (status === "running") {
-                        env.stack.pop(false);
                         break;
-                    } else {
-                        stack.pop();
                     }
                 }
             } else {
@@ -33,8 +30,9 @@ export class Parallel extends Process {
 
             if (status === "running") {
                 if (stack === undefined) {
-                    stack = env.stack.take(level, env.stack.length - level);
+                    stack = new Stack(env);
                 }
+                env.stack.move(stack, level, env.stack.length - level);
             } else {
                 stack = EMPTY;
                 count++;

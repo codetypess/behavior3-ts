@@ -22,15 +22,12 @@ export class Timeout extends Process {
             last.stack.clear();
             return "failure";
         } else {
-            for (let i = last.stack.length - 1; i >= 0; i--) {
-                const child = last.stack.get(i)!;
-                env.stack.push(child);
+            last.stack.move(env.stack, 0, last.stack.length);
+            while (env.stack.length > level) {
+                const child = env.stack.top()!;
                 status = child.run(env);
                 if (status === "running") {
-                    env.stack.pop(false);
                     break;
-                } else {
-                    last.stack.pop();
                 }
             }
         }
@@ -40,10 +37,11 @@ export class Timeout extends Process {
                 const arg = node.args as unknown as NodeArgs;
                 const time = this._checkOneof(node, env, 0, arg.time, 0);
                 last = {
-                    stack: env.stack.take(level, env.stack.length - level),
+                    stack: new Stack(env),
                     expired: env.context.time + time,
                 };
             }
+            env.stack.move(last.stack, level, env.stack.length - level);
             return node.yield(env, last);
         } else {
             return status;

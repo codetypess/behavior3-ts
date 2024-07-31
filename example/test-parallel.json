@@ -34,11 +34,24 @@
                   "message": "wait 1s",
                   "level": "info"
                 }
+              },
+              {
+                "id": 7,
+                "name": "Let",
+                "args": {
+                  "expr": true
+                },
+                "input": [
+                  ""
+                ],
+                "output": [
+                  "wait1"
+                ]
               }
             ]
           },
           {
-            "id": 7,
+            "id": 8,
             "name": "Log",
             "args": {
               "message": "run parallel!!!",
@@ -46,32 +59,45 @@
             }
           },
           {
-            "id": 8,
+            "id": 9,
             "name": "Sequence",
             "children": [
               {
-                "id": 9,
+                "id": 10,
                 "name": "Sequence",
                 "children": [
                   {
-                    "id": 10,
+                    "id": 11,
                     "name": "Wait",
                     "args": {
                       "time": 2
                     }
                   },
                   {
-                    "id": 11,
+                    "id": 12,
                     "name": "Log",
                     "args": {
                       "message": "wait 2s",
                       "level": "info"
                     }
+                  },
+                  {
+                    "id": 13,
+                    "name": "Let",
+                    "args": {
+                      "expr": true
+                    },
+                    "input": [
+                      ""
+                    ],
+                    "output": [
+                      "wait2"
+                    ]
                   }
                 ]
               },
               {
-                "id": 12,
+                "id": 14,
                 "name": "Log",
                 "args": {
                   "message": "wait 2s complete!!!",
@@ -79,11 +105,144 @@
                 }
               }
             ]
+          },
+          {
+            "id": 15,
+            "name": "Sequence",
+            "children": [
+              {
+                "id": 16,
+                "name": "Sequence",
+                "children": [
+                  {
+                    "id": 17,
+                    "name": "Wait",
+                    "args": {
+                      "time": 1
+                    },
+                    "input": [
+                      ""
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": 18,
+                "name": "Sequence",
+                "children": [
+                  {
+                    "id": 19,
+                    "name": "Sequence",
+                    "children": [
+                      {
+                        "id": 20,
+                        "name": "Log",
+                        "args": {
+                          "message": "wait going",
+                          "level": "info"
+                        },
+                        "input": [
+                          ""
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": 21,
+                    "name": "Sequence",
+                    "children": [
+                      {
+                        "id": 22,
+                        "name": "Wait",
+                        "args": {
+                          "time": 1
+                        },
+                        "input": [
+                          ""
+                        ]
+                      },
+                      {
+                        "id": 23,
+                        "name": "Log",
+                        "args": {
+                          "message": "complete going",
+                          "level": "info"
+                        },
+                        "input": [
+                          ""
+                        ]
+                      },
+                      {
+                        "id": 24,
+                        "name": "Let",
+                        "args": {
+                          "expr": true
+                        },
+                        "input": [
+                          ""
+                        ],
+                        "output": [
+                          "wait_going"
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
       {
-        "id": 13,
+        "id": 25,
+        "name": "Assert",
+        "args": {
+          "message": "wait1 not set"
+        },
+        "children": [
+          {
+            "id": 26,
+            "name": "NotNull",
+            "input": [
+              "wait1"
+            ]
+          }
+        ]
+      },
+      {
+        "id": 27,
+        "name": "Assert",
+        "args": {
+          "message": "wait2 not set"
+        },
+        "children": [
+          {
+            "id": 28,
+            "name": "NotNull",
+            "input": [
+              "wait2"
+            ]
+          }
+        ]
+      },
+      {
+        "id": 29,
+        "name": "Assert",
+        "args": {
+          "message": "wait_going not set"
+        },
+        "children": [
+          {
+            "id": 30,
+            "name": "NotNull",
+            "input": [
+              "wait_going"
+            ]
+          }
+        ]
+      },
+      {
+        "id": 31,
         "name": "Log",
         "args": {
           "message": "<------------- Parallel",
