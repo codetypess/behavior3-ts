@@ -24,7 +24,7 @@ export class Concat extends Process {
             input: ["数组1", "数组2"],
             output: ["新数组"],
             doc: `
-                + 如果输入不是数组，则返回\`failure\`
+                + 如果输入不是数组，则返回 \`failure\`
             `,
         };
     }

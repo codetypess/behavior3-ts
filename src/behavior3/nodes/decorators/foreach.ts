@@ -46,8 +46,8 @@ export class Foreach extends Process {
             doc: `
                 + 只能有一个子节点，多个仅执行第一个
                 + 遍历输入数组，将当前元素写入\`变量\`
-                + 当子节点返回\`failure\`时，退出遍历并返回\`failure\`状态
-                + 执行完所有子节点后，返回\`success\``,
+                + 当子节点返回 \`failure\` 时，退出遍历并返回 \`failure\` 状态
+                + 执行完所有子节点后，返回 \`success\``,
         };
     }
 }

@@ -45,8 +45,8 @@ export class IfElse extends Process {
             doc: `
                 + 必须有三个子节点
                 + 第一个子节点为条件节点
-                + 第二个子节点为条件为\`success\`时执行的节点
-                + 第三个子节点为条件为\`failure\`时执行的节点,
+                + 第二个子节点为条件为 \`success\` 时执行的节点
+                + 第三个子节点为条件为 \`failure\` 时执行的节点,
             `,
         };
     }

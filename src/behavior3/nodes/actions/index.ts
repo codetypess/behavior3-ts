@@ -65,7 +65,7 @@ export class Index extends Process {
             output: ["输出目标"],
             doc: `
                 + 合法元素不包括 \`undefined\` 和 \`null\`
-                + 只有索引到有合法元素时候才会返回\`success\`，否则返回\`failure\`
+                + 只有索引到有合法元素时候才会返回 \`success\`，否则返回 \`failure\`
             `,
         };
     }

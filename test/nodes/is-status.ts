@@ -29,7 +29,7 @@ export class IsStatus extends Process {
                 {
                     name: "status",
                     type: "enum",
-                    desc: "检查子节点的执行状态",
+                    desc: "执行状态",
                     options: [
                         { name: "成功", value: "success" },
                         { name: "失败", value: "failure" },
@@ -39,8 +39,8 @@ export class IsStatus extends Process {
             ],
             doc: `
                 + 只能有一个子节点，多个仅执行第一个
-                + 只有当子节点的执行状态与指定状态相同时才返回\`success\`，其余返回失败
-                + 若子节点返回\`running\`状态，将中断子节点并清理子节点的执行栈`,
+                + 只有当子节点的执行状态与指定状态相同时才返回 \`success\`，其余返回失败
+                + 若子节点返回 \`running\` 状态，将中断子节点并清理子节点的执行栈`,
         };
     }
 }

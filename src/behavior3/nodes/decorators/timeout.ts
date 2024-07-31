@@ -66,7 +66,7 @@ export class Timeout extends Process {
             ],
             doc: `
                 + 只能有一个子节点，多个仅执行第一个
-                + 当子节点执行超时或返回\`failure\`时，返回\`failure\`
+                + 当子节点执行超时或返回 \`failure\` 时，返回 \`failure\`
                 + 其余情况返回子节点的执行状态
             `,
         };

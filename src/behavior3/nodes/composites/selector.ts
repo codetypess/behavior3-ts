@@ -37,8 +37,8 @@ export class Selector extends Process {
             desc: "选择执行",
             status: ["|success", "&failure", "|running"],
             doc: `
-                + 一直往下执行，直到有子节点返回\`success\`则返回\`success\`
-                + 若全部节点返回\`failure\`则返回\`failure\``,
+                + 一直往下执行，直到有子节点返回 \`success\` 则返回 \`success\`
+                + 若全部节点返回 \`failure\` 则返回 \`failure\``,
         };
     }
 }

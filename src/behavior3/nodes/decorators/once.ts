@@ -45,7 +45,7 @@ export class Once extends Process {
             desc: "只执行一次",
             doc: `
                 + 只能有一个子节点，多个仅执行第一个
-                + 第一次执行完全部子节点时返回\`success\`，之后永远返回\`failure\``,
+                + 第一次执行完全部子节点时返回 \`success\`，之后永远返回 \`failure\``,
         };
     }
 }

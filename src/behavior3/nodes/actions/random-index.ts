@@ -33,7 +33,7 @@ export class RandomIndex extends Process {
             doc: `
                 + 合法元素不包括 \`undefined\` 和 \`null\`
                 + 在输入数组中，随机返回其中一个
-                + 当输入数组为空时，或者没有合法元素，返回\`failure\`
+                + 当输入数组为空时，或者没有合法元素，返回 \`failure\`
             `,
         };
     }

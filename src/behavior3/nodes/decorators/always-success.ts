@@ -27,7 +27,7 @@ export class AlwaysSuccess extends Process {
             desc: "始终返回成功",
             doc: `
                 + 只能有一个子节点，多个仅执行第一个
-                + 不管子节点是否成功都返回\`success\`
+                + 不管子节点是否成功都返回 \`success\`
             `,
         };
     }

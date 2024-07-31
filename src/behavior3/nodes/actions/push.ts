@@ -23,8 +23,8 @@ export class Push extends Process {
             desc: "向数组中添加元素",
             input: ["数组", "元素"],
             doc: `
-                + 当变量\`数组\`不是数组类型时返回\`failure\`
-                + 其余返回\`success\`
+                + 当变量\`数组\`不是数组类型时返回 \`failure\`
+                + 其余返回 \`success\`
             `,
         };
     }
