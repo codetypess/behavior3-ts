@@ -75,40 +75,34 @@ export interface NodeData {
     id: number;
     name: string;
     desc: string;
-    args: { [k: string]: unknown };
+    args?: { [k: string]: unknown };
     debug?: boolean;
     disabled?: boolean;
-    input: ReadonlyArray<string>;
-    output: ReadonlyArray<string>;
-    children: ReadonlyArray<NodeData>;
+    input?: Readonly<string[]>;
+    output?: Readonly<string[]>;
+    children?: Readonly<NodeData[]>;
 }
 
 export class Node {
     readonly vars: unknown;
     readonly tree: Tree;
-    readonly name: string;
-    readonly id: number;
-    readonly info: string;
     readonly args: { [k: string]: unknown };
-    readonly data: NodeData;
+    readonly input: Readonly<string[]>;
+    readonly output: Readonly<string[]>;
     readonly children: Node[] = [];
 
     private _process: Process;
+    private _data: NodeData;
 
     readonly __yield: string;
 
     constructor(data: NodeData, tree: Tree) {
-        this.data = data;
-        this.data.args = this.data.args ?? {};
-        this.data.input = this.data.input ?? [];
-        this.data.output = this.data.output ?? [];
-        this.data.children = this.data.children ?? [];
-        this.tree = tree;
-        this.name = data.name;
-        this.id = data.id;
-        this.info = `node ${tree.name}.${this.id}.${this.name}`;
+        this._data = data;
         this.__yield = TreeEnv.makeTempVar(this, "YIELD");
-        this.args = data.args;
+        this.tree = tree;
+        this.args = data.args ?? {};
+        this.input = data.input ?? [];
+        this.output = data.output ?? [];
 
         data.children?.forEach((value) => {
             if (!value.disabled) {
@@ -139,13 +133,21 @@ export class Node {
         }
     }
 
+    get id() {
+        return this._data.id;
+    }
+
+    get name() {
+        return this._data.name;
+    }
+
     run(env: TreeEnv) {
         const yieldKey = this.__yield;
         if (env.get(yieldKey) === undefined) {
             env.stack.push(this);
         }
 
-        const data = this.data;
+        const data = this._data;
 
         env.input.length = 0;
         env.output.length = 0;

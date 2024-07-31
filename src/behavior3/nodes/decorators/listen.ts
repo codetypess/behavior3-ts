@@ -50,7 +50,7 @@ export class Listen extends Process {
         const callback = (eventTarget?: TargetType) => {
             return (...eventArgs: unknown[]) => {
                 const level = env.stack.length;
-                const [eventArgsKey, eventTargetKey] = node.data.output as unknown as NodeOutput;
+                const [eventArgsKey, eventTargetKey] = node.output as NodeOutput;
                 if (eventTargetKey) {
                     env.set(eventTargetKey, eventTarget);
                 }

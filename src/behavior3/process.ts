@@ -15,7 +15,7 @@ export abstract class Process {
         defaultValue?: V
     ) {
         const inputValue = env.input[inputIndex];
-        const inputName = node.data.input[inputIndex];
+        const inputName = node.input[inputIndex];
         let value: V | undefined;
         if (inputName) {
             if (inputValue === undefined) {

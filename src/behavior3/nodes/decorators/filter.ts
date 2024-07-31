@@ -30,7 +30,7 @@ export class Filter extends Process {
         const filter = node.children[0];
 
         for (i = 0; i < arr.length; i++) {
-            env.set(node.data.output[0], arr[i]);
+            env.set(node.output[0], arr[i]);
             const status = filter.run(env);
             if (status === "running") {
                 if (last instanceof Array) {

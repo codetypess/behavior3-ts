@@ -8,7 +8,7 @@ type NodeOutput = [string];
 export class Foreach extends Process {
     override run(node: Node, env: TreeEnv): Status {
         const [arr] = env.input as NodeInput;
-        const [varname] = node.data.output as NodeOutput;
+        const [varname] = node.output as NodeOutput;
         let i = node.resume(env) as number | undefined;
         if (i !== undefined) {
             if (env.status === "running") {
