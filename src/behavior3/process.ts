@@ -15,13 +15,12 @@ export abstract class Process {
         defaultValue?: V
     ) {
         const inputValue = env.input[inputIndex];
+        const inputName = node.data.input[inputIndex];
         let value: V | undefined;
-        if (node.data.input[inputIndex]) {
+        if (inputName) {
             if (inputValue === undefined) {
                 const func = defaultValue === undefined ? node.error : node.warn;
-                func(
-                    `${node.tree.name}#${node.id}: missing input '${node.data.input[inputIndex]}'`
-                );
+                func.call(node, `${node.tree.name}#${node.id}: missing input '${inputName}'`);
             }
             value = inputValue as V;
         } else {

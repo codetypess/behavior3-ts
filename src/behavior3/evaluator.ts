@@ -6,6 +6,7 @@ export type Evaluator = (envars: any) => unknown;
 const enum TokenType {
     NUMBER,
     STRING,
+    BOOLEAN,
     DOT,
     GT,
     GE,
@@ -20,7 +21,7 @@ const enum TokenType {
 }
 type Token = {
     type: TokenType;
-    value?: string | number;
+    value?: string | number | boolean | null;
 };
 
 export class ExpressionEvaluator {
@@ -37,22 +38,24 @@ export class ExpressionEvaluator {
     }
 
     evaluate(args: ObjectType): unknown {
-        const stack: (string | number)[] = [];
+        const stack: unknown[] = [];
 
         this._args = args;
         for (const token of this._postfix) {
             const type = token.type;
-            if (type === TokenType.NUMBER) {
-                stack.push(token.value as number);
-            } else if (type === TokenType.STRING) {
-                stack.push(token.value as string);
+            if (
+                type === TokenType.NUMBER ||
+                type === TokenType.BOOLEAN ||
+                type === TokenType.STRING
+            ) {
+                stack.push(token.value);
             } else {
                 const b = stack.pop()!;
                 const a = stack.pop()!;
                 switch (type) {
                     case TokenType.DOT: {
                         const obj = this._toObject(a);
-                        stack.push(this._toValue(obj[b]));
+                        stack.push(this._toValue(obj[b as string]));
                         break;
                     }
                     case TokenType.GT:
@@ -106,7 +109,8 @@ export class ExpressionEvaluator {
     }
 
     private _toValue<T = number>(token: unknown, isNumber: boolean = true): T {
-        if (typeof token === "number") {
+        const type = typeof token;
+        if (type === "number" || type === "boolean" || token === null) {
             return token as T;
         } else if (typeof token === "string") {
             const value = this._args?.[token];
@@ -183,7 +187,13 @@ export class ExpressionEvaluator {
                     value: parseFloat(token),
                 });
             } else if (/^\w+$/.test(token)) {
-                outputQueue.push({ type: TokenType.STRING, value: token });
+                if (token === "true") {
+                    outputQueue.push({ type: TokenType.BOOLEAN, value: true });
+                } else if (token === "false") {
+                    outputQueue.push({ type: TokenType.BOOLEAN, value: false });
+                } else {
+                    outputQueue.push({ type: TokenType.STRING, value: token });
+                }
             } else if (token === "(") {
                 operatorStack.push(token);
             } else if (token === ")") {

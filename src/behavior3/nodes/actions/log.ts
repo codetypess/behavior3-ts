@@ -14,8 +14,11 @@ enum LogLevel {
     ERROR = "error",
 }
 
+type NodeInput = [unknown?];
+
 export class Log extends Process {
     override run(node: Node, env: TreeEnv): Status {
+        const [inputMsg] = env.input as NodeInput;
         const args = node.args as unknown as NodeArgs;
         const level = args.level ?? LogLevel.INFO;
         let print = console.log;
@@ -28,7 +31,7 @@ export class Log extends Process {
         } else if (level === LogLevel.ERROR) {
             print = console.error;
         }
-        print.call(console, "behavior3 -> log:", args.message);
+        print.call(console, "behavior3 -> log:", args.message, inputMsg ?? "");
         return "success";
     }
 
@@ -39,6 +42,7 @@ export class Log extends Process {
             children: 0,
             status: ["success"],
             desc: "打印日志",
+            input: ["日志?"],
             args: [
                 {
                     name: "message",

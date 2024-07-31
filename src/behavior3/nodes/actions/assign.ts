@@ -6,13 +6,14 @@ type ObjectType = { [key: string]: unknown };
 type NodeInput = [ObjectType, string?, (string | number | unknown)?];
 
 interface NodeArgs {
-    key: string;
-    value: number | string | ObjectType;
+    key?: string;
+    value?: number | string | ObjectType;
+    underscore?: boolean;
 }
 
 interface NodeVars {
-    readonly index: number;
-    readonly key: string;
+    readonly index?: number;
+    readonly key?: string;
 }
 
 export class Assign extends Process {
@@ -20,7 +21,7 @@ export class Assign extends Process {
         const args = node.args as unknown as NodeArgs;
         return {
             key: args.key,
-            index: parseInt(args.key),
+            index: args.key ? parseInt(args.key) : undefined,
         };
     }
 
@@ -52,9 +53,16 @@ export class Assign extends Process {
             if (key === undefined) {
                 node.warn(`key is undefined`);
                 return "failure";
+            } else if (!args.underscore && typeof key === "string" && key.startsWith("_")) {
+                node.warn(`key ${key} starts with _`);
+                return "failure";
+            }
+            if (typeof obj[key] === "function") {
+                node.warn(`not allowed to overwrite function ${key}`);
+                return "failure";
             }
             if (value === null || value === undefined) {
-                delete obj[`${key}`];
+                delete obj[key];
             } else {
                 obj[key] = value;
             }
@@ -73,6 +81,7 @@ export class Assign extends Process {
             args: [
                 { name: "key", type: "string?", desc: "常量key", oneof: "输入key" },
                 { name: "value", type: "json?", desc: "常量value", oneof: "输入value" },
+                { name: "underscore", type: "boolean?", desc: "允许下划线" },
             ],
             doc: `
                 + 对输入对象设置 \`key\` 和 \`value\`
