@@ -33,27 +33,38 @@ export class TreeRunner<T extends TreeEnv> {
     }
 
     clear() {
+        // force run clear
+        const interrupted = this.env.__interrupted;
+        this.env.__interrupted = false;
+        this._dispatch(TreeEvent.CLEANED);
+        this.env.__interrupted = interrupted;
+
         this.interrupt();
         this._env.clear();
         this._env.context.offAll(this._env);
     }
 
     interrupt() {
-        if (this._status === "running") {
+        if (this._status === "running" || this._executing) {
             this._dispatch(TreeEvent.INTERRUPTED);
             this.env.__interrupted = true;
             if (!this._executing) {
-                this.run();
+                this._doInterrupt();
             }
         }
     }
 
     run(): TreeStatus {
         const env = this.env;
-        const { stack, vars } = env;
+        const { stack } = env;
 
         if (env.debug) {
             console.debug(`---------------- debug ai: ${this.tree.name} --------------------`);
+        }
+
+        if (this._executing) {
+            const node = stack.top();
+            throw new Error(`tree '${this.tree.name}' already running: ${node?.name}#${node?.id}`);
         }
 
         this._executing = true;
@@ -83,18 +94,24 @@ export class TreeRunner<T extends TreeEnv> {
         }
 
         if (env.__interrupted) {
-            this._status = "interrupted";
-            stack.clear();
-            for (const key in vars) {
-                if (TreeEnv.isTempVar(key)) {
-                    delete vars[key];
-                }
-            }
-            env.__interrupted = false;
+            this._doInterrupt();
         }
 
         this._executing = false;
 
         return this._status;
+    }
+
+    private _doInterrupt() {
+        const env = this.env;
+        const { stack, vars } = env;
+        this._status = "interrupted";
+        stack.clear();
+        for (const key in vars) {
+            if (TreeEnv.isTempVar(key)) {
+                delete vars[key];
+            }
+        }
+        env.__interrupted = false;
     }
 }

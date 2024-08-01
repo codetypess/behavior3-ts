@@ -26,6 +26,10 @@ const builtinEventOptions = [
         name: "行为树执行失败后",
         value: TreeEvent.AFTER_RUN_FAILURE,
     },
+    {
+        name: "行为树被清理",
+        value: TreeEvent.CLEANED,
+    },
 ];
 
 type NodeInput = [TargetType | TargetType[] | undefined];

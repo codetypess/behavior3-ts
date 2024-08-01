@@ -8,6 +8,7 @@ export interface TreeData {
 }
 
 export const enum TreeEvent {
+    CLEANED = "treeCleaned",
     INTERRUPTED = "treeInterrupted",
     BEFORE_RUN = "beforeRunTree",
     AFTER_RUN = "afterRunTree",

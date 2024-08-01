@@ -89,26 +89,22 @@ export class Node {
     readonly args: { [k: string]: unknown };
     readonly input: Readonly<string[]>;
     readonly output: Readonly<string[]>;
-    readonly children: Node[] = [];
+    readonly children: Readonly<Node[]>;
 
     private _process: Process;
     private _data: NodeData;
-
-    readonly __yield: string;
+    private _yield?: string;
 
     constructor(data: NodeData, tree: Tree) {
         this._data = data;
-        this.__yield = TreeEnv.makeTempVar(this, "YIELD");
         this.tree = tree;
         this.args = data.args ?? {};
         this.input = data.input ?? [];
         this.output = data.output ?? [];
-
-        data.children?.forEach((value) => {
-            if (!value.disabled) {
-                this.children.push(new Node(value, tree));
-            }
-        });
+        this.children =
+            data.children
+                ?.filter((value) => !value.disabled)
+                .map((value) => new Node(value, tree)) ?? [];
 
         const process = tree.context.findProcess(this.name);
         if (!process) {
@@ -131,6 +127,10 @@ export class Node {
                 this.warn(`exactly ${descriptor.children} children`);
             }
         }
+    }
+
+    get __yield() {
+        return (this._yield ||= TreeEnv.makeTempVar(this, "YIELD"));
     }
 
     get id() {
