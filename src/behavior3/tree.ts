@@ -2,9 +2,9 @@ import { Context } from "./context";
 import { Node, NodeData } from "./node";
 
 export interface TreeData {
-    name: string;
-    desc: string;
-    root: NodeData;
+    readonly name: string;
+    readonly desc: string;
+    readonly root: NodeData;
 }
 
 export const enum TreeEvent {

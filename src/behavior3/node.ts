@@ -17,6 +17,8 @@ export interface NodeDef {
     color?: string;
     input?: string[];
     /**
+     * Used in Behavior3 Editor, to help editor deduce the status of the node.
+     *
      * + `!success`  !(child_success|child_success|...)
      * + `!failure`  !(child_failure|child_failure|...)
      * + `|success`  child_success|child_success|...
@@ -37,7 +39,10 @@ export interface NodeDef {
         | "&success"
         | "&failure"
     )[];
-    /** Allowed number of children
+    /**
+     * Used in Behavior3 Editor, to help editor alert error when the num of children is wrong.
+     *
+     * Allowed number of children
      * + -1: unlimited
      * + 0: no children
      * + 1: exactly one
@@ -72,15 +77,15 @@ export interface NodeDef {
 }
 
 export interface NodeData {
-    id: number;
-    name: string;
-    desc: string;
-    args?: { [k: string]: unknown };
-    debug?: boolean;
-    disabled?: boolean;
-    input?: Readonly<string[]>;
-    output?: Readonly<string[]>;
-    children?: Readonly<NodeData[]>;
+    readonly id: number;
+    readonly name: string;
+    readonly desc: string;
+    readonly args?: { [k: string]: unknown };
+    readonly debug?: boolean;
+    readonly disabled?: boolean;
+    readonly input?: Readonly<string[]>;
+    readonly output?: Readonly<string[]>;
+    readonly children?: Readonly<NodeData[]>;
 }
 
 export class Node {

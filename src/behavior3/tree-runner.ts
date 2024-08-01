@@ -27,9 +27,9 @@ export class TreeRunner<T extends TreeEnv> {
         return this._status;
     }
 
-    private _dispatch(event: string, ...args: unknown[]) {
+    private _dispatch(event: string) {
         const env = this._env;
-        env.context.dispatch(event, env, ...args);
+        env.context.dispatch(event, env);
     }
 
     clear() {
@@ -69,28 +69,27 @@ export class TreeRunner<T extends TreeEnv> {
 
         this._executing = true;
 
-        if (!env.__interrupted) {
-            if (stack.length > 0) {
-                let node = stack.top();
-                while (node) {
-                    this._status = node.run(env);
-                    if (this._status === "running") {
-                        break;
-                    } else {
-                        node = stack.top();
-                    }
+        if (stack.length > 0) {
+            let node = stack.top();
+            while (node) {
+                this._status = node.run(env);
+                if (this._status === "running") {
+                    break;
+                } else {
+                    node = stack.top();
                 }
-            } else {
-                this._dispatch(TreeEvent.BEFORE_RUN);
-                this._status = this.tree.root.run(env);
             }
-            if (this._status === "success") {
-                this._dispatch(TreeEvent.AFTER_RUN);
-                this._dispatch(TreeEvent.AFTER_RUN_SUCCESS);
-            } else if (this._status === "failure") {
-                this._dispatch(TreeEvent.AFTER_RUN);
-                this._dispatch(TreeEvent.AFTER_RUN_FAILURE);
-            }
+        } else {
+            this._dispatch(TreeEvent.BEFORE_RUN);
+            this._status = this.tree.root.run(env);
+        }
+
+        if (this._status === "success") {
+            this._dispatch(TreeEvent.AFTER_RUN);
+            this._dispatch(TreeEvent.AFTER_RUN_SUCCESS);
+        } else if (this._status === "failure") {
+            this._dispatch(TreeEvent.AFTER_RUN);
+            this._dispatch(TreeEvent.AFTER_RUN_FAILURE);
         }
 
         if (env.__interrupted) {

@@ -49,8 +49,9 @@ export class Context {
 
     constructor() {
         this.registerProcess(AlwaysFail);
-        this.registerProcess(Assert);
         this.registerProcess(AlwaysSuccess);
+        this.registerProcess(Assert);
+        this.registerProcess(Assign);
         this.registerProcess(Calculate);
         this.registerProcess(Check);
         this.registerProcess(Concat);
@@ -79,7 +80,6 @@ export class Context {
         this.registerProcess(Sequence);
         this.registerProcess(Timeout);
         this.registerProcess(Wait);
-        this.registerProcess(Assign);
     }
 
     get time() {
