@@ -33,10 +33,6 @@
       "desc": ""
     },
     {
-      "path": "test-status.json",
-      "desc": ""
-    },
-    {
       "path": "test-timeout.json",
       "desc": ""
     }

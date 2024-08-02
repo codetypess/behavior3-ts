@@ -45,7 +45,6 @@ export class RepeatUntilSuccess extends Process {
                     name: "maxLoop",
                     type: "int?",
                     desc: "最大循环次数",
-                    oneof: "最大循环次数",
                 },
             ],
             doc: `

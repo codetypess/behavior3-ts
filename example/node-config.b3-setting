@@ -405,6 +405,10 @@
             "value": "afterRunTreeFailure"
           },
           {
+            "name": "行为树被清理",
+            "value": "treeCleaned"
+          },
+          {
             "name": "testOff",
             "value": "testOff"
           },
@@ -640,8 +644,7 @@
       {
         "name": "maxLoop",
         "type": "int?",
-        "desc": "最大循环次数",
-        "oneof": "最大循环次数"
+        "desc": "最大循环次数"
       }
     ],
     "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 只有当子节点返回 `failure` 时，才返回 `success`，其它情况返回 `running` 状态\n+ 如果设定了尝试次数，超过指定次数则返回 `failure`"
@@ -663,8 +666,7 @@
       {
         "name": "maxLoop",
         "type": "int?",
-        "desc": "最大循环次数",
-        "oneof": "最大循环次数"
+        "desc": "最大循环次数"
       }
     ],
     "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 只有当子节点返回 `success` 时，才返回 `success`，其它情况返回 `running` 状态\n+ 如果设定了尝试次数，超过指定次数则返回 `failure`"
