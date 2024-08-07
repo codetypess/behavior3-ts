@@ -1,11 +1,12 @@
 import { TreeEnv } from "./tree-env";
 
+import { ObjectType } from "./context";
 import { Node, NodeDef } from "./node";
 
 export type Status = "success" | "failure" | "running";
 
 export abstract class Process {
-    init?(node: Node): unknown;
+    init?(node: Node): Readonly<ObjectType> | void;
 
     protected _checkOneof<V>(
         node: Node,

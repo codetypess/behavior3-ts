@@ -16,7 +16,7 @@ export class GetField extends Process {
             return "failure";
         }
 
-        const args = node.vars as NodeArgs;
+        const args = node.args as NodeArgs;
         const field = this._checkOneof(node, env, 1, args.field);
         const value = obj[field];
         if (typeof field !== "string" && typeof field !== "number") {

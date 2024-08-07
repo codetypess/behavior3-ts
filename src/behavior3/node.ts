@@ -1,3 +1,4 @@
+import { ObjectType } from "./context";
 import { Process, Status } from "./process";
 import { Tree } from "./tree";
 import { TreeEnv } from "./tree-env";
@@ -89,7 +90,7 @@ export interface NodeData {
 }
 
 export class Node {
-    readonly vars: unknown;
+    readonly consts: Readonly<ObjectType>;
     readonly tree: Tree;
     readonly args: { [k: string]: unknown };
     readonly input: Readonly<string[]>;
@@ -116,7 +117,7 @@ export class Node {
             throw new Error(`behavior3: process '${this.name}' not found`);
         }
         this._process = process;
-        this.vars = this._process.init?.(this) ?? {};
+        this.consts = this._process.init?.(this) ?? ({} as Readonly<ObjectType>);
 
         const descriptor = process.descriptor;
         if (

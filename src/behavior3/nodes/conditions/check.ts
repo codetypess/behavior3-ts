@@ -7,7 +7,7 @@ interface NodeArgs {
 }
 
 export class Check extends Process {
-    override init(node: Node): void {
+    override init(node: Node) {
         const args = node.args as unknown as NodeArgs;
         if (typeof args.value !== "string" || args.value.length === 0) {
             node.error(`args.value is not a expr string`);

@@ -12,7 +12,7 @@ export class Index extends Process {
     override run(node: Node, env: TreeEnv): Status {
         const [arr] = env.input as Input;
         if (arr instanceof Array) {
-            const args = node.vars as NodeArgs;
+            const args = node.args as NodeArgs;
             const index = this._checkOneof(node, env, 1, args.index);
             const value = arr[index];
             if (value !== undefined && value !== null) {

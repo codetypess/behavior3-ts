@@ -344,16 +344,16 @@
     ],
     "args": [
       {
-        "name": "expr",
+        "name": "value",
         "type": "json?",
-        "desc": "表达式",
+        "desc": "值(value)",
         "oneof": "已存在变量名"
       }
     ],
     "output": [
       "新变量名"
     ],
-    "doc": "+ 如果有输入变量，则给已有变量重新定义一个名字\n+ 如果有表达式，则使用表达式\n+ 如果表达式为 `null`，则清除变量\n"
+    "doc": "+ 如果有输入变量，则给已有变量重新定义一个名字\n+ 如果`值(value)`为 `null`，则清除变量\n"
   },
   {
     "name": "Listen",
@@ -692,7 +692,8 @@
     "type": "Action",
     "children": 0,
     "status": [
-      "success"
+      "success",
+      "failure"
     ],
     "desc": "设置对象字段值",
     "input": [
