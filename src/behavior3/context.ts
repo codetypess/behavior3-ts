@@ -1,14 +1,15 @@
 import { Evaluator, ExpressionEvaluator } from "./evaluator";
 import { Index } from "./nodes/actions";
-import { Assign } from "./nodes/actions/assign";
 import { Calculate } from "./nodes/actions/calculate";
 import { Concat } from "./nodes/actions/concat";
+import { GetField } from "./nodes/actions/get-field";
 import { Let } from "./nodes/actions/let";
 import { Log } from "./nodes/actions/log";
 import { Now } from "./nodes/actions/now";
 import { Push } from "./nodes/actions/push";
 import { Random } from "./nodes/actions/random";
 import { RandomIndex } from "./nodes/actions/random-index";
+import { SetField } from "./nodes/actions/set-field";
 import { Wait } from "./nodes/actions/wait";
 import { IfElse } from "./nodes/composites/ifelse";
 import { Parallel } from "./nodes/composites/parallel";
@@ -51,13 +52,13 @@ export class Context {
         this.registerProcess(AlwaysFail);
         this.registerProcess(AlwaysSuccess);
         this.registerProcess(Assert);
-        this.registerProcess(Assign);
         this.registerProcess(Calculate);
         this.registerProcess(Check);
         this.registerProcess(Concat);
         this.registerProcess(Delay);
         this.registerProcess(Filter);
         this.registerProcess(Foreach);
+        this.registerProcess(GetField);
         this.registerProcess(IfElse);
         this.registerProcess(Includes);
         this.registerProcess(Index);
@@ -78,6 +79,7 @@ export class Context {
         this.registerProcess(RepeatUntilSuccess);
         this.registerProcess(Selector);
         this.registerProcess(Sequence);
+        this.registerProcess(SetField);
         this.registerProcess(Timeout);
         this.registerProcess(Wait);
     }
