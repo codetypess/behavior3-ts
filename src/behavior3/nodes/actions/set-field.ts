@@ -42,7 +42,7 @@ export class SetField extends Process {
             name: "SetField",
             type: "Action",
             children: 0,
-            status: ["success"],
+            status: ["success", "failure"],
             desc: "设置对象字段值",
             input: ["输入对象", "字段(field)?", "值(value)?"],
             args: [
