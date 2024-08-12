@@ -40,6 +40,21 @@ export class Listen extends Process {
         return !!builtinEventOptions.find((e) => e.value === event);
     }
 
+    protected _processOutput(
+        node: Node,
+        env: TreeEnv,
+        eventTarget?: TargetType,
+        ...eventArgs: unknown[]
+    ) {
+        const [eventArgsKey, eventTargetKey] = node.output as NodeOutput;
+        if (eventTargetKey) {
+            env.set(eventTargetKey, eventTarget);
+        }
+        if (eventArgsKey) {
+            env.set(eventArgsKey, eventArgs);
+        }
+    }
+
     override run(node: Node, env: TreeEnv): Status {
         let [target] = env.input as NodeInput;
         const args = node.args as unknown as NodeArgs;
@@ -53,14 +68,8 @@ export class Listen extends Process {
 
         const callback = (eventTarget?: TargetType) => {
             return (...eventArgs: unknown[]) => {
+                this._processOutput(node, env, eventTarget, ...eventArgs);
                 const level = env.stack.length;
-                const [eventArgsKey, eventTargetKey] = node.output as NodeOutput;
-                if (eventTargetKey) {
-                    env.set(eventTargetKey, eventTarget);
-                }
-                if (eventArgsKey) {
-                    env.set(eventArgsKey, eventArgs);
-                }
                 const status = node.children[0].run(env);
                 if (status === "running") {
                     env.stack.popTo(level);

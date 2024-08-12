@@ -2,8 +2,6 @@ import { Node, NodeDef } from "../../node";
 import { Process, Status } from "../../process";
 import { Stack, TreeEnv } from "../../tree-env";
 
-const EMPTY = new Stack(null!);
-
 export class Parallel extends Process {
     override run(node: Node, env: TreeEnv): Status {
         const last = (node.resume(env) as Stack[]) ?? [];
@@ -34,7 +32,6 @@ export class Parallel extends Process {
                 }
                 env.stack.move(stack, level, env.stack.length - level);
             } else {
-                stack = EMPTY;
                 count++;
             }
 

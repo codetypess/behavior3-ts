@@ -14,9 +14,43 @@ export interface NodeDef {
      */
     type: "Action" | "Decorator" | "Condition" | "Composite";
     desc: string;
+    /** ["input1?", "input2", "..."] */
+    input?: string[];
+    /** ["output1", "output2", "..."] */
+    output?: string[];
+    args?: {
+        name: string;
+        type:
+            | "boolean"
+            | "boolean?"
+            | "boolean[]"
+            | "int"
+            | "int?"
+            | "int[]"
+            | "float"
+            | "float?"
+            | "float[]"
+            | "string"
+            | "string?"
+            | "string[]"
+            | "json"
+            | "json?"
+            | "json[]"
+            | "enum"
+            | "enum?"
+            | "enum[]"
+            | "code"
+            | "code?"
+            | "code[]";
+        desc: string;
+        /** Input `value`, only one is allowed between `value` and this arg.*/
+        oneof?: string;
+        default?: unknown;
+        options?: { name: string; value: unknown; desc?: string }[];
+    }[];
+    doc?: string;
     icon?: string;
     color?: string;
-    input?: string[];
     /**
      * Used in Behavior3 Editor, to help editor deduce the status of the node.
      *
@@ -50,31 +84,6 @@ export interface NodeDef {
      * + 3: exactly three children (ifelse)
      */
     children?: -1 | 0 | 1 | 3;
-    args?: {
-        name: string;
-        type:
-            | "boolean"
-            | "boolean?"
-            | "int"
-            | "int?"
-            | "float"
-            | "float?"
-            | "string"
-            | "string?"
-            | "json"
-            | "json?"
-            | "enum"
-            | "enum?"
-            | "code"
-            | "code?";
-        desc: string;
-        /** Input `value`, only one is allowed between `value` and this arg.*/
-        oneof?: string;
-        default?: unknown;
-        options?: { name: string; value: unknown }[];
-    }[];
-    output?: string[];
-    doc?: string;
 }
 
 export interface NodeData {
