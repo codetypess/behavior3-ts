@@ -144,6 +144,7 @@ export class Node {
         }
     }
 
+    /** @private */
     get __yield() {
         return (this._yield ||= TreeEnv.makeTempVar(this, "YIELD"));
     }
@@ -157,8 +158,7 @@ export class Node {
     }
 
     run(env: TreeEnv) {
-        const yieldKey = this.__yield;
-        if (env.get(yieldKey) === undefined) {
+        if (env.stack.top() !== this) {
             env.stack.push(this);
         }
 
@@ -179,8 +179,8 @@ export class Node {
                 env.set(varName, env.output[i]);
             });
             env.stack.pop();
-        } else if (env.get(yieldKey) === undefined) {
-            env.set(yieldKey, true);
+        } else if (env.get(this.__yield) === undefined) {
+            env.set(this.__yield, true);
         }
 
         env.__status = status;
