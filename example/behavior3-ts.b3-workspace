@@ -9,6 +9,10 @@
       "desc": "怪物测试AI"
     },
     {
+      "path": "test-array.json",
+      "desc": ""
+    },
+    {
       "path": "test-listen.json",
       "desc": ""
     },

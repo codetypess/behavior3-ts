@@ -1,0 +1,70 @@
+{
+  "name": "test-array",
+  "root": {
+    "id": 1,
+    "name": "Sequence",
+    "children": [
+      {
+        "id": 2,
+        "name": "Attack",
+        "args": {
+          "distance": 1331,
+          "range": 1,
+          "enemy": [
+            "go1"
+          ],
+          "multi": [
+            false,
+            true
+          ],
+          "data": [
+            {
+              "a": 1,
+              "b": [
+                "a",
+                "b"
+              ]
+            }
+          ],
+          "velocity": [],
+          "target": [
+            "enemy",
+            "self"
+          ]
+        },
+        "input": [
+          "ddd",
+          "skill1",
+          "skill2"
+        ],
+        "output": [
+          "d",
+          "damage1",
+          "damage2"
+        ]
+      },
+      {
+        "id": 3,
+        "name": "Attack",
+        "args": {
+          "range": 1,
+          "enemy": [],
+          "multi": [],
+          "data": [],
+          "velocity": [],
+          "target": []
+        },
+        "input": [
+          "hello",
+          "skill2",
+          ""
+        ],
+        "output": [
+          "atkout"
+        ]
+      }
+    ]
+  },
+  "export": true,
+  "desc": ""
+}
