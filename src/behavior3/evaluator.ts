@@ -181,7 +181,7 @@ export class ExpressionEvaluator {
         const operatorStack: string[] = [];
 
         infix.forEach((token) => {
-            if (/^\d+$/.test(token)) {
+            if (/^\d+|\d+\.\d+$/.test(token)) {
                 outputQueue.push({
                     type: TokenType.NUMBER,
                     value: parseFloat(token),

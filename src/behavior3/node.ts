@@ -14,9 +14,9 @@ export interface NodeDef {
      */
     type: "Action" | "Decorator" | "Condition" | "Composite";
     desc: string;
-    /** ["input1?", "input2", "..."] */
+    /** ["input1?", "input2..."] */
     input?: string[];
-    /** ["output1", "output2", "..."] */
+    /** ["output1", "output2..."] */
     output?: string[];
     args?: {
         name: string;
@@ -24,24 +24,31 @@ export interface NodeDef {
             | "boolean"
             | "boolean?"
             | "boolean[]"
+            | "boolean[]?"
             | "int"
             | "int?"
             | "int[]"
+            | "int[]?"
             | "float"
             | "float?"
             | "float[]"
+            | "float[]?"
             | "string"
             | "string?"
             | "string[]"
+            | "string[]?"
             | "json"
             | "json?"
             | "json[]"
+            | "json[]?"
             | "enum"
             | "enum?"
             | "enum[]"
+            | "enum[]?"
             | "code"
             | "code?"
-            | "code[]";
+            | "code[]"
+            | "code[]?";
         desc: string;
         /** Input `value`, only one is allowed between `value` and this arg.*/
         oneof?: string;
@@ -90,7 +97,7 @@ export interface NodeData {
     readonly id: number;
     readonly name: string;
     readonly desc: string;
-    readonly args?: { [k: string]: unknown };
+    readonly args?: { readonly [k: string]: unknown };
     readonly debug?: boolean;
     readonly disabled?: boolean;
     readonly input?: Readonly<string[]>;
@@ -101,7 +108,7 @@ export interface NodeData {
 export class Node {
     readonly consts: Readonly<ObjectType>;
     readonly tree: Tree;
-    readonly args: { [k: string]: unknown };
+    readonly args: { readonly [k: string]: unknown };
     readonly input: Readonly<string[]>;
     readonly output: Readonly<string[]>;
     readonly children: Readonly<Node[]>;

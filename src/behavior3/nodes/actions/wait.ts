@@ -8,13 +8,6 @@ interface NodeArgs {
 }
 
 export class Wait extends Process {
-    override init(node: Node): void {
-        const args = node.args as unknown as NodeArgs;
-        if (typeof args.time !== "number") {
-            node.error(`args.time is not a number`);
-        }
-    }
-
     override run(node: Node, env: TreeEnv): Status {
         const t = node.resume(env);
         if (typeof t === "number") {
