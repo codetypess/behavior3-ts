@@ -3,21 +3,29 @@ import { Process, Status } from "../../process";
 import { TreeEnv } from "../../tree-env";
 
 interface NodeArgs {
-    delay: number;
+    readonly delay: number;
+    readonly cache_args?: Readonly<string[]>;
 }
 
 export class Delay extends Process {
     override run(node: Node, env: TreeEnv): Status {
         const args = node.args as unknown as NodeArgs;
         const delay = this._checkOneof(node, env, 0, args.delay, 0);
+
+        const keys = args.cache_args ?? [];
+        const cacheArgs: unknown[] = keys.map((key) => env.get(key));
+
         env.context.delay(
             delay,
             () => {
+                const cacheOldArgs: unknown[] = keys.map((key) => env.get(key));
+                keys.forEach((key, i) => env.set(key, cacheArgs[i]));
                 const level = env.stack.length;
                 const status = node.children[0].run(env);
                 if (status === "running") {
                     env.stack.popTo(level);
                 }
+                keys.forEach((key, i) => env.set(key, cacheOldArgs[i]));
             },
             env
         );
@@ -38,6 +46,11 @@ export class Delay extends Process {
                     type: "float?",
                     desc: "延时时间",
                     oneof: "延时时间",
+                },
+                {
+                    name: "cache_args",
+                    type: "string[]?",
+                    desc: "暂存环境变量",
                 },
             ],
             doc: `
