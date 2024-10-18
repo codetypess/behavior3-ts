@@ -4,7 +4,7 @@ import { TreeEnv } from "../../tree-env";
 
 interface NodeArgs {
     readonly delay: number;
-    readonly cache_args?: Readonly<string[]>;
+    readonly cacheVars?: Readonly<string[]>;
 }
 
 export class Delay extends Process {
@@ -12,20 +12,20 @@ export class Delay extends Process {
         const args = node.args as unknown as NodeArgs;
         const delay = this._checkOneof(node, env, 0, args.delay, 0);
 
-        const keys = args.cache_args ?? [];
-        const cacheArgs: unknown[] = keys.map((key) => env.get(key));
+        const keys = args.cacheVars ?? [];
+        const cacheVars: unknown[] = keys.map((key) => env.get(key));
 
         env.context.delay(
             delay,
             () => {
-                const cacheOldArgs: unknown[] = keys.map((key) => env.get(key));
-                keys.forEach((key, i) => env.set(key, cacheArgs[i]));
+                const currVars: unknown[] = keys.map((key) => env.get(key));
+                keys.forEach((key, i) => env.set(key, cacheVars[i]));
                 const level = env.stack.length;
                 const status = node.children[0].run(env);
                 if (status === "running") {
                     env.stack.popTo(level);
                 }
-                keys.forEach((key, i) => env.set(key, cacheOldArgs[i]));
+                keys.forEach((key, i) => env.set(key, currVars[i]));
             },
             env
         );
@@ -48,7 +48,7 @@ export class Delay extends Process {
                     oneof: "延时时间",
                 },
                 {
-                    name: "cache_args",
+                    name: "cacheVars",
                     type: "string[]?",
                     desc: "暂存环境变量",
                 },
