@@ -5,7 +5,7 @@ import { TreeEnv } from "../../tree-env";
 type Input = [unknown[]];
 
 export class Filter extends Process {
-    override run(node: Node, env: TreeEnv): Status {
+    override tick(node: Node, env: TreeEnv): Status {
         const [arr] = env.input as Input;
         if (!(arr instanceof Array) || arr.length === 0) {
             return "failure";
@@ -31,7 +31,7 @@ export class Filter extends Process {
 
         for (i = 0; i < arr.length; i++) {
             env.set(node.output[0], arr[i]);
-            const status = filter.run(env);
+            const status = filter.tick(env);
             if (status === "running") {
                 if (last instanceof Array) {
                     last[0] = i;

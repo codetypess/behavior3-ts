@@ -5,7 +5,7 @@ import { TreeEnv } from "./tree-env";
 export type TreeStatus = Status | "interrupted";
 
 export class TreeRunner<T extends TreeEnv> {
-    protected _executing: boolean = false;
+    protected _ticking: boolean = false;
     protected _status: TreeStatus = "success";
     protected _env: T;
     protected _tree: Tree;
@@ -27,6 +27,10 @@ export class TreeRunner<T extends TreeEnv> {
         return this._status;
     }
 
+    get ticking() {
+        return this._ticking;
+    }
+
     private _dispatch(event: string) {
         const env = this._env;
         env.context.dispatch(event, env);
@@ -45,16 +49,16 @@ export class TreeRunner<T extends TreeEnv> {
     }
 
     interrupt() {
-        if (this._status === "running" || this._executing) {
+        if (this._status === "running" || this._ticking) {
             this._dispatch(TreeEvent.INTERRUPTED);
             this.env.__interrupted = true;
-            if (!this._executing) {
+            if (!this._ticking) {
                 this._doInterrupt();
             }
         }
     }
 
-    run(): TreeStatus {
+    tick(): TreeStatus {
         const env = this.env;
         const { stack } = env;
 
@@ -62,17 +66,17 @@ export class TreeRunner<T extends TreeEnv> {
             console.debug(`---------------- debug ai: ${this.tree.name} --------------------`);
         }
 
-        if (this._executing) {
+        if (this._ticking) {
             const node = stack.top();
-            throw new Error(`tree '${this.tree.name}' already running: ${node?.name}#${node?.id}`);
+            throw new Error(`tree '${this.tree.name}' already ticking: ${node?.name}#${node?.id}`);
         }
 
-        this._executing = true;
+        this._ticking = true;
 
         if (stack.length > 0) {
             let node = stack.top();
             while (node) {
-                this._status = node.run(env);
+                this._status = node.tick(env);
                 if (this._status === "running") {
                     break;
                 } else {
@@ -81,7 +85,7 @@ export class TreeRunner<T extends TreeEnv> {
             }
         } else {
             this._dispatch(TreeEvent.BEFORE_RUN);
-            this._status = this.tree.root.run(env);
+            this._status = this.tree.root.tick(env);
         }
 
         if (this._status === "success") {
@@ -96,7 +100,7 @@ export class TreeRunner<T extends TreeEnv> {
             this._doInterrupt();
         }
 
-        this._executing = false;
+        this._ticking = false;
 
         return this._status;
     }

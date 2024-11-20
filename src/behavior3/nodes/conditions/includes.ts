@@ -5,7 +5,7 @@ import { TreeEnv } from "../../tree-env";
 type NodeInput = [unknown, unknown[]];
 
 export class Includes extends Process {
-    override run(node: Node, env: TreeEnv): Status {
+    override tick(node: Node, env: TreeEnv): Status {
         const [arr, element] = env.input as NodeInput;
         if (!Array.isArray(arr) || element === undefined || element === null) {
             return "failure";

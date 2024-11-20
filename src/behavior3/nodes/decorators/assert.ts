@@ -7,7 +7,7 @@ interface NodeArgs {
 }
 
 export class Assert extends Process {
-    override run(node: Node, env: TreeEnv): Status {
+    override tick(node: Node, env: TreeEnv): Status {
         const args = node.args as unknown as NodeArgs;
         const isYield = node.resume(env);
         if (typeof isYield === "boolean") {
@@ -22,7 +22,7 @@ export class Assert extends Process {
             }
         }
 
-        const status = node.children[0].run(env);
+        const status = node.children[0].tick(env);
         if (status === "success") {
             return "success";
         } else if (status === "running") {

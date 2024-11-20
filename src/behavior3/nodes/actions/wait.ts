@@ -8,7 +8,7 @@ interface NodeArgs {
 }
 
 export class Wait extends Process {
-    override run(node: Node, env: TreeEnv): Status {
+    override tick(node: Node, env: TreeEnv): Status {
         const t = node.resume(env);
         if (typeof t === "number") {
             if (env.context.time >= t) {

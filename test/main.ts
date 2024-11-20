@@ -21,32 +21,32 @@ console.log("====================test hero=============================");
 const heroAi = createTreeRunner("./example/hero.json");
 heroAi.env.owner = context.avators[1];
 heroAi.env.owner.tree = heroAi;
-heroAi.run();
-heroAi.run();
-heroAi.run();
-heroAi.run();
-heroAi.run();
-heroAi.run();
+heroAi.tick();
+heroAi.tick();
+heroAi.tick();
+heroAi.tick();
+heroAi.tick();
+heroAi.tick();
 
 //后摇;
-heroAi.run();
+heroAi.tick();
 heroAi.interrupt();
-heroAi.run();
+heroAi.tick();
 context.time = 20;
-heroAi.run();
+heroAi.tick();
 
 console.log("====================test monster=============================");
 const monsterAi = createTreeRunner("./example/monster.json");
 monsterAi.env.owner = context.avators[0];
 monsterAi.env.owner.hp = 100;
 monsterAi.env.owner.tree = monsterAi;
-monsterAi.run();
+monsterAi.tick();
 
 monsterAi.env.owner.hp = 20;
-monsterAi.run();
+monsterAi.tick();
 monsterAi.env.context.time = 40;
-monsterAi.run();
-monsterAi.run();
+monsterAi.tick();
+monsterAi.tick();
 
 console.log("run end");
 
@@ -59,7 +59,7 @@ const testTree = (
     let i = 0;
     while (i < 100) {
         context.time++;
-        runner.run();
+        runner.tick();
         if (onTick) {
             if (!onTick(i, runner)) {
                 break;

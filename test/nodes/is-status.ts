@@ -8,10 +8,10 @@ interface NodeArgs {
 }
 
 export class IsStatus extends Process {
-    override run(node: Node, env: TreeEnv<Context>): Status {
+    override tick(node: Node, env: TreeEnv<Context>): Status {
         const args = node.args as unknown as NodeArgs;
         const level = env.stack.length;
-        const status = node.children[0].run(env);
+        const status = node.children[0].tick(env);
         if (status === "running") {
             env.stack.popTo(level);
         }

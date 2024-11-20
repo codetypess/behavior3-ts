@@ -13,7 +13,7 @@ export class Once extends Process {
         };
     }
 
-    override run(node: Node, env: TreeEnv): Status {
+    override tick(node: Node, env: TreeEnv): Status {
         const onceKey = (node.consts as Readonly<NodeConsts>).onceKey;
         if (env.get(onceKey) === true) {
             return "failure";
@@ -28,7 +28,7 @@ export class Once extends Process {
             return "success";
         }
 
-        const status = node.children[0].run(env);
+        const status = node.children[0].tick(env);
         if (status === "running") {
             return node.yield(env);
         }

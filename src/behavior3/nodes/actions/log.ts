@@ -17,7 +17,7 @@ enum LogLevel {
 type NodeInput = [unknown?];
 
 export class Log extends Process {
-    override run(node: Node, env: TreeEnv): Status {
+    override tick(node: Node, env: TreeEnv): Status {
         const [inputMsg] = env.input as NodeInput;
         const args = node.args as unknown as NodeArgs;
         const level = args.level ?? LogLevel.INFO;

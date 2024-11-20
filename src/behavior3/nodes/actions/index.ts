@@ -9,7 +9,7 @@ type NodeArgs = {
 };
 
 export class Index extends Process {
-    override run(node: Node, env: TreeEnv): Status {
+    override tick(node: Node, env: TreeEnv): Status {
         const [arr] = env.input as Input;
         if (arr instanceof Array) {
             const args = node.args as NodeArgs;

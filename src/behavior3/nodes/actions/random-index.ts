@@ -5,7 +5,7 @@ import { TreeEnv } from "../../tree-env";
 type Input = [unknown[]];
 
 export class RandomIndex extends Process {
-    override run(node: Node, env: TreeEnv): Status {
+    override tick(node: Node, env: TreeEnv): Status {
         const [arr] = env.input as Input;
         if (!(arr instanceof Array) || arr.length === 0) {
             return "failure";

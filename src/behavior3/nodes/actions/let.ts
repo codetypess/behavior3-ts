@@ -7,7 +7,7 @@ interface NodeArgs {
 }
 
 export class Let extends Process {
-    override run(node: Node, env: TreeEnv): Status {
+    override tick(node: Node, env: TreeEnv): Status {
         const args = node.args as unknown as NodeArgs;
         const value = this._checkOneof(node, env, 0, args.value, null);
         env.output.push(value);

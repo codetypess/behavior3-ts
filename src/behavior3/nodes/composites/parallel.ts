@@ -5,7 +5,7 @@ import { Stack, TreeEnv } from "../../tree-env";
 const EMPTY_STACK: Stack = new Stack(null!);
 
 export class Parallel extends Process {
-    override run(node: Node, env: TreeEnv): Status {
+    override tick(node: Node, env: TreeEnv): Status {
         const last = (node.resume(env) as Stack[]) ?? [];
         const level = env.stack.length;
         let count = 0;
@@ -14,12 +14,12 @@ export class Parallel extends Process {
             let stack = last[idx];
             let status: Status | undefined;
             if (stack === undefined) {
-                status = child.run(env);
+                status = child.tick(env);
             } else if (stack.length > 0) {
                 stack.move(env.stack, 0, stack.length);
                 while (env.stack.length > level) {
                     child = env.stack.top()!;
-                    status = child.run(env);
+                    status = child.tick(env);
                     if (status === "running") {
                         break;
                     }

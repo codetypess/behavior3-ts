@@ -55,7 +55,7 @@ export class Listen extends Process {
         }
     }
 
-    override run(node: Node, env: TreeEnv): Status {
+    override tick(node: Node, env: TreeEnv): Status {
         let [target] = env.input as NodeInput;
         const args = node.args as unknown as NodeArgs;
 
@@ -70,7 +70,7 @@ export class Listen extends Process {
             return (...eventArgs: unknown[]) => {
                 this._processOutput(node, env, eventTarget, ...eventArgs);
                 const level = env.stack.length;
-                const status = node.children[0].run(env);
+                const status = node.children[0].tick(env);
                 if (status === "running") {
                     env.stack.popTo(level);
                 }

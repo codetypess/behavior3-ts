@@ -4,7 +4,7 @@ import { Role } from "../role";
 type AttackInput = [Role | undefined];
 
 export class Attack extends Process {
-    override run(node: Node, env: TreeEnv): Status {
+    override tick(node: Node, env: TreeEnv): Status {
         const [enemy] = env.input as AttackInput;
         if (!enemy) {
             return "failure";

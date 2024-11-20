@@ -6,7 +6,7 @@ type MoveToTargetInput = [Role | undefined];
 export class MoveToTarget extends Process {
     static SPEED = 50;
 
-    override run(node: Node, env: RoleTreeEnv): Status {
+    override tick(node: Node, env: RoleTreeEnv): Status {
         const [target] = env.input as MoveToTargetInput;
         if (!target) {
             return "failure";

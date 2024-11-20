@@ -5,7 +5,7 @@ import { TreeEnv } from "../../tree-env";
 type NodeInput = [unknown];
 
 export class NotNull extends Process {
-    override run(node: Node, env: TreeEnv): Status {
+    override tick(node: Node, env: TreeEnv): Status {
         const [value] = env.input as NodeInput;
         if (value === undefined || value === null) {
             return "failure";

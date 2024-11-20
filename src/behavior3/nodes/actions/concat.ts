@@ -5,7 +5,7 @@ import { TreeEnv } from "../../tree-env";
 type NodeInput = [unknown[], unknown[]];
 
 export class Concat extends Process {
-    override run(node: Node, env: TreeEnv): Status {
+    override tick(node: Node, env: TreeEnv): Status {
         const [arr1, arr2] = env.input as NodeInput;
         if (!Array.isArray(arr1) || !Array.isArray(arr2)) {
             return "failure";

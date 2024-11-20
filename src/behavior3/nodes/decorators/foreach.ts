@@ -6,7 +6,7 @@ type NodeInput = [unknown[]];
 type NodeOutput = [string];
 
 export class Foreach extends Process {
-    override run(node: Node, env: TreeEnv): Status {
+    override tick(node: Node, env: TreeEnv): Status {
         const [arr] = env.input as NodeInput;
         const [varname] = node.output as NodeOutput;
         let i = node.resume(env) as number | undefined;
@@ -23,7 +23,7 @@ export class Foreach extends Process {
 
         for (; i < arr.length; i++) {
             env.set(varname, arr[i]);
-            const status = node.children[0].run(env);
+            const status = node.children[0].tick(env);
             if (status === "running") {
                 return node.yield(env, i);
             } else if (status === "failure") {

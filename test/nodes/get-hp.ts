@@ -2,7 +2,7 @@ import { Node, NodeDef, Process, Status } from "../../src/behavior3";
 import { Role, RoleTreeEnv } from "../role";
 
 export class GetHp extends Process {
-    override run(node: Node, env: RoleTreeEnv): Status {
+    override tick(node: Node, env: RoleTreeEnv): Status {
         env.output.push((env.owner as Role).hp);
         return "success";
     }

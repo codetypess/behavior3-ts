@@ -3,7 +3,7 @@ import { Process, Status } from "../../process";
 import { TreeEnv } from "../../tree-env";
 
 export class Selector extends Process {
-    override run(node: Node, env: TreeEnv): Status {
+    override tick(node: Node, env: TreeEnv): Status {
         const last = node.resume(env);
         let i = 0;
 
@@ -18,7 +18,7 @@ export class Selector extends Process {
         }
 
         for (; i < node.children.length; i++) {
-            const status = node.children[i].run(env);
+            const status = node.children[i].tick(env);
             if (status === "success") {
                 return "success";
             } else if (status === "running") {

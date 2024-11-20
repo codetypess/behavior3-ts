@@ -7,7 +7,7 @@ interface MoveToPosArgs {
 }
 
 export class MoveToPos extends Process {
-    override run(node: Node, env: RoleTreeEnv): Status {
+    override tick(node: Node, env: RoleTreeEnv): Status {
         const owner = env.owner as Role;
         const args = node.args as unknown as MoveToPosArgs;
         owner.x = args.x;

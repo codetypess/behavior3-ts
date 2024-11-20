@@ -8,24 +8,24 @@ interface NodeArgs {
 }
 
 export class Delay extends Process {
-    override run(node: Node, env: TreeEnv): Status {
+    override tick(node: Node, env: TreeEnv): Status {
         const args = node.args as unknown as NodeArgs;
         const delay = this._checkOneof(node, env, 0, args.delay, 0);
 
         const keys = args.cacheVars ?? [];
-        const cacheVars: unknown[] = keys.map((key) => env.get(key));
+        const cacheArgs: unknown[] = keys.map((key) => env.get(key));
 
         env.context.delay(
             delay,
             () => {
-                const currVars: unknown[] = keys.map((key) => env.get(key));
-                keys.forEach((key, i) => env.set(key, cacheVars[i]));
+                const cacheOldArgs: unknown[] = keys.map((key) => env.get(key));
+                keys.forEach((key, i) => env.set(key, cacheArgs[i]));
                 const level = env.stack.length;
-                const status = node.children[0].run(env);
+                const status = node.children[0].tick(env);
                 if (status === "running") {
                     env.stack.popTo(level);
                 }
-                keys.forEach((key, i) => env.set(key, currVars[i]));
+                keys.forEach((key, i) => env.set(key, cacheOldArgs[i]));
             },
             env
         );

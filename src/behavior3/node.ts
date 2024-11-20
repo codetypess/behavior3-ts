@@ -164,7 +164,7 @@ export class Node {
         return this._data.name;
     }
 
-    run(env: TreeEnv) {
+    tick(env: TreeEnv) {
         if (env.stack.top() !== this) {
             env.stack.push(this);
         }
@@ -178,7 +178,7 @@ export class Node {
             env.input.push(env.get(varName));
         });
 
-        const status = this._process.run(this, env);
+        const status = this._process.tick(this, env);
         if (env.__interrupted) {
             return "running";
         } else if (status !== "running") {

@@ -11,7 +11,7 @@ interface NodeArgs {
 }
 
 export class SetField extends Process {
-    override run(node: Node, env: TreeEnv): Status {
+    override tick(node: Node, env: TreeEnv): Status {
         const [obj] = env.input as NodeInput;
         if (typeof obj !== "object" || !obj) {
             node.warn(`invalid object: ${obj}`);

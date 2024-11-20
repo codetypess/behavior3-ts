@@ -9,7 +9,7 @@ type NodeArgs = {
 };
 
 export class GetField extends Process {
-    override run(node: Node, env: TreeEnv): Status {
+    override tick(node: Node, env: TreeEnv): Status {
         const [obj] = env.input as Input;
         if (typeof obj !== "object" || !obj) {
             node.warn(`invalid object: ${obj}`);

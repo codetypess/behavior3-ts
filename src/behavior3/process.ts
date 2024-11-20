@@ -30,7 +30,7 @@ export abstract class Process {
         return (value ?? defaultValue) as V;
     }
 
-    abstract run(node: Node, env: TreeEnv): Status;
+    abstract tick(node: Node, env: TreeEnv): Status;
 
     abstract get descriptor(): NodeDef;
 }

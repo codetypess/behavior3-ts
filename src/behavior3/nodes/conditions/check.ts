@@ -15,7 +15,7 @@ export class Check extends Process {
         node.tree.context.compileCode(args.value);
     }
 
-    override run(node: Node, env: TreeEnv): Status {
+    override tick(node: Node, env: TreeEnv): Status {
         const args = node.args as unknown as NodeArgs;
         const value = env.eval(args.value);
         return value ? "success" : "failure";

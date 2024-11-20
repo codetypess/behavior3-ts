@@ -3,7 +3,7 @@ import { Process, Status } from "../../process";
 import { TreeEnv } from "../../tree-env";
 
 export class AlwaysSuccess extends Process {
-    override run(node: Node, env: TreeEnv): Status {
+    override tick(node: Node, env: TreeEnv): Status {
         const isYield = node.resume(env);
         if (typeof isYield === "boolean") {
             if (env.status === "running") {
@@ -11,7 +11,7 @@ export class AlwaysSuccess extends Process {
             }
             return "success";
         }
-        const status = node.children[0].run(env);
+        const status = node.children[0].tick(env);
         if (status === "running") {
             return node.yield(env);
         }

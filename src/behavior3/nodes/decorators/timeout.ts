@@ -12,12 +12,12 @@ interface NodeYield {
 }
 
 export class Timeout extends Process {
-    override run(node: Node, env: TreeEnv): Status {
+    override tick(node: Node, env: TreeEnv): Status {
         const level = env.stack.length;
         let last = node.resume(env) as NodeYield | undefined;
         let status: Status = "failure";
         if (last === undefined) {
-            status = node.children[0].run(env);
+            status = node.children[0].tick(env);
         } else if (env.context.time >= last.expired) {
             last.stack.clear();
             return "failure";
@@ -25,7 +25,7 @@ export class Timeout extends Process {
             last.stack.move(env.stack, 0, last.stack.length);
             while (env.stack.length > level) {
                 const child = env.stack.top()!;
-                status = child.run(env);
+                status = child.tick(env);
                 if (status === "running") {
                     break;
                 }

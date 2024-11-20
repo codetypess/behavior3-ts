@@ -7,7 +7,7 @@ interface NodeArgs {
 }
 
 export class RepeatUntilSuccess extends Process {
-    override run(node: Node, env: TreeEnv): Status {
+    override tick(node: Node, env: TreeEnv): Status {
         const args = node.args as unknown as NodeArgs;
         const maxLoop = this._checkOneof(node, env, 0, args.maxLoop, Number.MAX_SAFE_INTEGER);
         let count = node.resume(env) as number | undefined;
@@ -24,7 +24,7 @@ export class RepeatUntilSuccess extends Process {
             count = 1;
         }
 
-        const status = node.children[0].run(env);
+        const status = node.children[0].tick(env);
         if (status === "success") {
             return "success";
         } else {
