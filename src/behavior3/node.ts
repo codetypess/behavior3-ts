@@ -139,7 +139,7 @@ export class Node {
         if (
             descriptor.children !== undefined &&
             descriptor.children !== -1 &&
-            descriptor.children !== descriptor.children
+            descriptor.children !== this.children.length
         ) {
             if (descriptor.children === 0) {
                 this.warn(`no children is required`);
