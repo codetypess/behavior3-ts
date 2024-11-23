@@ -37,6 +37,10 @@
       "desc": ""
     },
     {
+      "path": "test-switch-case.json",
+      "desc": ""
+    },
+    {
       "path": "test-timeout.json",
       "desc": ""
     }

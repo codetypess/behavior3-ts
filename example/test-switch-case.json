@@ -1,0 +1,384 @@
+{
+  "name": "test-switch-case",
+  "root": {
+    "id": 1,
+    "name": "Sequence",
+    "children": [
+      {
+        "id": 2,
+        "name": "Log",
+        "args": {
+          "message": "-------------> Switch",
+          "level": "info"
+        },
+        "input": [
+          ""
+        ]
+      },
+      {
+        "id": 3,
+        "name": "AlwaysSuccess",
+        "children": [
+          {
+            "id": 4,
+            "name": "Switch",
+            "children": [
+              {
+                "id": 5,
+                "name": "Case",
+                "children": [
+                  {
+                    "id": 6,
+                    "name": "AlwaysFail",
+                    "children": [
+                      {
+                        "id": 7,
+                        "name": "Log",
+                        "args": {
+                          "message": "1. case fail",
+                          "level": "info"
+                        },
+                        "input": [
+                          ""
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": 8,
+                    "name": "Log",
+                    "args": {
+                      "message": "1. none",
+                      "level": "info"
+                    },
+                    "input": [
+                      ""
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": 9,
+                "name": "Case",
+                "children": [
+                  {
+                    "id": 10,
+                    "name": "RepeatUntilSuccess",
+                    "args": {},
+                    "input": [],
+                    "children": [
+                      {
+                        "id": 11,
+                        "name": "Sequence",
+                        "children": [
+                          {
+                            "id": 12,
+                            "name": "Wait",
+                            "args": {
+                              "time": 1
+                            },
+                            "input": [
+                              ""
+                            ]
+                          },
+                          {
+                            "id": 13,
+                            "name": "Log",
+                            "args": {
+                              "message": "2. wait success",
+                              "level": "info"
+                            },
+                            "input": [
+                              ""
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": 14,
+                    "name": "Log",
+                    "args": {
+                      "message": "2. case done",
+                      "level": "info"
+                    },
+                    "input": [
+                      ""
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": 15,
+                "name": "Case",
+                "children": [
+                  {
+                    "id": 16,
+                    "name": "Log",
+                    "args": {
+                      "message": "3. case never",
+                      "level": "info"
+                    },
+                    "input": [
+                      ""
+                    ]
+                  },
+                  {
+                    "id": 17,
+                    "name": "Assert",
+                    "args": {
+                      "message": "NO!!!"
+                    },
+                    "children": [
+                      {
+                        "id": 18,
+                        "name": "AlwaysFail",
+                        "children": [
+                          {
+                            "id": 19,
+                            "name": "Log",
+                            "args": {
+                              "message": "neve run",
+                              "level": "info"
+                            },
+                            "input": [
+                              ""
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 20,
+        "name": "AlwaysSuccess",
+        "children": [
+          {
+            "id": 21,
+            "name": "Switch",
+            "children": [
+              {
+                "id": 22,
+                "name": "Case",
+                "children": [
+                  {
+                    "id": 23,
+                    "name": "Log",
+                    "args": {
+                      "message": "4. case fail",
+                      "level": "info"
+                    },
+                    "input": [
+                      ""
+                    ]
+                  },
+                  {
+                    "id": 24,
+                    "name": "Log",
+                    "args": {
+                      "message": "4. none",
+                      "level": "info"
+                    },
+                    "input": [
+                      ""
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": 25,
+                "name": "Case",
+                "children": [
+                  {
+                    "id": 26,
+                    "name": "Log",
+                    "args": {
+                      "message": "5. wait success",
+                      "level": "info"
+                    },
+                    "input": [
+                      ""
+                    ]
+                  },
+                  {
+                    "id": 27,
+                    "name": "Sequence",
+                    "children": [
+                      {
+                        "id": 28,
+                        "name": "Wait",
+                        "args": {
+                          "time": 1
+                        },
+                        "input": [
+                          ""
+                        ]
+                      },
+                      {
+                        "id": 29,
+                        "name": "Log",
+                        "args": {
+                          "message": "5. case done",
+                          "level": "info"
+                        },
+                        "input": [
+                          ""
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": 30,
+                "name": "Case",
+                "children": [
+                  {
+                    "id": 31,
+                    "name": "Log",
+                    "args": {
+                      "message": "6. case never",
+                      "level": "info"
+                    },
+                    "input": [
+                      ""
+                    ]
+                  },
+                  {
+                    "id": 32,
+                    "name": "Assert",
+                    "args": {
+                      "message": "NO!!!"
+                    },
+                    "children": [
+                      {
+                        "id": 33,
+                        "name": "AlwaysFail",
+                        "children": [
+                          {
+                            "id": 34,
+                            "name": "Log",
+                            "args": {
+                              "message": "neve run",
+                              "level": "info"
+                            },
+                            "input": [
+                              ""
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 35,
+        "name": "AlwaysSuccess",
+        "children": [
+          {
+            "id": 36,
+            "name": "Switch",
+            "children": [
+              {
+                "id": 37,
+                "name": "Case",
+                "children": [
+                  {
+                    "id": 38,
+                    "name": "Log",
+                    "args": {
+                      "message": "7. success",
+                      "level": "info"
+                    },
+                    "input": [
+                      ""
+                    ]
+                  },
+                  {
+                    "id": 39,
+                    "name": "Log",
+                    "args": {
+                      "message": "7. case done",
+                      "level": "info"
+                    },
+                    "input": [
+                      ""
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": 40,
+                "name": "Case",
+                "children": [
+                  {
+                    "id": 41,
+                    "name": "Log",
+                    "args": {
+                      "message": "8. case never",
+                      "level": "info"
+                    },
+                    "input": [
+                      ""
+                    ]
+                  },
+                  {
+                    "id": 42,
+                    "name": "Assert",
+                    "args": {
+                      "message": "NO!!!"
+                    },
+                    "children": [
+                      {
+                        "id": 43,
+                        "name": "AlwaysFail",
+                        "children": [
+                          {
+                            "id": 44,
+                            "name": "Log",
+                            "args": {
+                              "message": "neve run",
+                              "level": "info"
+                            },
+                            "input": [
+                              ""
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 45,
+        "name": "Log",
+        "args": {
+          "message": "<------------- Switch",
+          "level": "info"
+        },
+        "input": [
+          ""
+        ]
+      }
+    ]
+  },
+  "export": true,
+  "desc": ""
+}

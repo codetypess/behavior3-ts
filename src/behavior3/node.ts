@@ -88,9 +88,10 @@ export interface NodeDef {
      * + -1: unlimited
      * + 0: no children
      * + 1: exactly one
+     * + 2: exactly two (case)
      * + 3: exactly three children (ifelse)
      */
-    children?: -1 | 0 | 1 | 3;
+    children?: -1 | 0 | 1 | 2 | 3;
 }
 
 export interface NodeData {

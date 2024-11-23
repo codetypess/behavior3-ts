@@ -15,6 +15,7 @@ import { IfElse } from "./nodes/composites/ifelse";
 import { Parallel } from "./nodes/composites/parallel";
 import { Selector } from "./nodes/composites/selector";
 import { Sequence } from "./nodes/composites/sequence";
+import { Case, Switch } from "./nodes/composites/switch";
 import { Check } from "./nodes/conditions/check";
 import { Includes } from "./nodes/conditions/includes";
 import { IsNull } from "./nodes/conditions/is-null";
@@ -53,6 +54,7 @@ export class Context {
         this.registerProcess(AlwaysSuccess);
         this.registerProcess(Assert);
         this.registerProcess(Calculate);
+        this.registerProcess(Case);
         this.registerProcess(Check);
         this.registerProcess(Concat);
         this.registerProcess(Delay);
@@ -80,6 +82,7 @@ export class Context {
         this.registerProcess(Selector);
         this.registerProcess(Sequence);
         this.registerProcess(SetField);
+        this.registerProcess(Switch);
         this.registerProcess(Timeout);
         this.registerProcess(Wait);
     }
