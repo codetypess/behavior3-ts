@@ -20,7 +20,7 @@ import { Check } from "./nodes/conditions/check";
 import { Includes } from "./nodes/conditions/includes";
 import { IsNull } from "./nodes/conditions/is-null";
 import { NotNull } from "./nodes/conditions/not-null";
-import { AlwaysFail } from "./nodes/decorators/always-failure";
+import { AlwaysFailure } from "./nodes/decorators/always-failure";
 import { AlwaysSuccess } from "./nodes/decorators/always-success";
 import { Assert } from "./nodes/decorators/assert";
 import { Delay } from "./nodes/decorators/delay";
@@ -50,7 +50,7 @@ export class Context {
     protected _listenerMap: Map<string, Map<TargetType, Map<Callback, TagType>>> = new Map();
 
     constructor() {
-        this.registerProcess(AlwaysFail);
+        this.registerProcess(AlwaysFailure);
         this.registerProcess(AlwaysSuccess);
         this.registerProcess(Assert);
         this.registerProcess(Calculate);

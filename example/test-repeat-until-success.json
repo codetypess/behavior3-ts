@@ -29,7 +29,7 @@
             "children": [
               {
                 "id": 5,
-                "name": "AlwaysFail",
+                "name": "AlwaysFailure",
                 "children": [
                   {
                     "id": 6,
@@ -90,7 +90,7 @@
                       },
                       {
                         "id": 14,
-                        "name": "AlwaysFail",
+                        "name": "AlwaysFailure",
                         "children": [
                           {
                             "id": 15,

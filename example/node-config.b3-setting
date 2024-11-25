@@ -1,6 +1,6 @@
 [
   {
-    "name": "AlwaysFail",
+    "name": "AlwaysFailure",
     "type": "Decorator",
     "children": 1,
     "status": [

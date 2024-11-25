@@ -90,13 +90,7 @@
                 "children": [
                   {
                     "id": 13,
-                    "name": "AlwaysFail",
-                    "args": {
-                      "time": 2
-                    },
-                    "input": [
-                      ""
-                    ],
+                    "name": "AlwaysFailure",
                     "children": [
                       {
                         "id": 14,

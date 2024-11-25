@@ -19,9 +19,6 @@
           {
             "id": 4,
             "name": "Once",
-            "args": {
-              "time": 3
-            },
             "debug": true,
             "children": [
               {
@@ -36,7 +33,7 @@
                 "children": [
                   {
                     "id": 6,
-                    "name": "AlwaysFail",
+                    "name": "AlwaysFailure",
                     "children": [
                       {
                         "id": 7,
@@ -61,9 +58,6 @@
           {
             "id": 9,
             "name": "Once",
-            "args": {
-              "time": 3
-            },
             "debug": true,
             "children": [
               {
@@ -85,9 +79,6 @@
           {
             "id": 12,
             "name": "Once",
-            "args": {
-              "time": 3
-            },
             "debug": true,
             "children": [
               {

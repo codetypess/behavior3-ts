@@ -7,7 +7,7 @@ export class Switch extends Process {
     override init(node: Node): Readonly<ObjectType> | void {
         node.children.forEach((v) => {
             if (v.name !== "Case") {
-                node.error(`only `);
+                node.error(`only allow Case node`);
             }
         });
     }

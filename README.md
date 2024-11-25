@@ -1,37 +1,110 @@
 # 行为树框架 for typescript/javascript
 
-## 基本概念
+## 用途
 
-#### 节点数据结构
+在游戏中使用行为树，可以大大的降低 AI、技能、BUFF 实现的复杂度，同时提高配置的灵活度，而且更加容易找到游戏行为中的问题。
+
+以下是最主要的使用用途：
+
+-   游戏中的人物的 AI
+-   游戏中的技能和 BUFF
+-   游戏中 NPC 的工作流程
+-   游戏中的新手引导
+-   游戏中的业务工作流或决策行为
+
+## 节点定义
 
 ```javascript
-{
-    name: 'FindEnemy',        // 节点名称
-    desc: '查找敌人'，          // 说明
-    args: {w: 100, h: 50},    // 常量配置
-    input: {'var1', 'var2'},  // 输入变量
-    output: {'target'},       // 输出变量
-    children: {}              // 子节点
+export interface NodeDef {
+    name: string;
+    /**
+     * Recommended type used for the node definition:
+     * + `Action`: No children allowed, returns `success`, `failure` or `running`.
+     * + `Decorator`: Only one child allowed, returns `success`, `failure` or `running`.
+     * + `Composite`: Contains more than one child, returns `success`, `failure` or `running`.
+     * + `Condition`: No children allowed, no output, returns `success` or `failure`.
+     */
+    type: "Action" | "Decorator" | "Condition" | "Composite";
+    desc: string;
+    input?: string[]; // ["input1?", "input2..."]
+    output?: string[]; // ["output1", "output2..."]
+    args?: {
+        name: string,
+        type:
+            | "boolean"
+            | "boolean?"
+            | "boolean[]"
+            | "boolean[]?"
+            | "int"
+            | "int?"
+            | "int[]"
+            | "int[]?"
+            | "float"
+            | "float?"
+            | "float[]"
+            | "float[]?"
+            | "string"
+            | "string?"
+            | "string[]"
+            | "string[]?"
+            | "json"
+            | "json?"
+            | "json[]"
+            | "json[]?"
+            | "enum"
+            | "enum?"
+            | "enum[]"
+            | "enum[]?"
+            | "code"
+            | "code?"
+            | "code[]"
+            | "code[]?",
+        desc: string,
+        oneof?: string, // Input `value`, only one is allowed between `value` and this arg.
+        default?: unknown,
+        options?: { name: string, value: unknown, desc?: string }[],
+    }[];
+    doc?: string; // markdown
 }
 ```
 
 #### 常量
 
-通常是固定值，比如范围，类型之类的
+通常是固定值，比如范围，类型之类的，常量支持可选和必填。
 
 #### 输入/输出变量
 
-因为节点之间都有相互的影响，比如这个节点可能会用到上一个节点所产生的数据，所以大多数行为树设计者都提供一个数据结构来记录行为树的运行状态，称之为“黑板”。
+通常情况，一个节点并不能完成自己的工作，需要依赖于上一个节点的输出，或者依赖于外部的输入，所以大多数行为树设计都会提供一个数据结构来记录节点的运行状态，称之为“黑板”，节点可以从黑板中读取变量，也可以写入变量。
 
-我偷换了个概念，把节点当成一个 function 来执行，如上面一个节点定义的 input={'var1', 'var2'}意思是在执行节点前从黑板里把 var1 和 var2 这两个变量取出来，作为参数传进去，在节点执行完后把结果返回，写到 target 这个变量上。整个过程就像下面这段伪代码：
+让我们来看一个简单的例子，在特定的范围（`w`, `h`）内寻找大于指定数量（`count`）的敌人，并把找到的敌人放在变量 `target` 中，这个节点的大致实现如下：
 
 ```typescript
-override run(node: Node, env: RoleTreeEnv) {
-        const args = node.args as FindEnemyArgs;
-        const x = env.owner.x;
-        const y = env.owner.y;
-        const w = args.w;
-        const h = args.h;
+type NodeArgs = {
+    readonly w: number;
+    readonly h: number;
+};
+
+type NodeInput = [number];
+
+export class FindEnemy extends Process {
+    override get descriptor(): NodeDef {
+        return {
+            name: "FindEnemy",
+            type: "Action",
+            desc: "寻找敌人",
+            args: [
+                { name: "w", type: "int", desc: "宽度" },
+                { name: "h", type: "int", desc: "高度" },
+            ],
+            input: ["count"],
+            output: ["target"],
+        };
+    }
+
+    override run(node: Node, env: RoleTreeEnv) {
+        const [count] = node.input as NodeInput;
+        const { x, y } = env.owner;
+        const { w, h } = node.args as NodeArgs;
         const list = env.context.find((role: Role) => {
             if (role === env.owner) {
                 return false;
@@ -39,59 +112,75 @@ override run(node: Node, env: RoleTreeEnv) {
             const tx = role.x;
             const ty = role.y;
             return Math.abs(x - tx) <= w && Math.abs(y - ty) <= h;
-        }, args.count ?? -1);
-        if (list.length) {
+        });
+        if (list.length >= count) {
             env.output.push(...list);
             return "success";
         } else {
             return "failure";
         }
     }
-```
-
-上面这个节点执行完，黑板上 target 这个变量就写上了查找到的目标，而后面的节点就可以使用 target 这个变量作为 input 了。
-
-```javascript
-{
-    name: 'attack',
-    desc: '攻击敌人',
-    args: {skill: 101},
-    input: {'target'},
 }
 ```
 
+上述节点执行成功后，黑板上的 `target` 变量就会被赋值成查找到的敌人列表，这样后面的节点就可以使用 `target` 这个变量作为输入了。
+
 #### 状态返回
 
--   SUCCESS 成功
--   FAILURE 失败
--   RUNNING 正在运行
+我们使用栈来实现行为树的调度，当行为树节点运行的时候，把会节点压入栈，只有当节点返回 `success` 或 `failure` 时，才会出栈，继续执行下一个节点，否则会一直执行栈顶的节点，直到返回 `success` 或 `failure` 为止。
 
-## 复合节点
+-   success 节点执行成功
+-   failure 节点执行失败
+-   running 节点运行中
+
+![](images/behavior3-editor-running.png)
+
+## 内置节点
+
+### 行为节点
+
+-   Calculate 简单的数值公式计算
+-   Concate 拼接两个数组
+-   GetField 获取对象的字段值
+-   Index 获取数组的元素
+-   Let 定义变量
+-   Log 打印日志
+-   Push 向数组中添加元素
+-   RandomIndex 随机返回数组中一个
+-   Random 返回一个随机数值
+-   SetField 设置对象的字段值
+-   Wait 等待一段时间
+
+### 复合节点
 
 -   Parallel 并行执行, 执行所有子节点并反回 true
 -   Sequence 顺序执行，执行所有子节点直到返回 false
 -   Selector 选择执行，执行所有子节点直到返回 true
+-   IfElse 条件执行，根据条件执行不同的子节点，并返回子节点扫执行状态
+-   Switch 分支执行，根据 `case` 条件执行不同的分支子节点，并返回分支子节点扫执行状态
 
-## 装饰节点
+### 条件节点
 
--   Not 取反
--   AlwaysSuccess
--   AlwaysFail
+-   Check 检查表达式
+-   IsNull 检查值是否为空
+-   NotNull 检查值是否不为空
+-   Includes 判断元素是否在数组中
 
-## 行为节点
+### 装饰节点
 
--   Wait 等待一段时间后继续执行
--   MoveToTarget 移动到目标
--   GetHp 获取生命值
--   Attack 攻击目标
-
-## Running 状态
-
-做行为树始终绕不开一个问题，就是 `running` 状态，如果一套行为树方案没有 `running` 状态，那它只能用来做决策树，而不能做持续动作。要想实现 `running` 状态，关键是如何用上一次运行的节点恢复起来。行为树的节点调用很像程序的调用栈，其实对复合节点稍做改造即可实现：
-
--   只要是有任意子节点返回的是 `running`, 立即返回 `running`。
--   运行节点前把节点压入栈，如果该节点返回 `running`，则中断执行，等待下次 tick 唤醒，如果返回的是 `success` 或 `failure`，则出栈，继续往下执行。
-    ![](images/behavior3-editor-running.png)
+-   AlwaysSuccess 永远返回成功
+-   AlwaysFailure 永远返回失败
+-   Assert 断言，如果断言失败，抛出异常，一般用于调试测试
+-   Delay 延时执行子节点
+-   Filter 返回满足条件的元素
+-   Foreach 遍历数组
+-   Invert 反转子节点执行状态
+-   Listen 监听事件并执行子节点
+-   Once 只执行一次
+-   Repeat 重复执行子节点
+-   RepeatUntilFailure 重复执行子节点直到返回失败
+-   RepeatUntilSuccess 重复执行子节点直到返回成功
+-   Timeout 限定时间内执行子节点
 
 ## 编辑器
 

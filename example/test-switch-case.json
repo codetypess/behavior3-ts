@@ -29,7 +29,7 @@
                 "children": [
                   {
                     "id": 6,
-                    "name": "AlwaysFail",
+                    "name": "AlwaysFailure",
                     "children": [
                       {
                         "id": 7,
@@ -133,7 +133,7 @@
                     "children": [
                       {
                         "id": 18,
-                        "name": "AlwaysFail",
+                        "name": "AlwaysFailure",
                         "children": [
                           {
                             "id": 19,
@@ -260,7 +260,7 @@
                     "children": [
                       {
                         "id": 33,
-                        "name": "AlwaysFail",
+                        "name": "AlwaysFailure",
                         "children": [
                           {
                             "id": 34,
@@ -343,7 +343,7 @@
                     "children": [
                       {
                         "id": 43,
-                        "name": "AlwaysFail",
+                        "name": "AlwaysFailure",
                         "children": [
                           {
                             "id": 44,

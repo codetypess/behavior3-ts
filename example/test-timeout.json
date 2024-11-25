@@ -43,7 +43,7 @@
                 "children": [
                   {
                     "id": 7,
-                    "name": "AlwaysFail",
+                    "name": "AlwaysFailure",
                     "children": [
                       {
                         "id": 8,
@@ -174,10 +174,7 @@
             "children": [
               {
                 "id": 23,
-                "name": "AlwaysFail",
-                "args": {
-                  "message": "log success"
-                },
+                "name": "AlwaysFailure",
                 "children": [
                   {
                     "id": 24,

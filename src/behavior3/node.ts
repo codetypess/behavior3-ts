@@ -228,4 +228,8 @@ export class Node {
     warn(msg: string) {
         console.warn(`${this.tree.name}->${this.name}#${this.id}: ${msg}`);
     }
+
+    info(msg: string) {
+        console.info(`${this.tree.name}->${this.name}#${this.id}: ${msg}`);
+    }
 }

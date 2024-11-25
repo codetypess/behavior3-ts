@@ -2,7 +2,7 @@ import { Node, NodeDef } from "../../node";
 import { Process, Status } from "../../process";
 import { TreeEnv } from "../../tree-env";
 
-export class AlwaysFail extends Process {
+export class AlwaysFailure extends Process {
     override tick(node: Node, env: TreeEnv): Status {
         const isYield = node.resume(env);
         if (typeof isYield === "boolean") {
@@ -20,7 +20,7 @@ export class AlwaysFail extends Process {
 
     override get descriptor(): NodeDef {
         return {
-            name: "AlwaysFail",
+            name: "AlwaysFailure",
             type: "Decorator",
             children: 1,
             status: ["failure", "|running"],
