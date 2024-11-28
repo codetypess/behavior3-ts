@@ -153,7 +153,8 @@ export class FindEnemy extends Process {
 
 ### 复合节点
 
--   Parallel 并行执行, 执行所有子节点并反回 true
+-   Race 竞争执行，并行执行所有子节点，优先返回第一个成功的子节点
+-   Parallel 并行执行, 执行所有子节点
 -   Sequence 顺序执行，执行所有子节点直到返回 false
 -   Selector 选择执行，执行所有子节点直到返回 true
 -   IfElse 条件执行，根据条件执行不同的子节点，并返回子节点扫执行状态
