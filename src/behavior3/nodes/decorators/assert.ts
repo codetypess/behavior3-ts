@@ -18,7 +18,7 @@ export class Assert extends Process {
             if (env.status === "success") {
                 return "success";
             } else {
-                throw new Error(args.message);
+                node.error(args.message);
             }
         }
 
@@ -28,8 +28,10 @@ export class Assert extends Process {
         } else if (status === "running") {
             return node.yield(env);
         } else {
-            throw new Error(args.message);
+            node.error(args.message);
         }
+
+        return "success";
     }
 
     override get descriptor(): NodeDef {

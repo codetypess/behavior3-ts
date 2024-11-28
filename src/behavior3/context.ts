@@ -13,6 +13,7 @@ import { SetField } from "./nodes/actions/set-field";
 import { Wait } from "./nodes/actions/wait";
 import { IfElse } from "./nodes/composites/ifelse";
 import { Parallel } from "./nodes/composites/parallel";
+import { Race } from "./nodes/composites/race";
 import { Selector } from "./nodes/composites/selector";
 import { Sequence } from "./nodes/composites/sequence";
 import { Case, Switch } from "./nodes/composites/switch";
@@ -74,6 +75,7 @@ export class Context {
         this.registerProcess(Once);
         this.registerProcess(Parallel);
         this.registerProcess(Push);
+        this.registerProcess(Race);
         this.registerProcess(Random);
         this.registerProcess(RandomIndex);
         this.registerProcess(Repeat);

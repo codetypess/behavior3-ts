@@ -96,4 +96,5 @@ testTree("test-listen", (i, runner) => {
     }
 });
 testTree("test-switch-case");
+testTree("test-race");
 console.log("====================test api end======================");

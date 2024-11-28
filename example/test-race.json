@@ -1,0 +1,251 @@
+{
+  "name": "test-race",
+  "root": {
+    "id": 1,
+    "name": "Sequence",
+    "children": [
+      {
+        "id": 2,
+        "name": "Sequence",
+        "children": [
+          {
+            "id": 3,
+            "name": "AlwaysSuccess",
+            "children": [
+              {
+                "id": 4,
+                "name": "Race",
+                "children": [
+                  {
+                    "id": 5,
+                    "name": "Sequence",
+                    "children": [
+                      {
+                        "id": 6,
+                        "name": "Wait",
+                        "args": {
+                          "time": 2
+                        },
+                        "input": [
+                          ""
+                        ]
+                      },
+                      {
+                        "id": 7,
+                        "name": "Let",
+                        "args": {
+                          "value": 1
+                        },
+                        "input": [
+                          ""
+                        ],
+                        "output": [
+                          "value"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": 8,
+                    "name": "Sequence",
+                    "children": [
+                      {
+                        "id": 9,
+                        "name": "Wait",
+                        "args": {
+                          "time": 3
+                        },
+                        "input": [
+                          ""
+                        ]
+                      },
+                      {
+                        "id": 10,
+                        "name": "Let",
+                        "args": {
+                          "value": 2
+                        },
+                        "input": [
+                          ""
+                        ],
+                        "output": [
+                          "value"
+                        ]
+                      },
+                      {
+                        "id": 11,
+                        "name": "Log",
+                        "args": {
+                          "message": "hello race success",
+                          "level": "info"
+                        },
+                        "input": [
+                          ""
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": 12,
+                    "name": "AlwaysFailure",
+                    "children": [
+                      {
+                        "id": 13,
+                        "name": "Log",
+                        "args": {
+                          "message": "hello race failure",
+                          "level": "info"
+                        },
+                        "input": [
+                          ""
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": 14,
+            "name": "Assert",
+            "args": {
+              "message": "race error"
+            },
+            "children": [
+              {
+                "id": 15,
+                "name": "Check",
+                "args": {
+                  "value": "value == 1"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 16,
+        "name": "Sequence",
+        "children": [
+          {
+            "id": 17,
+            "name": "AlwaysSuccess",
+            "children": [
+              {
+                "id": 18,
+                "name": "Race",
+                "children": [
+                  {
+                    "id": 19,
+                    "name": "Sequence",
+                    "children": [
+                      {
+                        "id": 20,
+                        "name": "Wait",
+                        "args": {
+                          "time": 2
+                        },
+                        "input": [
+                          ""
+                        ]
+                      },
+                      {
+                        "id": 21,
+                        "name": "Let",
+                        "args": {
+                          "value": 1
+                        },
+                        "input": [
+                          ""
+                        ],
+                        "output": [
+                          "value"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": 22,
+                    "name": "Sequence",
+                    "children": [
+                      {
+                        "id": 23,
+                        "name": "Wait",
+                        "args": {
+                          "time": 1
+                        },
+                        "input": [
+                          ""
+                        ]
+                      },
+                      {
+                        "id": 24,
+                        "name": "Let",
+                        "args": {
+                          "value": 2
+                        },
+                        "input": [
+                          ""
+                        ],
+                        "output": [
+                          "value"
+                        ]
+                      },
+                      {
+                        "id": 25,
+                        "name": "Log",
+                        "args": {
+                          "message": "hello race success",
+                          "level": "info"
+                        },
+                        "input": [
+                          ""
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": 26,
+                    "name": "AlwaysFailure",
+                    "children": [
+                      {
+                        "id": 27,
+                        "name": "Log",
+                        "args": {
+                          "message": "hello race failure",
+                          "level": "info"
+                        },
+                        "input": [
+                          ""
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": 28,
+            "name": "Assert",
+            "args": {
+              "message": "race error"
+            },
+            "children": [
+              {
+                "id": 29,
+                "name": "Check",
+                "args": {
+                  "value": "value == 2"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "export": true,
+  "desc": ""
+}

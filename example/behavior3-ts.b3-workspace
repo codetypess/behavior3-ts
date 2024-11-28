@@ -25,6 +25,10 @@
       "desc": ""
     },
     {
+      "path": "test-race.json",
+      "desc": ""
+    },
+    {
       "path": "test-repeat-until-failure.json",
       "desc": ""
     },
