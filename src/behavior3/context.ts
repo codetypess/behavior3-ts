@@ -22,6 +22,7 @@ import { Includes } from "./nodes/conditions/includes";
 import { IsNull } from "./nodes/conditions/is-null";
 import { NotNull } from "./nodes/conditions/not-null";
 import { AlwaysFailure } from "./nodes/decorators/always-failure";
+import { AlwaysRunning } from "./nodes/decorators/always-running";
 import { AlwaysSuccess } from "./nodes/decorators/always-success";
 import { Assert } from "./nodes/decorators/assert";
 import { Delay } from "./nodes/decorators/delay";

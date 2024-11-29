@@ -33,9 +33,9 @@ export class Switch extends Process {
         }
 
         for (let i = step >>> 1; i < node.children.length; i++) {
-            const caseNode = node.children[i];
+            const [first, second] = node.children[i].children;
             if (step % 2 === 0) {
-                status = caseNode.children[0].tick(env);
+                status = first.tick(env);
                 if (status === "running") {
                     return node.yield(env, step);
                 } else if (status === "success") {
@@ -45,7 +45,7 @@ export class Switch extends Process {
                 }
             }
             if (step % 2 === 1) {
-                status = caseNode.children[1].tick(env);
+                status = second.tick(env);
                 if (status === "running") {
                     return node.yield(env, step);
                 }
@@ -65,7 +65,7 @@ export class Switch extends Process {
             desc: "分支执行",
             doc: `
                 + 按顺序测试 \`Case\` 节点的判断条件（第一个子节点）
-                + 若测试返回 \`success\` 则执行 \`Case\` 第二个子节点，并返回此节点的状态
+                + 若测试返回 \`success\` 则执行 \`Case\` 第二个子节点，并返回子节点的执行状态
                 + 若没有判断为 \`success\` 的 \`Case\` 节点，则返回 \`failure\`
             `,
         };
@@ -88,6 +88,7 @@ export class Case extends Process {
                 + 必须有两个子节点
                 + 第一个子节点为判断条件
                 + 第二个子节点为判断为 \`success\` 时执行的节点
+                + 此节点不会真正意义的执行，而是交由 \`Switch\` 节点来执行
             `,
         };
     }
