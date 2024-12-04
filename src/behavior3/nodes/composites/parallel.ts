@@ -1,10 +1,24 @@
-import { Node, NodeDef } from "../../node";
+import { Node } from "../../node";
 import { Process, Status } from "../../process";
 import { Stack, TreeEnv } from "../../tree-env";
 
 const EMPTY_STACK: Stack = new Stack(null!);
 
 export class Parallel extends Process {
+    constructor() {
+        super({
+            name: "Parallel",
+            type: "Composite",
+            status: ["success", "|running"],
+            children: -1,
+            desc: "并行执行",
+            doc: `
+                + 并行执行所有子节点
+                + 当有子节点返回 \`running\` 时，返回 \`running\` 状态
+                + 执行完所有子节点后，返回 \`success\``,
+        });
+    }
+
     override tick(node: Node, env: TreeEnv): Status {
         const last = (node.resume(env) as Stack[]) ?? [];
         const level = env.stack.length;
@@ -46,19 +60,5 @@ export class Parallel extends Process {
         } else {
             return node.yield(env, last);
         }
-    }
-
-    override get descriptor(): NodeDef {
-        return {
-            name: "Parallel",
-            type: "Composite",
-            status: ["success", "|running"],
-            children: -1,
-            desc: "并行执行",
-            doc: `
-                + 并行执行所有子节点
-                + 当有子节点返回 \`running\` 时，返回 \`running\` 状态
-                + 执行完所有子节点后，返回 \`success\``,
-        };
     }
 }

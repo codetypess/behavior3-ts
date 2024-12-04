@@ -1,9 +1,24 @@
 import { ObjectType } from "../../context";
-import { Node, NodeDef } from "../../node";
+import { Node } from "../../node";
 import { Process, Status } from "../../process";
 import { TreeEnv } from "../../tree-env";
 
 export class Switch extends Process {
+    constructor() {
+        super({
+            name: "Switch",
+            type: "Composite",
+            children: -1,
+            status: ["|success", "|failure", "|running"],
+            desc: "分支执行",
+            doc: `
+                + 按顺序测试 \`Case\` 节点的判断条件（第一个子节点）
+                + 若测试返回 \`success\` 则执行 \`Case\` 第二个子节点，并返回子节点的执行状态
+                + 若没有判断为 \`success\` 的 \`Case\` 节点，则返回 \`failure\`
+            `,
+        });
+    }
+
     override init(node: Node): Readonly<ObjectType> | void {
         node.children.forEach((v) => {
             if (v.name !== "Case") {
@@ -55,30 +70,11 @@ export class Switch extends Process {
 
         return "failure";
     }
-
-    override get descriptor(): NodeDef {
-        return {
-            name: "Switch",
-            type: "Composite",
-            children: -1,
-            status: ["|success", "|failure", "|running"],
-            desc: "分支执行",
-            doc: `
-                + 按顺序测试 \`Case\` 节点的判断条件（第一个子节点）
-                + 若测试返回 \`success\` 则执行 \`Case\` 第二个子节点，并返回子节点的执行状态
-                + 若没有判断为 \`success\` 的 \`Case\` 节点，则返回 \`failure\`
-            `,
-        };
-    }
 }
 
 export class Case extends Process {
-    override tick(node: Node, env: TreeEnv): Status {
-        throw new Error("Tick children by Switch");
-    }
-
-    override get descriptor(): NodeDef {
-        return {
+    constructor() {
+        super({
             name: "Case",
             type: "Composite",
             children: 2,
@@ -90,6 +86,10 @@ export class Case extends Process {
                 + 第二个子节点为判断为 \`success\` 时执行的节点
                 + 此节点不会真正意义的执行，而是交由 \`Switch\` 节点来执行
             `,
-        };
+        });
+    }
+
+    override tick(node: Node, env: TreeEnv): Status {
+        throw new Error("Tick children by Switch");
     }
 }

@@ -1,10 +1,24 @@
-import { Node, NodeDef } from "../../node";
+import { Node } from "../../node";
 import { Process, Status } from "../../process";
 import { Stack, TreeEnv } from "../../tree-env";
 
 const EMPTY_STACK: Stack = new Stack(null!);
 
 export class Race extends Process {
+    constructor() {
+        super({
+            name: "Race",
+            type: "Composite",
+            status: ["|success", "&failure", "|running"],
+            children: -1,
+            desc: "竞争执行",
+            doc: `
+                + 并行执行所有子节点
+                + 当有子节点返回 \`success\` 时，立即返回 \`success\` 状态，并中断其他子节点
+                + 如果所有子节点返回 \`failure\` 则返回 \`failure\``,
+        });
+    }
+
     override tick(node: Node, env: TreeEnv): Status {
         const last = (node.resume(env) as Stack[]) ?? [];
         const level = env.stack.length;
@@ -48,19 +62,5 @@ export class Race extends Process {
         } else {
             return node.yield(env, last);
         }
-    }
-
-    override get descriptor(): NodeDef {
-        return {
-            name: "Race",
-            type: "Composite",
-            status: ["|success", "&failure", "|running"],
-            children: -1,
-            desc: "竞争执行",
-            doc: `
-                + 并行执行所有子节点
-                + 当有子节点返回 \`success\` 时，立即返回 \`success\` 状态，并中断其他子节点
-                + 如果所有子节点返回 \`failure\` 则返回 \`failure\``,
-        };
     }
 }

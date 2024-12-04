@@ -7,16 +7,8 @@ interface MoveToPosArgs {
 }
 
 export class MoveToPos extends Process {
-    override tick(node: Node, env: RoleTreeEnv): Status {
-        const owner = env.owner as Role;
-        const args = node.args as unknown as MoveToPosArgs;
-        owner.x = args.x;
-        owner.y = args.y;
-        return "success";
-    }
-
-    override get descriptor(): NodeDef {
-        return {
+    constructor() {
+        super({
             name: "MoveToPos",
             type: "Action",
             desc: "移动到位置",
@@ -24,6 +16,14 @@ export class MoveToPos extends Process {
                 { name: "x", type: "float", desc: "x坐标" },
                 { name: "y", type: "float", desc: "y坐标" },
             ],
-        };
+        });
+    }
+
+    override tick(node: Node, env: RoleTreeEnv): Status {
+        const owner = env.owner as Role;
+        const args = node.args as unknown as MoveToPosArgs;
+        owner.x = args.x;
+        owner.y = args.y;
+        return "success";
     }
 }

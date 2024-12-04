@@ -8,6 +8,19 @@ interface FindEnemyArgs {
 }
 
 export class FindEnemy extends Process {
+    constructor() {
+        super({
+            name: "FindEnemy",
+            type: "Action",
+            desc: "寻找敌人",
+            args: [
+                { name: "w", type: "int", desc: "宽度" },
+                { name: "h", type: "int", desc: "高度" },
+                { name: "count", type: "int?", desc: "数量" },
+            ],
+        });
+    }
+
     override tick(node: Node, env: RoleTreeEnv): Status {
         const args = node.args as unknown as FindEnemyArgs;
         const x = env.owner.x;
@@ -28,18 +41,5 @@ export class FindEnemy extends Process {
         } else {
             return "failure";
         }
-    }
-
-    override get descriptor(): NodeDef {
-        return {
-            name: "FindEnemy",
-            type: "Action",
-            desc: "寻找敌人",
-            args: [
-                { name: "w", type: "int", desc: "宽度" },
-                { name: "h", type: "int", desc: "高度" },
-                { name: "count", type: "int?", desc: "数量" },
-            ],
-        };
     }
 }

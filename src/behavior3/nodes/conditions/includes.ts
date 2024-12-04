@@ -1,21 +1,12 @@
-import { Node, NodeDef } from "../../node";
+import { Node } from "../../node";
 import { Process, Status } from "../../process";
 import { TreeEnv } from "../../tree-env";
 
 type NodeInput = [unknown, unknown[]];
 
 export class Includes extends Process {
-    override tick(node: Node, env: TreeEnv): Status {
-        const [arr, element] = env.input as NodeInput;
-        if (!Array.isArray(arr) || element === undefined || element === null) {
-            return "failure";
-        }
-        const index = arr.indexOf(element);
-        return index >= 0 ? "success" : "failure";
-    }
-
-    override get descriptor(): NodeDef {
-        return {
+    constructor() {
+        super({
             name: "Includes",
             type: "Condition",
             children: 0,
@@ -26,6 +17,15 @@ export class Includes extends Process {
                 + 若输入的元素不合法，返回 \`failure\`
                 + 只有数组包含元素时返回 \`success\`，否则返回 \`failure\`
             `,
-        };
+        });
+    }
+
+    override tick(node: Node, env: TreeEnv): Status {
+        const [arr, element] = env.input as NodeInput;
+        if (!Array.isArray(arr) || element === undefined || element === null) {
+            return "failure";
+        }
+        const index = arr.indexOf(element);
+        return index >= 0 ? "success" : "failure";
     }
 }

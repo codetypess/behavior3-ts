@@ -6,6 +6,15 @@ type MoveToTargetInput = [Role | undefined];
 export class MoveToTarget extends Process {
     static SPEED = 50;
 
+    constructor() {
+        super({
+            name: "MoveToTarget",
+            type: "Action",
+            desc: "移动到目标",
+            input: ["目标"],
+        });
+    }
+
     override tick(node: Node, env: RoleTreeEnv): Status {
         const [target] = env.input as MoveToTargetInput;
         if (!target) {
@@ -30,9 +39,5 @@ export class MoveToTarget extends Process {
         }
 
         return node.yield(env);
-    }
-
-    get descriptor(): NodeDef {
-        return { name: "MoveToTarget", type: "Action", desc: "移动到目标", input: ["目标"] };
     }
 }

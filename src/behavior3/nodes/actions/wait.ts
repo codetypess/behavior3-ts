@@ -1,4 +1,4 @@
-import { Node, NodeDef } from "../../node";
+import { Node } from "../../node";
 import { Process, Status } from "../../process";
 import { TreeEnv } from "../../tree-env";
 
@@ -8,26 +8,8 @@ interface NodeArgs {
 }
 
 export class Wait extends Process {
-    override tick(node: Node, env: TreeEnv): Status {
-        const t = node.resume(env);
-        if (typeof t === "number") {
-            if (env.context.time >= t) {
-                return "success";
-            } else {
-                return "running";
-            }
-        } else {
-            const args = node.args as unknown as NodeArgs;
-            let time = this._checkOneof(node, env, 0, args.time, 0);
-            if (args.random) {
-                time += (Math.random() - 0.5) * args.random;
-            }
-            return node.yield(env, env.context.time + time);
-        }
-    }
-
-    override get descriptor(): NodeDef {
-        return {
+    constructor() {
+        super({
             name: "Wait",
             type: "Action",
             children: 0,
@@ -47,6 +29,24 @@ export class Wait extends Process {
                     desc: "随机范围",
                 },
             ],
-        };
+        });
+    }
+
+    override tick(node: Node, env: TreeEnv): Status {
+        const t = node.resume(env);
+        if (typeof t === "number") {
+            if (env.context.time >= t) {
+                return "success";
+            } else {
+                return "running";
+            }
+        } else {
+            const args = node.args as unknown as NodeArgs;
+            let time = this._checkOneof(node, env, 0, args.time, 0);
+            if (args.random) {
+                time += (Math.random() - 0.5) * args.random;
+            }
+            return node.yield(env, env.context.time + time);
+        }
     }
 }

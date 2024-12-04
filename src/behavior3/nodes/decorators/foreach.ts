@@ -1,4 +1,4 @@
-import { Node, NodeDef } from "../../node";
+import { Node } from "../../node";
 import { Process, Status } from "../../process";
 import { TreeEnv } from "../../tree-env";
 
@@ -6,6 +6,23 @@ type NodeInput = [unknown[]];
 type NodeOutput = [string];
 
 export class Foreach extends Process {
+    constructor() {
+        super({
+            name: "ForEach",
+            type: "Decorator",
+            children: 1,
+            status: ["success", "|running", "|failure"],
+            desc: "遍历数组",
+            input: ["数组"],
+            output: ["变量"],
+            doc: `
+                + 只能有一个子节点，多个仅执行第一个
+                + 遍历输入数组，将当前元素写入\`变量\`
+                + 当子节点返回 \`failure\` 时，退出遍历并返回 \`failure\` 状态
+                + 执行完所有子节点后，返回 \`success\``,
+        });
+    }
+
     override tick(node: Node, env: TreeEnv): Status {
         const [arr] = env.input as NodeInput;
         const [varname] = node.output as NodeOutput;
@@ -32,22 +49,5 @@ export class Foreach extends Process {
         }
 
         return "success";
-    }
-
-    override get descriptor(): NodeDef {
-        return {
-            name: "ForEach",
-            type: "Decorator",
-            children: 1,
-            status: ["success", "|running", "|failure"],
-            desc: "遍历数组",
-            input: ["数组"],
-            output: ["变量"],
-            doc: `
-                + 只能有一个子节点，多个仅执行第一个
-                + 遍历输入数组，将当前元素写入\`变量\`
-                + 当子节点返回 \`failure\` 时，退出遍历并返回 \`failure\` 状态
-                + 执行完所有子节点后，返回 \`success\``,
-        };
     }
 }

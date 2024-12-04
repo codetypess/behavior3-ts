@@ -1,4 +1,4 @@
-import { Node, NodeDef } from "../../node";
+import { Node } from "../../node";
 import { Process, Status } from "../../process";
 import { Stack, TreeEnv } from "../../tree-env";
 
@@ -12,6 +12,30 @@ interface NodeYield {
 }
 
 export class Timeout extends Process {
+    constructor() {
+        super({
+            name: "Timeout",
+            type: "Decorator",
+            children: 1,
+            status: ["|success", "|running", "failure"],
+            desc: "超时",
+            input: ["超时时间?"],
+            args: [
+                {
+                    name: "time",
+                    type: "float?",
+                    desc: "超时时间",
+                    oneof: "超时时间",
+                },
+            ],
+            doc: `
+                + 只能有一个子节点，多个仅执行第一个
+                + 当子节点执行超时或返回 \`failure\` 时，返回 \`failure\`
+                + 其余情况返回子节点的执行状态
+            `,
+        });
+    }
+
     override tick(node: Node, env: TreeEnv): Status {
         const level = env.stack.length;
         let last = node.resume(env) as NodeYield | undefined;
@@ -46,29 +70,5 @@ export class Timeout extends Process {
         } else {
             return status;
         }
-    }
-
-    override get descriptor(): NodeDef {
-        return {
-            name: "Timeout",
-            type: "Decorator",
-            children: 1,
-            status: ["|success", "|running", "failure"],
-            desc: "超时",
-            input: ["超时时间?"],
-            args: [
-                {
-                    name: "time",
-                    type: "float?",
-                    desc: "超时时间",
-                    oneof: "超时时间",
-                },
-            ],
-            doc: `
-                + 只能有一个子节点，多个仅执行第一个
-                + 当子节点执行超时或返回 \`failure\` 时，返回 \`failure\`
-                + 其余情况返回子节点的执行状态
-            `,
-        };
     }
 }

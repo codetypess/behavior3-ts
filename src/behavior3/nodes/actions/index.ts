@@ -1,4 +1,4 @@
-import { Node, NodeDef } from "../../node";
+import { Node } from "../../node";
 import { Process, Status } from "../../process";
 import { TreeEnv } from "../../tree-env";
 
@@ -9,27 +9,8 @@ type NodeArgs = {
 };
 
 export class Index extends Process {
-    override tick(node: Node, env: TreeEnv): Status {
-        const [arr] = env.input as Input;
-        if (arr instanceof Array) {
-            const args = node.args as NodeArgs;
-            const index = this._checkOneof(node, env, 1, args.index);
-            const value = arr[index];
-            if (value !== undefined && value !== null) {
-                env.output.push(value);
-                return "success";
-            } else if (typeof index !== "number" || isNaN(index)) {
-                node.warn(`invalid index: ${index}`);
-            }
-        } else {
-            node.warn(`invalid array: ${arr}`);
-        }
-
-        return "failure";
-    }
-
-    override get descriptor(): NodeDef {
-        return {
+    constructor() {
+        super({
             name: "Index",
             type: "Action",
             children: 0,
@@ -50,6 +31,25 @@ export class Index extends Process {
                 + 索引数组的时候，第一个元素的索引为 0
                 + 只有索引到有合法元素时候才会返回 \`success\`，否则返回 \`failure\`
             `,
-        };
+        });
+    }
+
+    override tick(node: Node, env: TreeEnv): Status {
+        const [arr] = env.input as Input;
+        if (arr instanceof Array) {
+            const args = node.args as NodeArgs;
+            const index = this._checkOneof(node, env, 1, args.index);
+            const value = arr[index];
+            if (value !== undefined && value !== null) {
+                env.output.push(value);
+                return "success";
+            } else if (typeof index !== "number" || isNaN(index)) {
+                node.warn(`invalid index: ${index}`);
+            }
+        } else {
+            node.warn(`invalid array: ${arr}`);
+        }
+
+        return "failure";
     }
 }

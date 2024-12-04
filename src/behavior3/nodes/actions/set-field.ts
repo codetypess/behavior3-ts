@@ -1,4 +1,4 @@
-import { Node, NodeDef } from "../../node";
+import { Node } from "../../node";
 import { Process, Status } from "../../process";
 import { TreeEnv } from "../../tree-env";
 
@@ -11,6 +11,27 @@ interface NodeArgs {
 }
 
 export class SetField extends Process {
+    constructor() {
+        super({
+            name: "SetField",
+            type: "Action",
+            children: 0,
+            status: ["success", "failure"],
+            desc: "设置对象字段值",
+            input: ["输入对象", "字段(field)?", "值(value)?"],
+            args: [
+                { name: "field", type: "string?", desc: "字段(field)", oneof: "字段(field)" },
+                { name: "value", type: "json?", desc: "值(value)", oneof: "值(value)" },
+            ],
+            doc: `
+                + 对输入对象设置 \`field\` 和 \`value\`
+                + 输入参数1必须为对象，否则返回 \`failure\`
+                + 如果 \`field\` 不为 \`string\`, 也返回 \`failure\`
+                + 如果 \`value\` 为 \`undefined\` 或 \`null\`, 则删除 \`field\` 的值
+            `,
+        });
+    }
+
     override tick(node: Node, env: TreeEnv): Status {
         const [obj] = env.input as NodeInput;
         if (typeof obj !== "object" || !obj) {
@@ -35,26 +56,5 @@ export class SetField extends Process {
             obj[field] = value;
             return "success";
         }
-    }
-
-    override get descriptor(): NodeDef {
-        return {
-            name: "SetField",
-            type: "Action",
-            children: 0,
-            status: ["success", "failure"],
-            desc: "设置对象字段值",
-            input: ["输入对象", "字段(field)?", "值(value)?"],
-            args: [
-                { name: "field", type: "string?", desc: "字段(field)", oneof: "字段(field)" },
-                { name: "value", type: "json?", desc: "值(value)", oneof: "值(value)" },
-            ],
-            doc: `
-                + 对输入对象设置 \`field\` 和 \`value\`
-                + 输入参数1必须为对象，否则返回 \`failure\`
-                + 如果 \`field\` 不为 \`string\`, 也返回 \`failure\`
-                + 如果 \`value\` 为 \`undefined\` 或 \`null\`, 则删除 \`field\` 的值
-            `,
-        };
     }
 }

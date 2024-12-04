@@ -53,6 +53,7 @@ export class Context {
 
     constructor() {
         this.registerProcess(AlwaysFailure);
+        this.registerProcess(AlwaysRunning);
         this.registerProcess(AlwaysSuccess);
         this.registerProcess(Assert);
         this.registerProcess(Calculate);

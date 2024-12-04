@@ -1,4 +1,4 @@
-import { Node, NodeDef } from "../../node";
+import { Node } from "../../node";
 import { Process, Status } from "../../process";
 import { TreeEnv } from "../../tree-env";
 
@@ -7,6 +7,19 @@ interface NodeConsts {
 }
 
 export class Once extends Process {
+    constructor() {
+        super({
+            name: "Once",
+            type: "Decorator",
+            children: 1,
+            status: ["success", "failure", "|running"],
+            desc: "只执行一次",
+            doc: `
+                + 只能有一个子节点，多个仅执行第一个
+                + 第一次执行完全部子节点时返回 \`success\`，之后永远返回 \`failure\``,
+        });
+    }
+
     override init(node: Node): Readonly<NodeConsts> {
         return {
             onceKey: TreeEnv.makePrivateVar(node, "ONCE"),
@@ -34,18 +47,5 @@ export class Once extends Process {
         }
         env.set(onceKey, true);
         return "success";
-    }
-
-    override get descriptor(): NodeDef {
-        return {
-            name: "Once",
-            type: "Decorator",
-            children: 1,
-            status: ["success", "failure", "|running"],
-            desc: "只执行一次",
-            doc: `
-                + 只能有一个子节点，多个仅执行第一个
-                + 第一次执行完全部子节点时返回 \`success\`，之后永远返回 \`failure\``,
-        };
     }
 }

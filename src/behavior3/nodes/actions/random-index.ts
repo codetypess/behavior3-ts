@@ -1,10 +1,27 @@
-import { Node, NodeDef } from "../../node";
+import { Node } from "../../node";
 import { Process, Status } from "../../process";
 import { TreeEnv } from "../../tree-env";
 
 type Input = [unknown[]];
 
 export class RandomIndex extends Process {
+    constructor() {
+        super({
+            name: "RandomIndex",
+            type: "Action",
+            children: 0,
+            status: ["success", "failure"],
+            desc: "随机返回输入的其中一个!",
+            input: ["输入目标"],
+            output: ["随机目标"],
+            doc: `
+                + 合法元素不包括 \`undefined\` 和 \`null\`
+                + 在输入数组中，随机返回其中一个
+                + 当输入数组为空时，或者没有合法元素，返回 \`failure\`
+            `,
+        });
+    }
+
     override tick(node: Node, env: TreeEnv): Status {
         const [arr] = env.input as Input;
         if (!(arr instanceof Array) || arr.length === 0) {
@@ -19,22 +36,5 @@ export class RandomIndex extends Process {
         } else {
             return "failure";
         }
-    }
-
-    override get descriptor(): NodeDef {
-        return {
-            name: "RandomIndex",
-            type: "Action",
-            children: 0,
-            status: ["success", "failure"],
-            desc: "随机返回输入的其中一个!",
-            input: ["输入目标"],
-            output: ["随机目标"],
-            doc: `
-                + 合法元素不包括 \`undefined\` 和 \`null\`
-                + 在输入数组中，随机返回其中一个
-                + 当输入数组为空时，或者没有合法元素，返回 \`failure\`
-            `,
-        };
     }
 }

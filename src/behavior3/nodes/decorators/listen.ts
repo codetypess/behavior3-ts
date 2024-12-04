@@ -1,5 +1,5 @@
 import { TargetType } from "../../context";
-import { Node, NodeDef } from "../../node";
+import { Node } from "../../node";
 import { Process, Status } from "../../process";
 import { TreeEvent } from "../../tree";
 import { TreeEnv } from "../../tree-env";
@@ -36,6 +36,29 @@ type NodeInput = [TargetType | TargetType[] | undefined];
 type NodeOutput = [string?, string?];
 
 export class Listen extends Process {
+    constructor() {
+        super({
+            name: "Listen",
+            type: "Decorator",
+            children: 1,
+            status: ["success"],
+            desc: "侦听事件",
+            input: ["目标对象?"],
+            output: ["事件参数?", "事件目标?"],
+            args: [
+                {
+                    name: "event",
+                    type: "enum",
+                    desc: "事件",
+                    options: builtinEventOptions.slice(),
+                },
+            ],
+            doc: `
+                + 当事件触发时，执行第一个子节点，多个仅执行第一个
+                + 如果子节点返回 \`running\`，会中断执行并清理执行栈`,
+        });
+    }
+
     protected _isBuiltinEvent(event: string): boolean {
         return !!builtinEventOptions.find((e) => e.value === event);
     }
@@ -89,28 +112,5 @@ export class Listen extends Process {
         }
 
         return "success";
-    }
-
-    override get descriptor(): NodeDef {
-        return {
-            name: "Listen",
-            type: "Decorator",
-            children: 1,
-            status: ["success"],
-            desc: "侦听事件",
-            input: ["目标对象?"],
-            output: ["事件参数?", "事件目标?"],
-            args: [
-                {
-                    name: "event",
-                    type: "enum",
-                    desc: "事件",
-                    options: builtinEventOptions.slice(),
-                },
-            ],
-            doc: `
-                + 当事件触发时，执行第一个子节点，多个仅执行第一个
-                + 如果子节点返回 \`running\`，会中断执行并清理执行栈`,
-        };
     }
 }

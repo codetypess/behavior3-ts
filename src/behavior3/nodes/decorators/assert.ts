@@ -1,4 +1,4 @@
-import { Node, NodeDef } from "../../node";
+import { Node } from "../../node";
 import { Process, Status } from "../../process";
 import { TreeEnv } from "../../tree-env";
 
@@ -7,6 +7,28 @@ interface NodeArgs {
 }
 
 export class Assert extends Process {
+    constructor() {
+        super({
+            name: "Assert",
+            type: "Decorator",
+            children: 1,
+            status: ["success"],
+            desc: "断言",
+            args: [
+                {
+                    name: "message",
+                    type: "string",
+                    desc: "消息",
+                },
+            ],
+            doc: `
+                + 只能有一个子节点，多个仅执行第一个
+                + 当子节点返回 \`failure\` 时，抛出异常
+                + 其余情况返回子节点的执行状态
+            `,
+        });
+    }
+
     override tick(node: Node, env: TreeEnv): Status {
         const args = node.args as unknown as NodeArgs;
         const isYield = node.resume(env);
@@ -32,27 +54,5 @@ export class Assert extends Process {
         }
 
         return "success";
-    }
-
-    override get descriptor(): NodeDef {
-        return {
-            name: "Assert",
-            type: "Decorator",
-            children: 1,
-            status: ["success"],
-            desc: "断言",
-            args: [
-                {
-                    name: "message",
-                    type: "string",
-                    desc: "消息",
-                },
-            ],
-            doc: `
-                + 只能有一个子节点，多个仅执行第一个
-                + 当子节点返回 \`failure\` 时，抛出异常
-                + 其余情况返回子节点的执行状态
-            `,
-        };
     }
 }

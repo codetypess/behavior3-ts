@@ -11,6 +11,16 @@
     "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 不管子节点是否成功都返回 `failure`\n"
   },
   {
+    "name": "AlwaysRunning",
+    "type": "Decorator",
+    "children": 1,
+    "status": [
+      "running"
+    ],
+    "desc": "始终返回运行中状态",
+    "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 始终返回 `running`\n"
+  },
+  {
     "name": "AlwaysSuccess",
     "type": "Decorator",
     "children": 1,

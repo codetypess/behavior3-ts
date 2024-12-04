@@ -6,6 +6,16 @@ import { Node, NodeDef } from "./node";
 export type Status = "success" | "failure" | "running";
 
 export abstract class Process {
+    protected _descriptor: NodeDef;
+
+    constructor(descriptor: NodeDef) {
+        this._descriptor = descriptor;
+    }
+
+    get descriptor(): Readonly<NodeDef> {
+        return this._descriptor;
+    }
+
     init?(node: Node): Readonly<ObjectType> | void;
 
     protected _checkOneof<V>(
@@ -31,6 +41,4 @@ export abstract class Process {
     }
 
     abstract tick(node: Node, env: TreeEnv): Status;
-
-    abstract get descriptor(): NodeDef;
 }

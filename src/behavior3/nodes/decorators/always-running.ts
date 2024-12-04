@@ -1,15 +1,10 @@
-import { Node, NodeDef } from "../../node";
+import { Node } from "../../node";
 import { Process, Status } from "../../process";
 import { TreeEnv } from "../../tree-env";
 
 export class AlwaysRunning extends Process {
-    override tick(node: Node, env: TreeEnv): Status {
-        node.children[0].tick(env);
-        return "running";
-    }
-
-    override get descriptor(): NodeDef {
-        return {
+    constructor() {
+        super({
             name: "AlwaysRunning",
             type: "Decorator",
             children: 1,
@@ -19,6 +14,11 @@ export class AlwaysRunning extends Process {
                 + 只能有一个子节点，多个仅执行第一个
                 + 始终返回 \`running\`
             `,
-        };
+        });
+    }
+
+    override tick(node: Node, env: TreeEnv): Status {
+        node.children[0].tick(env);
+        return "running";
     }
 }

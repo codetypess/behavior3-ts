@@ -1,4 +1,4 @@
-import { Node, NodeDef } from "../../node";
+import { Node } from "../../node";
 import { Process, Status } from "../../process";
 import { TreeEnv } from "../../tree-env";
 
@@ -17,26 +17,8 @@ enum LogLevel {
 type NodeInput = [unknown?];
 
 export class Log extends Process {
-    override tick(node: Node, env: TreeEnv): Status {
-        const [inputMsg] = env.input as NodeInput;
-        const args = node.args as unknown as NodeArgs;
-        const level = args.level ?? LogLevel.INFO;
-        let print = console.log;
-        if (level === LogLevel.INFO) {
-            print = console.info;
-        } else if (level === LogLevel.DEBUG) {
-            print = console.debug;
-        } else if (level === LogLevel.WARN) {
-            print = console.warn;
-        } else if (level === LogLevel.ERROR) {
-            print = console.error;
-        }
-        print.call(console, "behavior3 -> log:", args.message, inputMsg ?? "");
-        return "success";
-    }
-
-    override get descriptor(): NodeDef {
-        return {
+    constructor() {
+        super({
             name: "Log",
             type: "Action",
             children: 0,
@@ -74,6 +56,24 @@ export class Log extends Process {
                     ],
                 },
             ],
-        };
+        });
+    }
+
+    override tick(node: Node, env: TreeEnv): Status {
+        const [inputMsg] = env.input as NodeInput;
+        const args = node.args as unknown as NodeArgs;
+        const level = args.level ?? LogLevel.INFO;
+        let print = console.log;
+        if (level === LogLevel.INFO) {
+            print = console.info;
+        } else if (level === LogLevel.DEBUG) {
+            print = console.debug;
+        } else if (level === LogLevel.WARN) {
+            print = console.warn;
+        } else if (level === LogLevel.ERROR) {
+            print = console.error;
+        }
+        print.call(console, "behavior3 -> log:", args.message, inputMsg ?? "");
+        return "success";
     }
 }
