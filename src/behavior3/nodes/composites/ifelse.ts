@@ -30,7 +30,7 @@ export class IfElse extends Process {
     }
 
     override tick(node: Node, env: TreeEnv): Status {
-        const i = node.resume(env) as number | undefined;
+        const i: number | undefined = node.resume(env);
         let status: Status = env.status;
         if (i !== undefined) {
             if (status === "running") {

@@ -28,7 +28,7 @@ export class Switch extends Process {
     }
 
     override tick(node: Node, env: TreeEnv): Status {
-        let step = node.resume(env) as number | undefined;
+        let step: number | undefined = node.resume(env);
         let status = env.status;
         if (typeof step === "number") {
             if (status === "running") {

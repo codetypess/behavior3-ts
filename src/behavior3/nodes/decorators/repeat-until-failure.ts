@@ -32,7 +32,7 @@ export class RepeatUntilFailure extends Process {
     override tick(node: Node, env: TreeEnv): Status {
         const args = node.args as unknown as NodeArgs;
         const maxLoop = this._checkOneof(node, env, 0, args.maxLoop, Number.MAX_SAFE_INTEGER);
-        let count = node.resume(env) as number | undefined;
+        let count: number | undefined = node.resume(env);
 
         if (typeof count === "number") {
             if (env.status === "failure") {

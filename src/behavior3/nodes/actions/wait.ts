@@ -33,7 +33,7 @@ export class Wait extends Process {
     }
 
     override tick(node: Node, env: TreeEnv): Status {
-        const t = node.resume(env);
+        const t: number | undefined = node.resume(env);
         if (typeof t === "number") {
             if (env.context.time >= t) {
                 return "success";

@@ -19,7 +19,7 @@ export class Sequence extends Process {
     }
 
     override tick(node: Node, env: TreeEnv): Status {
-        const last = node.resume(env);
+        const last: number | undefined = node.resume(env);
         let i = 0;
 
         if (typeof last === "number") {

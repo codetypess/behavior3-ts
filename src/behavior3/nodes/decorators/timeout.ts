@@ -38,7 +38,7 @@ export class Timeout extends Process {
 
     override tick(node: Node, env: TreeEnv): Status {
         const level = env.stack.length;
-        let last = node.resume(env) as NodeYield | undefined;
+        let last: NodeYield | undefined = node.resume(env);
         let status: Status = "failure";
         if (last === undefined) {
             status = node.children[0].tick(env);

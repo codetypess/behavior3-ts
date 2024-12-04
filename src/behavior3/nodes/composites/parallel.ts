@@ -20,7 +20,7 @@ export class Parallel extends Process {
     }
 
     override tick(node: Node, env: TreeEnv): Status {
-        const last = (node.resume(env) as Stack[]) ?? [];
+        const last: Stack[] = node.resume(env) ?? [];
         const level = env.stack.length;
         let count = 0;
 

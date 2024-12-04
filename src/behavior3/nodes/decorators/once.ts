@@ -32,7 +32,7 @@ export class Once extends Process {
             return "failure";
         }
 
-        const isYield = node.resume(env);
+        const isYield: boolean | undefined = node.resume(env);
         if (typeof isYield === "boolean") {
             if (env.status === "running") {
                 node.error(`unexpected status error`);

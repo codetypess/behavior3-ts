@@ -35,7 +35,7 @@ export class Repeat extends Process {
         const args = node.args as unknown as NodeArgs;
         const count = this._checkOneof(node, env, 0, args.count, Number.MAX_SAFE_INTEGER);
 
-        let i = node.resume(env) as number | undefined;
+        let i: number | undefined = node.resume(env);
 
         if (i !== undefined) {
             if (env.status === "running") {

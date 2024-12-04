@@ -212,13 +212,13 @@ export class Node {
         return status;
     }
 
-    yield(env: TreeEnv, value?: unknown): Status {
+    yield<T = unknown>(env: TreeEnv, value?: T): Status {
         env.set(this.__yield, value ?? true);
         return "running";
     }
 
-    resume(env: TreeEnv): unknown {
-        return env.get(this.__yield);
+    resume<T = unknown>(env: TreeEnv): T | undefined {
+        return env.get(this.__yield) as T;
     }
 
     error(msg: string) {

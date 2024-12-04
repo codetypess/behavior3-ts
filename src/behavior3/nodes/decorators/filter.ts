@@ -28,7 +28,7 @@ export class Filter extends Process {
             return "failure";
         }
 
-        let last = node.resume(env) as [number, unknown[]] | undefined;
+        let last: [number, unknown[]] | undefined = node.resume(env);
         let i;
         let newArr: unknown[];
         if (last instanceof Array) {

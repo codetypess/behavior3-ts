@@ -26,7 +26,7 @@ export class Foreach extends Process {
     override tick(node: Node, env: TreeEnv): Status {
         const [arr] = env.input as NodeInput;
         const [varname] = node.output as NodeOutput;
-        let i = node.resume(env) as number | undefined;
+        let i: number | undefined = node.resume(env);
         if (i !== undefined) {
             if (env.status === "running") {
                 node.error(`unexpected status error`);
