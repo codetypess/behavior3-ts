@@ -21,10 +21,10 @@ export interface NodeDef {
     args?: {
         name: string;
         type:
-            | "boolean"
-            | "boolean?"
-            | "boolean[]"
-            | "boolean[]?"
+            | "bool"
+            | "bool?"
+            | "bool[]"
+            | "bool[]?"
             | "int"
             | "int?"
             | "int[]"
@@ -45,10 +45,10 @@ export interface NodeDef {
             | "enum?"
             | "enum[]"
             | "enum[]?"
-            | "code"
-            | "code?"
-            | "code[]"
-            | "code[]?";
+            | "expr"
+            | "expr?"
+            | "expr[]"
+            | "expr[]?";
         desc: string;
         /** Input `value`, only one is allowed between `value` and this arg.*/
         oneof?: string;

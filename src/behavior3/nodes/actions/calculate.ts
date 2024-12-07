@@ -14,7 +14,7 @@ export class Calculate extends Process {
             children: 0,
             status: ["success"],
             desc: "简单的数值公式计算",
-            args: [{ name: "value", type: "code", desc: "计算公式" }],
+            args: [{ name: "value", type: "expr", desc: "计算公式" }],
             output: ["计算结果"],
             doc: `
                 + 做简单的数值公式计算，返回结果到输出

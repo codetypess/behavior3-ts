@@ -14,7 +14,7 @@ export class Check extends Process {
             children: 0,
             status: ["success", "failure"],
             desc: "检查True或False",
-            args: [{ name: "value", type: "code", desc: "值" }],
+            args: [{ name: "value", type: "expr", desc: "值" }],
             doc: `
                 + 做简单数值公式判定，返回 \`success\` 或 \`failure\`
             `,

@@ -1,4 +1,4 @@
-import { Node, NodeDef, Process, Status, TreeEnv } from "../../src/behavior3";
+import { Node, Process, Status, TreeEnv } from "../../src/behavior3";
 import { Role } from "../role";
 
 type AttackInput = [Role | undefined];
@@ -29,7 +29,7 @@ export class Attack extends Process {
                 },
                 {
                     name: "multi",
-                    type: "boolean[]",
+                    type: "bool[]",
                     desc: "是否多目标",
                 },
                 {

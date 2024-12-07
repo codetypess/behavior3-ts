@@ -32,7 +32,7 @@ export class Random extends Process {
                 },
                 {
                     name: "floor",
-                    type: "boolean?",
+                    type: "bool?",
                     desc: "是否向下取整",
                 },
             ],
