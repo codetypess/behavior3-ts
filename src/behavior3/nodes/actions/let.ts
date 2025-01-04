@@ -1,14 +1,18 @@
-import { Node } from "../../node";
-import { Process, Status } from "../../process";
-import { TreeEnv } from "../../tree-env";
+import type { Context, DeepReadonly } from "../../context";
+import { Node, NodeDef, Status } from "../../node";
+import { Tree } from "../../tree";
 
-interface NodeArgs {
-    value?: unknown;
-}
+export class Let extends Node {
+    declare args: { readonly value?: unknown };
 
-export class Let extends Process {
-    constructor() {
-        super({
+    override onTick(tree: Tree<Context, unknown>): Status {
+        const value = this._checkOneof(0, this.args.value, null);
+        this.output.push(value);
+        return "success";
+    }
+
+    get descriptor(): DeepReadonly<NodeDef> {
+        return {
             name: "Let",
             type: "Action",
             children: 0,
@@ -28,13 +32,6 @@ export class Let extends Process {
                 + 如果有输入变量，则给已有变量重新定义一个名字
                 + 如果\`值(value)\`为 \`null\`，则清除变量
             `,
-        });
-    }
-
-    override tick(node: Node, env: TreeEnv): Status {
-        const args = node.args as unknown as NodeArgs;
-        const value = this._checkOneof(node, env, 0, args.value, null);
-        env.output.push(value);
-        return "success";
+        };
     }
 }

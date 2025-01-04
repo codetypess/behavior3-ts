@@ -1,16 +1,29 @@
-import { Node } from "../../node";
-import { Process, Status } from "../../process";
-import { TreeEnv } from "../../tree-env";
+import type { Context, DeepReadonly } from "../../context";
+import { Node, NodeDef, Status } from "../../node";
+import { Tree } from "../../tree";
 
-interface NodeArgs {
-    min?: number;
-    max?: number;
-    floor?: boolean;
-}
+export class Random extends Node {
+    declare args: {
+        readonly min?: number;
+        readonly max?: number;
+        readonly floor?: boolean;
+    };
 
-export class Random extends Process {
-    constructor() {
-        super({
+    override onTick(tree: Tree<Context, unknown>): Status {
+        const args = this.args;
+        const MAX_INT = Number.MAX_SAFE_INTEGER;
+        const min = this._checkOneof(0, args.min, MAX_INT);
+        const max = this._checkOneof(1, args.max, MAX_INT);
+        let value = min + Math.random() * (max - min);
+        if (args.floor) {
+            value = Math.floor(value);
+        }
+        this.output.push(value);
+        return "success";
+    }
+
+    get descriptor(): DeepReadonly<NodeDef> {
+        return {
             name: "Random",
             type: "Action",
             children: 0,
@@ -37,19 +50,6 @@ export class Random extends Process {
                 },
             ],
             output: ["随机数"],
-        });
-    }
-
-    override tick(node: Node, env: TreeEnv): Status {
-        const args = node.args as unknown as NodeArgs;
-        const MAX_INT = Number.MAX_SAFE_INTEGER;
-        const min = this._checkOneof(node, env, 0, args.min, MAX_INT);
-        const max = this._checkOneof(node, env, 1, args.max, MAX_INT);
-        let value = min + Math.random() * (max - min);
-        if (args.floor) {
-            value = Math.floor(value);
-        }
-        env.output.push(value);
-        return "success";
+        };
     }
 }

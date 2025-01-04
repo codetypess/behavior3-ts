@@ -1,4 +1,5 @@
 import { Evaluator, ExpressionEvaluator } from "./evaluator";
+import { Node, NodeData, NodeDef } from "./node";
 import { Index } from "./nodes/actions";
 import { Calculate } from "./nodes/actions/calculate";
 import { Concat } from "./nodes/actions/concat";
@@ -35,68 +36,80 @@ import { Repeat } from "./nodes/decorators/repeat";
 import { RepeatUntilFailure } from "./nodes/decorators/repeat-until-failure";
 import { RepeatUntilSuccess } from "./nodes/decorators/repeat-until-success";
 import { Timeout } from "./nodes/decorators/timeout";
-import { Process } from "./process";
+import { TreeData } from "./tree";
 
-export type Constructor<T> = new (...args: unknown[]) => T;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type Constructor<T, A extends any[] = any[]> = new (...args: A) => T;
 export type Callback<A extends unknown[] = unknown[]> = (...args: A) => void;
 export type ObjectType = { [k: string]: unknown };
 export type TargetType = object | string | number;
 export type TagType = unknown;
 
+// prettier-ignore
+export type DeepReadonly<T> =
+    T extends (infer U)[] ? ReadonlyArray<DeepReadonly<U>> :
+    // eslint-disable-next-line @typescript-eslint/ban-types
+    T extends Function ? T :
+    T extends object ? { readonly [K in keyof T]: DeepReadonly<T[K]> } :
+    T;
+
 export class Context {
-    protected _processResolvers: Map<string, Process> = new Map();
-    protected _evaluators: Map<string, Evaluator> = new Map();
+    readonly nodeDefs: Record<string, DeepReadonly<NodeDef>> = {};
+    readonly trees: Record<string, Node> = {};
+
+    protected _evaluators: Record<string, Evaluator> = {};
     protected _time: number = 0;
     protected _delays: Map<Callback, [TagType, number]> = new Map();
-
     protected _listenerMap: Map<string, Map<TargetType, Map<Callback, TagType>>> = new Map();
 
+    private _nodeClasses: Record<string, Constructor<Node>> = {};
+
     constructor() {
-        this.registerProcess(AlwaysFailure);
-        this.registerProcess(AlwaysRunning);
-        this.registerProcess(AlwaysSuccess);
-        this.registerProcess(Assert);
-        this.registerProcess(Calculate);
-        this.registerProcess(Case);
-        this.registerProcess(Check);
-        this.registerProcess(Concat);
-        this.registerProcess(Delay);
-        this.registerProcess(Filter);
-        this.registerProcess(Foreach);
-        this.registerProcess(GetField);
-        this.registerProcess(IfElse);
-        this.registerProcess(Includes);
-        this.registerProcess(Index);
-        this.registerProcess(Invert);
-        this.registerProcess(IsNull);
-        this.registerProcess(Let);
-        this.registerProcess(Listen);
-        this.registerProcess(Log);
-        this.registerProcess(NotNull);
-        this.registerProcess(Now);
-        this.registerProcess(Once);
-        this.registerProcess(Parallel);
-        this.registerProcess(Push);
-        this.registerProcess(Race);
-        this.registerProcess(Random);
-        this.registerProcess(RandomIndex);
-        this.registerProcess(Repeat);
-        this.registerProcess(RepeatUntilFailure);
-        this.registerProcess(RepeatUntilSuccess);
-        this.registerProcess(Selector);
-        this.registerProcess(Sequence);
-        this.registerProcess(SetField);
-        this.registerProcess(Switch);
-        this.registerProcess(Timeout);
-        this.registerProcess(Wait);
+        this.registerNode(AlwaysFailure);
+        this.registerNode(AlwaysRunning);
+        this.registerNode(AlwaysSuccess);
+        this.registerNode(Assert);
+        this.registerNode(Calculate);
+        this.registerNode(Case);
+        this.registerNode(Check);
+        this.registerNode(Concat);
+        this.registerNode(Delay);
+        this.registerNode(Filter);
+        this.registerNode(Foreach);
+        this.registerNode(GetField);
+        this.registerNode(IfElse);
+        this.registerNode(Includes);
+        this.registerNode(Index);
+        this.registerNode(Invert);
+        this.registerNode(IsNull);
+        this.registerNode(Let);
+        this.registerNode(Listen);
+        this.registerNode(Log);
+        this.registerNode(NotNull);
+        this.registerNode(Now);
+        this.registerNode(Once);
+        this.registerNode(Parallel);
+        this.registerNode(Push);
+        this.registerNode(Race);
+        this.registerNode(Random);
+        this.registerNode(RandomIndex);
+        this.registerNode(Repeat);
+        this.registerNode(RepeatUntilFailure);
+        this.registerNode(RepeatUntilSuccess);
+        this.registerNode(Selector);
+        this.registerNode(Sequence);
+        this.registerNode(SetField);
+        this.registerNode(Switch);
+        this.registerNode(Timeout);
+        this.registerNode(Wait);
+    }
+
+    loadTree(path: string): Promise<Node> {
+        throw new Error("Method not implemented.");
     }
 
     get time() {
         return this._time;
-    }
-
-    get processResolvers(): Map<string, Process> {
-        return this._processResolvers;
     }
 
     delay(time: number, callback: Callback, tag: TagType) {
@@ -192,25 +205,64 @@ export class Context {
     }
 
     compileCode(code: string) {
-        let evaluator = this._evaluators.get(code);
+        let evaluator = this._evaluators[code];
         if (!evaluator) {
             const expr = new ExpressionEvaluator(code);
             evaluator = (envars: ObjectType) => expr.evaluate(envars);
-            this._evaluators.set(code, evaluator);
+            this._evaluators[code] = evaluator;
         }
         return evaluator;
     }
 
     registerCode(code: string, evaluator: Evaluator) {
-        this._evaluators.set(code, evaluator);
+        this._evaluators[code] = evaluator;
     }
 
-    registerProcess<T extends Process>(cls: Constructor<T>) {
-        const process = new cls();
-        this._processResolvers.set(process.descriptor.name, process);
+    registerNode<T extends Node>(cls: Constructor<T>) {
+        const node = new cls();
+        const descriptor = node.descriptor;
+        this.nodeDefs[descriptor.name] = descriptor;
+        this._nodeClasses[descriptor.name] = cls;
     }
 
-    findProcess(name: string) {
-        return this._processResolvers.get(name);
+    protected _createNode(cfg: NodeData, treeCfg: TreeData) {
+        const NodeCls = this._nodeClasses[cfg.name];
+        const descriptor = this.nodeDefs[cfg.name];
+
+        if (!NodeCls || !descriptor) {
+            throw new Error(`behavior3: node '${cfg.name}' not found`);
+        }
+
+        cfg.input ||= [];
+        cfg.output ||= [];
+        cfg.children ||= [];
+        cfg.args ||= {};
+        cfg.tree = treeCfg;
+
+        const node = new NodeCls();
+
+        for (const childCfg of cfg.children) {
+            if (!childCfg.disabled) {
+                (node.children as Node[]).push(this._createNode(childCfg, treeCfg));
+            }
+        }
+
+        node.init(this, cfg);
+
+        if (
+            descriptor.children !== undefined &&
+            descriptor.children !== -1 &&
+            descriptor.children !== node.children.length
+        ) {
+            if (descriptor.children === 0) {
+                node.warn(`no children is required`);
+            } else if (node.children.length < descriptor.children) {
+                node.error(`at least ${descriptor.children} children are required`);
+            } else {
+                node.warn(`exactly ${descriptor.children} children`);
+            }
+        }
+
+        return node;
     }
 }

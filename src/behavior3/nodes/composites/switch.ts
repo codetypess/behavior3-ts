@@ -1,38 +1,24 @@
-import { ObjectType } from "../../context";
-import { Node } from "../../node";
-import { Process, Status } from "../../process";
-import { TreeEnv } from "../../tree-env";
+import type { Context, DeepReadonly } from "../../context";
+import { Node, NodeData, NodeDef, Status } from "../../node";
+import { Tree } from "../../tree";
 
-export class Switch extends Process {
-    constructor() {
-        super({
-            name: "Switch",
-            type: "Composite",
-            children: -1,
-            status: ["|success", "|failure", "|running"],
-            desc: "分支执行",
-            doc: `
-                + 按顺序测试 \`Case\` 节点的判断条件（第一个子节点）
-                + 若测试返回 \`success\` 则执行 \`Case\` 第二个子节点，并返回子节点的执行状态
-                + 若没有判断为 \`success\` 的 \`Case\` 节点，则返回 \`failure\`
-            `,
-        });
-    }
+export class Switch extends Node {
+    override init(context: Context, cfg: NodeData): void {
+        super.init(context, cfg);
 
-    override init(node: Node): Readonly<ObjectType> | void {
-        node.children.forEach((v) => {
+        this.children.forEach((v) => {
             if (v.name !== "Case") {
-                node.error(`only allow Case node`);
+                this.error(`only allow Case node`);
             }
         });
     }
 
-    override tick(node: Node, env: TreeEnv): Status {
-        let step: number | undefined = node.resume(env);
-        let status = env.status;
+    override onTick(tree: Tree<Context, unknown>): Status {
+        let step: number | undefined = tree.resume(this);
+        let status = tree.status;
         if (typeof step === "number") {
             if (status === "running") {
-                node.error(`unexpected status error`);
+                this.error(`unexpected status error`);
             }
             if (step % 2 === 0) {
                 if (status === "success") {
@@ -47,12 +33,12 @@ export class Switch extends Process {
             step = 0;
         }
 
-        for (let i = step >>> 1; i < node.children.length; i++) {
-            const [first, second] = node.children[i].children;
+        for (let i = step >>> 1; i < this.children.length; i++) {
+            const [first, second] = this.children[i].children;
             if (step % 2 === 0) {
-                status = first.tick(env);
+                status = first.tick(tree);
                 if (status === "running") {
-                    return node.yield(env, step);
+                    return tree.yield(this, step);
                 } else if (status === "success") {
                     step = i * 2 + 1;
                 } else {
@@ -60,9 +46,9 @@ export class Switch extends Process {
                 }
             }
             if (step % 2 === 1) {
-                status = second.tick(env);
+                status = second.tick(tree);
                 if (status === "running") {
-                    return node.yield(env, step);
+                    return tree.yield(this, step);
                 }
                 return status;
             }
@@ -70,11 +56,30 @@ export class Switch extends Process {
 
         return "failure";
     }
+
+    get descriptor(): DeepReadonly<NodeDef> {
+        return {
+            name: "Switch",
+            type: "Composite",
+            children: -1,
+            status: ["|success", "|failure", "|running"],
+            desc: "分支执行",
+            doc: `
+                + 按顺序测试 \`Case\` 节点的判断条件（第一个子节点）
+                + 若测试返回 \`success\` 则执行 \`Case\` 第二个子节点，并返回子节点的执行状态
+                + 若没有判断为 \`success\` 的 \`Case\` 节点，则返回 \`failure\`
+            `,
+        };
+    }
 }
 
-export class Case extends Process {
-    constructor() {
-        super({
+export class Case extends Node {
+    override onTick(tree: Tree<Context, unknown>): Status {
+        throw new Error("tick children by Switch");
+    }
+
+    get descriptor(): DeepReadonly<NodeDef> {
+        return {
             name: "Case",
             type: "Composite",
             children: 2,
@@ -86,10 +91,6 @@ export class Case extends Process {
                 + 第二个子节点为判断为 \`success\` 时执行的节点
                 + 此节点不会真正意义的执行，而是交由 \`Switch\` 节点来执行
             `,
-        });
-    }
-
-    override tick(node: Node, env: TreeEnv): Status {
-        throw new Error("Tick children by Switch");
+        };
     }
 }

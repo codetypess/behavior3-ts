@@ -1,16 +1,17 @@
-import { Node, NodeDef, Process, Status, TreeEnv } from "../../src/behavior3";
+import { Node, NodeDef, Status, Tree } from "../../src/behavior3";
+import { RoleContext } from "../role";
 
-export class Idle extends Process {
-    constructor() {
-        super({
+export class Idle extends Node {
+    override onTick(tree: Tree<RoleContext, unknown>): Status {
+        console.log("Do Idle");
+        return "success";
+    }
+
+    override get descriptor(): Readonly<NodeDef> {
+        return {
             name: "Idle",
             type: "Action",
             desc: "待机",
-        });
-    }
-
-    override tick(node: Node, env: TreeEnv): Status {
-        console.log("Do Idle");
-        return "success";
+        };
     }
 }

@@ -1,12 +1,21 @@
-import { Node } from "../../node";
-import { Process, Status } from "../../process";
-import { TreeEnv } from "../../tree-env";
+import type { Context, DeepReadonly } from "../../context";
+import { Node, NodeDef, Status } from "../../node";
+import { Tree } from "../../tree";
 
-type NodeInput = [unknown, unknown[]];
+export class Includes extends Node {
+    declare input: [unknown, unknown[]];
 
-export class Includes extends Process {
-    constructor() {
-        super({
+    override onTick(tree: Tree<Context, unknown>): Status {
+        const [arr, element] = this.input;
+        if (!Array.isArray(arr) || element === undefined || element === null) {
+            return "failure";
+        }
+        const index = arr.indexOf(element);
+        return index >= 0 ? "success" : "failure";
+    }
+
+    get descriptor(): DeepReadonly<NodeDef> {
+        return {
             name: "Includes",
             type: "Condition",
             children: 0,
@@ -17,15 +26,6 @@ export class Includes extends Process {
                 + 若输入的元素不合法，返回 \`failure\`
                 + 只有数组包含元素时返回 \`success\`，否则返回 \`failure\`
             `,
-        });
-    }
-
-    override tick(node: Node, env: TreeEnv): Status {
-        const [arr, element] = env.input as NodeInput;
-        if (!Array.isArray(arr) || element === undefined || element === null) {
-            return "failure";
-        }
-        const index = arr.indexOf(element);
-        return index >= 0 ? "success" : "failure";
+        };
     }
 }

@@ -1,12 +1,21 @@
-import { Node } from "../../node";
-import { Process, Status } from "../../process";
-import { TreeEnv } from "../../tree-env";
+import type { Context, DeepReadonly } from "../../context";
+import { Node, NodeDef, Status } from "../../node";
+import { Tree } from "../../tree";
 
-type NodeInput = [unknown[], unknown[]];
+export class Concat extends Node {
+    declare input: [unknown[], unknown[]];
 
-export class Concat extends Process {
-    constructor() {
-        super({
+    override onTick(tree: Tree<Context, unknown>): Status {
+        const [arr1, arr2] = this.input;
+        if (!Array.isArray(arr1) || !Array.isArray(arr2)) {
+            return "failure";
+        }
+        this.output.push(arr1.concat(arr2));
+        return "success";
+    }
+
+    get descriptor(): DeepReadonly<NodeDef> {
+        return {
             name: "Concat",
             type: "Action",
             children: 0,
@@ -17,15 +26,6 @@ export class Concat extends Process {
             doc: `
                 + 如果输入不是数组，则返回 \`failure\`
             `,
-        });
-    }
-
-    override tick(node: Node, env: TreeEnv): Status {
-        const [arr1, arr2] = env.input as NodeInput;
-        if (!Array.isArray(arr1) || !Array.isArray(arr2)) {
-            return "failure";
-        }
-        env.output.push(arr1.concat(arr2));
-        return "success";
+        };
     }
 }

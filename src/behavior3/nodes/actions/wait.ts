@@ -1,15 +1,33 @@
-import { Node } from "../../node";
-import { Process, Status } from "../../process";
-import { TreeEnv } from "../../tree-env";
+import type { Context, DeepReadonly } from "../../context";
+import { Node, NodeDef, Status } from "../../node";
+import { Tree } from "../../tree";
 
-interface NodeArgs {
-    readonly time: number;
-    readonly random?: number;
-}
+export class Wait extends Node {
+    declare args: {
+        readonly time: number;
+        readonly random?: number;
+    };
 
-export class Wait extends Process {
-    constructor() {
-        super({
+    override onTick(tree: Tree<Context, unknown>): Status {
+        const t: number | undefined = tree.resume(this);
+        if (typeof t === "number") {
+            if (tree.context.time >= t) {
+                return "success";
+            } else {
+                return "running";
+            }
+        } else {
+            const args = this.args;
+            let time = this._checkOneof(0, args.time, 0);
+            if (args.random) {
+                time += (Math.random() - 0.5) * args.random;
+            }
+            return tree.yield(this, tree.context.time + time);
+        }
+    }
+
+    get descriptor(): DeepReadonly<NodeDef> {
+        return {
             name: "Wait",
             type: "Action",
             children: 0,
@@ -29,24 +47,6 @@ export class Wait extends Process {
                     desc: "随机范围",
                 },
             ],
-        });
-    }
-
-    override tick(node: Node, env: TreeEnv): Status {
-        const t: number | undefined = node.resume(env);
-        if (typeof t === "number") {
-            if (env.context.time >= t) {
-                return "success";
-            } else {
-                return "running";
-            }
-        } else {
-            const args = node.args as unknown as NodeArgs;
-            let time = this._checkOneof(node, env, 0, args.time, 0);
-            if (args.random) {
-                time += (Math.random() - 0.5) * args.random;
-            }
-            return node.yield(env, env.context.time + time);
-        }
+        };
     }
 }

@@ -1,14 +1,36 @@
-import { Node } from "../../node";
-import { Process, Status } from "../../process";
-import { TreeEnv } from "../../tree-env";
+import type { Context, DeepReadonly } from "../../context";
+import { Node, NodeDef, Status } from "../../node";
+import { Tree } from "../../tree";
 
-interface NodeArgs {
-    readonly maxLoop?: number;
-}
+export class RepeatUntilSuccess extends Node {
+    declare args: { readonly maxLoop?: number };
 
-export class RepeatUntilSuccess extends Process {
-    constructor() {
-        super({
+    override onTick(tree: Tree<Context, unknown>): Status {
+        const maxLoop = this._checkOneof(0, this.args.maxLoop, Number.MAX_SAFE_INTEGER);
+        let count: number | undefined = tree.resume(this);
+
+        if (typeof count === "number") {
+            if (tree.status === "success") {
+                return "success";
+            } else if (count >= maxLoop) {
+                return "failure";
+            } else {
+                count++;
+            }
+        } else {
+            count = 1;
+        }
+
+        const status = this.children[0].tick(tree);
+        if (status === "success") {
+            return "success";
+        } else {
+            return tree.yield(this, count);
+        }
+    }
+
+    get descriptor(): DeepReadonly<NodeDef> {
+        return {
             name: "RepeatUntilSuccess",
             type: "Decorator",
             children: 1,
@@ -26,31 +48,6 @@ export class RepeatUntilSuccess extends Process {
                 + 只能有一个子节点，多个仅执行第一个
                 + 只有当子节点返回 \`success\` 时，才返回 \`success\`，其它情况返回 \`running\` 状态
                 + 如果设定了尝试次数，超过指定次数则返回 \`failure\``,
-        });
-    }
-
-    override tick(node: Node, env: TreeEnv): Status {
-        const args = node.args as unknown as NodeArgs;
-        const maxLoop = this._checkOneof(node, env, 0, args.maxLoop, Number.MAX_SAFE_INTEGER);
-        let count: number | undefined = node.resume(env);
-
-        if (typeof count === "number") {
-            if (env.status === "success") {
-                return "success";
-            } else if (count >= maxLoop) {
-                return "failure";
-            } else {
-                count++;
-            }
-        } else {
-            count = 1;
-        }
-
-        const status = node.children[0].tick(env);
-        if (status === "success") {
-            return "success";
-        } else {
-            return node.yield(env, count);
-        }
+        };
     }
 }

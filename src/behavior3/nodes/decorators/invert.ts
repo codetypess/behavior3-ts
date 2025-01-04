@@ -1,10 +1,29 @@
-import { Node } from "../../node";
-import { Process, Status } from "../../process";
-import { TreeEnv } from "../../tree-env";
+import type { Context, DeepReadonly } from "../../context";
+import { Node, NodeDef, Status } from "../../node";
+import { Tree } from "../../tree";
 
-export class Invert extends Process {
-    constructor() {
-        super({
+export class Invert extends Node {
+    override onTick(tree: Tree<Context, unknown>): Status {
+        const isYield: boolean | undefined = tree.resume(this);
+        if (typeof isYield === "boolean") {
+            if (tree.status === "running") {
+                this.error(`unexpected status error`);
+            }
+            return this._invert(tree.status);
+        }
+        const status = this.children[0].tick(tree);
+        if (status === "running") {
+            return tree.yield(this);
+        }
+        return this._invert(status);
+    }
+
+    private _invert(status: Status): Status {
+        return status === "failure" ? "success" : "failure";
+    }
+
+    get descriptor(): DeepReadonly<NodeDef> {
+        return {
             name: "Invert",
             type: "Decorator",
             children: 1,
@@ -15,25 +34,6 @@ export class Invert extends Process {
                 + 当子节点返回 \`success\` 时返回 \`failure\`
                 + 当子节点返回 \`failure\` 时返回 \`success\`
             `,
-        });
-    }
-
-    override tick(node: Node, env: TreeEnv): Status {
-        const isYield: boolean | undefined = node.resume(env);
-        if (typeof isYield === "boolean") {
-            if (env.status === "running") {
-                node.error(`unexpected status error`);
-            }
-            return this._invert(env.status);
-        }
-        const status = node.children[0].tick(env);
-        if (status === "running") {
-            return node.yield(env);
-        }
-        return this._invert(status);
-    }
-
-    private _invert(status: Status): Status {
-        return status === "failure" ? "success" : "failure";
+        };
     }
 }

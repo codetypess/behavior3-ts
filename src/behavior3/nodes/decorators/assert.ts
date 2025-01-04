@@ -1,14 +1,39 @@
-import { Node } from "../../node";
-import { Process, Status } from "../../process";
-import { TreeEnv } from "../../tree-env";
+import type { Context, DeepReadonly } from "../../context";
+import { Node, NodeDef, Status } from "../../node";
+import { Tree } from "../../tree";
 
-interface NodeArgs {
-    message: string;
-}
+export class Assert extends Node {
+    declare args: { readonly message: string };
 
-export class Assert extends Process {
-    constructor() {
-        super({
+    override onTick(tree: Tree<Context, unknown>): Status {
+        const args = this.args;
+        const isYield: boolean | undefined = tree.resume(this);
+        if (typeof isYield === "boolean") {
+            if (tree.status === "running") {
+                this.error(`unexpected status error`);
+            }
+
+            if (tree.status === "success") {
+                return "success";
+            } else {
+                this.error(args.message);
+            }
+        }
+
+        const status = this.children[0].tick(tree);
+        if (status === "success") {
+            return "success";
+        } else if (status === "running") {
+            return tree.yield(this);
+        } else {
+            this.error(args.message);
+        }
+
+        return "success";
+    }
+
+    get descriptor(): DeepReadonly<NodeDef> {
+        return {
             name: "Assert",
             type: "Decorator",
             children: 1,
@@ -26,33 +51,6 @@ export class Assert extends Process {
                 + 当子节点返回 \`failure\` 时，抛出异常
                 + 其余情况返回子节点的执行状态
             `,
-        });
-    }
-
-    override tick(node: Node, env: TreeEnv): Status {
-        const args = node.args as unknown as NodeArgs;
-        const isYield: boolean | undefined = node.resume(env);
-        if (typeof isYield === "boolean") {
-            if (env.status === "running") {
-                node.error(`unexpected status error`);
-            }
-
-            if (env.status === "success") {
-                return "success";
-            } else {
-                node.error(args.message);
-            }
-        }
-
-        const status = node.children[0].tick(env);
-        if (status === "success") {
-            return "success";
-        } else if (status === "running") {
-            return node.yield(env);
-        } else {
-            node.error(args.message);
-        }
-
-        return "success";
+        };
     }
 }

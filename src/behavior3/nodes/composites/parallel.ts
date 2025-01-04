@@ -1,39 +1,26 @@
-import { Node } from "../../node";
-import { Process, Status } from "../../process";
-import { Stack, TreeEnv } from "../../tree-env";
+import type { Context, DeepReadonly } from "../../context";
+import { Node, NodeDef, Status } from "../../node";
+import { Stack } from "../../stack";
+import { Tree } from "../../tree";
 
 const EMPTY_STACK: Stack = new Stack(null!);
 
-export class Parallel extends Process {
-    constructor() {
-        super({
-            name: "Parallel",
-            type: "Composite",
-            status: ["success", "|running"],
-            children: -1,
-            desc: "并行执行",
-            doc: `
-                + 并行执行所有子节点
-                + 当有子节点返回 \`running\` 时，返回 \`running\` 状态
-                + 执行完所有子节点后，返回 \`success\``,
-        });
-    }
-
-    override tick(node: Node, env: TreeEnv): Status {
-        const last: Stack[] = node.resume(env) ?? [];
-        const level = env.stack.length;
+export class Parallel extends Node {
+    override onTick(tree: Tree<Context, unknown>): Status {
+        const last: Stack[] = tree.resume(this) ?? [];
+        const level = tree.stack.length;
         let count = 0;
 
-        node.children.forEach((child, idx) => {
+        this.children.forEach((child, idx) => {
             let stack = last[idx];
             let status: Status | undefined;
             if (stack === undefined) {
-                status = child.tick(env);
+                status = child.tick(tree);
             } else if (stack.length > 0) {
-                stack.move(env.stack, 0, stack.length);
-                while (env.stack.length > level) {
-                    child = env.stack.top()!;
-                    status = child.tick(env);
+                stack.move(tree.stack, 0, stack.length);
+                while (tree.stack.length > level) {
+                    child = tree.stack.top()!;
+                    status = child.tick(tree);
                     if (status === "running") {
                         break;
                     }
@@ -44,9 +31,9 @@ export class Parallel extends Process {
 
             if (status === "running") {
                 if (stack === undefined) {
-                    stack = new Stack(env);
+                    stack = new Stack(tree);
                 }
-                env.stack.move(stack, level, env.stack.length - level);
+                tree.stack.move(stack, level, tree.stack.length - level);
             } else {
                 count++;
                 stack = EMPTY_STACK;
@@ -55,10 +42,24 @@ export class Parallel extends Process {
             last[idx] = stack;
         });
 
-        if (count === node.children.length) {
+        if (count === this.children.length) {
             return "success";
         } else {
-            return node.yield(env, last);
+            return tree.yield(this, last);
         }
+    }
+
+    get descriptor(): DeepReadonly<NodeDef> {
+        return {
+            name: "Parallel",
+            type: "Composite",
+            status: ["success", "|running"],
+            children: -1,
+            desc: "并行执行",
+            doc: `
+                + 并行执行所有子节点
+                + 当有子节点返回 \`running\` 时，返回 \`running\` 状态
+                + 执行完所有子节点后，返回 \`success\``,
+        };
     }
 }

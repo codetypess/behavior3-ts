@@ -1,12 +1,57 @@
-import { Node } from "../../node";
-import { Process, Status } from "../../process";
-import { TreeEnv } from "../../tree-env";
+import type { Context, DeepReadonly } from "../../context";
+import { Node, NodeDef, Status } from "../../node";
+import { Tree } from "../../tree";
 
-type Input = [unknown[]];
+export class Filter extends Node {
+    declare input: [unknown[]];
 
-export class Filter extends Process {
-    constructor() {
-        super({
+    override onTick(tree: Tree<Context, unknown>): Status {
+        const [arr] = this.input;
+        if (!(arr instanceof Array) || arr.length === 0) {
+            return "failure";
+        }
+
+        let last: [number, unknown[]] | undefined = tree.resume(this);
+        let i;
+        let newArr: unknown[];
+        if (last instanceof Array) {
+            [i, newArr] = last;
+            if (tree.status === "running") {
+                this.error(`unexpected status error`);
+            } else if (tree.status === "success") {
+                newArr.push(arr[i]);
+            }
+            i++;
+        } else {
+            i = 0;
+            newArr = [];
+        }
+
+        const filter = this.children[0];
+
+        for (i = 0; i < arr.length; i++) {
+            tree.blackboard.set(this.cfg.output[0], arr[i]);
+            const status = filter.tick(tree);
+            if (status === "running") {
+                if (last instanceof Array) {
+                    last[0] = i;
+                    last[1] = newArr;
+                } else {
+                    last = [i, newArr];
+                }
+                return tree.yield(this, last);
+            } else if (status === "success") {
+                newArr.push(arr[i]);
+            }
+        }
+
+        this.output.push(undefined, newArr);
+
+        return newArr.length === 0 ? "failure" : "success";
+    }
+
+    get descriptor(): DeepReadonly<NodeDef> {
+        return {
             name: "Filter",
             type: "Decorator",
             children: 1,
@@ -19,51 +64,6 @@ export class Filter extends Process {
                 + 遍历输入数组，将当前元素写入\`变量\`，满足条件的元素放入新数组
                 + 只有当新数组不为空时，才返回 \`success\`
             `,
-        });
-    }
-
-    override tick(node: Node, env: TreeEnv): Status {
-        const [arr] = env.input as Input;
-        if (!(arr instanceof Array) || arr.length === 0) {
-            return "failure";
-        }
-
-        let last: [number, unknown[]] | undefined = node.resume(env);
-        let i;
-        let newArr: unknown[];
-        if (last instanceof Array) {
-            [i, newArr] = last;
-            if (env.status === "running") {
-                node.error(`unexpected status error`);
-            } else if (env.status === "success") {
-                newArr.push(arr[i]);
-            }
-            i++;
-        } else {
-            i = 0;
-            newArr = [];
-        }
-
-        const filter = node.children[0];
-
-        for (i = 0; i < arr.length; i++) {
-            env.set(node.output[0], arr[i]);
-            const status = filter.tick(env);
-            if (status === "running") {
-                if (last instanceof Array) {
-                    last[0] = i;
-                    last[1] = newArr;
-                } else {
-                    last = [i, newArr];
-                }
-                return node.yield(env, last);
-            } else if (status === "success") {
-                newArr.push(arr[i]);
-            }
-        }
-
-        env.output.push(undefined, newArr);
-
-        return newArr.length === 0 ? "failure" : "success";
+        };
     }
 }

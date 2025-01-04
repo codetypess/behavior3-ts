@@ -1,7 +1,8 @@
-import { ObjectType } from "./context";
-import { Process, Status } from "./process";
-import { Tree } from "./tree";
-import { TreeEnv } from "./tree-env";
+import { Blackboard } from "./blackboard";
+import type { Context, DeepReadonly, ObjectType } from "./context";
+import type { Tree, TreeData } from "./tree";
+
+export type Status = "success" | "failure" | "running";
 
 export interface NodeDef {
     name: string;
@@ -95,141 +96,138 @@ export interface NodeDef {
 }
 
 export interface NodeData {
-    readonly id: number;
-    readonly name: string;
-    readonly desc: string;
-    readonly args?: { readonly [k: string]: unknown };
-    readonly debug?: boolean;
-    readonly disabled?: boolean;
-    readonly input?: Readonly<string[]>;
-    readonly output?: Readonly<string[]>;
-    readonly children?: Readonly<NodeData[]>;
+    id: number;
+    name: string;
+    desc: string;
+    args: { [k: string]: unknown };
+    debug?: boolean;
+    disabled?: boolean;
+    input: string[];
+    output: string[];
+    children: NodeData[];
+
+    tree: TreeData;
 }
 
-export class Node {
-    readonly consts: Readonly<ObjectType>;
-    readonly tree: Tree;
-    readonly args: { readonly [k: string]: unknown };
-    readonly input: Readonly<string[]>;
-    readonly output: Readonly<string[]>;
-    readonly children: Readonly<Node[]>;
+export abstract class Node {
+    readonly args: unknown = {};
+    readonly input: unknown[] = [];
+    readonly output: unknown[] = [];
 
-    private _process: Process;
-    private _data: NodeData;
+    private _children: Node[] = [];
+    private _cfg!: DeepReadonly<NodeData>;
     private _yield?: string;
 
-    constructor(data: NodeData, tree: Tree) {
-        this._data = data;
-        this.tree = tree;
-        this.args = data.args ?? {};
-        this.input = data.input ?? [];
-        this.output = data.output ?? [];
-        this.children =
-            data.children
-                ?.filter((value) => !value.disabled)
-                .map((value) => new Node(value, tree)) ?? [];
-
-        const process = tree.context.findProcess(this.name);
-        if (!process) {
-            throw new Error(`behavior3: process '${this.name}' not found`);
+    constructor() {
+        if (this.tick !== Node.prototype.tick) {
+            throw new Error("don't override 'tick' function");
         }
-        this._process = process;
-        this.consts = this._process.init?.(this) ?? ({} as Readonly<ObjectType>);
+    }
 
-        const descriptor = process.descriptor;
-        if (
-            descriptor.children !== undefined &&
-            descriptor.children !== -1 &&
-            descriptor.children !== this.children.length
-        ) {
-            if (descriptor.children === 0) {
-                this.warn(`no children is required`);
-            } else if (this.children.length < descriptor.children) {
-                this.error(`at least ${descriptor.children} children are required`);
-            } else {
-                this.warn(`exactly ${descriptor.children} children`);
-            }
-        }
+    init(context: Context, cfg: NodeData) {
+        this._cfg = cfg;
+        Object.keys(cfg.args).forEach((k) => ((this.args as ObjectType)[k] = cfg.args[k]));
     }
 
     /** @private */
     get __yield() {
-        return (this._yield ||= TreeEnv.makeTempVar(this, "YIELD"));
+        return (this._yield ||= Blackboard.makeTempVar(this, "YIELD"));
+    }
+
+    get cfg() {
+        return this._cfg;
     }
 
     get id() {
-        return this._data.id;
+        return this.cfg.id;
     }
 
     get name() {
-        return this._data.name;
+        return this.cfg.name;
     }
 
-    tick(env: TreeEnv) {
-        if (env.stack.top() !== this) {
-            env.stack.push(this);
+    get children(): Readonly<Node[]> {
+        return this._children;
+    }
+
+    tick(tree: Tree<Context, unknown>): Status {
+        const { stack, blackboard } = tree;
+        const { cfg, input, output } = this;
+
+        if (stack.top() !== this) {
+            stack.push(this);
         }
 
-        const data = this._data;
+        input.length = 0;
+        output.length = 0;
 
-        env.input.length = 0;
-        env.output.length = 0;
-
-        data.input?.forEach((varName) => {
-            env.input.push(env.get(varName));
+        cfg.input.forEach((varName) => {
+            input.push(blackboard.get(varName));
         });
 
-        const status = this._process.tick(this, env);
-        if (env.__interrupted) {
+        const status = this.onTick(tree);
+
+        if (tree.__interrupted) {
             return "running";
         } else if (status !== "running") {
-            data.output?.forEach((varName, i) => {
-                env.set(varName, env.output[i]);
+            cfg.output.forEach((varName, i) => {
+                blackboard.set(varName, output[i]);
             });
-            env.stack.pop();
-        } else if (env.get(this.__yield) === undefined) {
-            env.set(this.__yield, true);
+            stack.pop();
+        } else if (blackboard.get(this.__yield) === undefined) {
+            blackboard.set(this.__yield, true);
         }
 
-        env.__status = status;
+        tree.__status = status;
 
-        if (data.debug || env.debug) {
+        if (cfg.debug || tree.debug) {
             let varStr = "";
-            for (const k in env.vars) {
-                if (!(TreeEnv.isTempVar(k) || TreeEnv.isPrivateVar(k))) {
-                    varStr += `${k}:${env.vars[k]}, `;
+            for (const k in blackboard.values) {
+                if (!(Blackboard.isTempVar(k) || Blackboard.isPrivateVar(k))) {
+                    varStr += `${k}:${blackboard.values[k]}, `;
                 }
             }
-            const indent = env.debug ? " ".repeat(env.stack.length) : "";
+            const indent = tree.debug ? " ".repeat(stack.length) : "";
             console.debug(
-                `[DEBUG] behavior3 -> ${indent}${this.name}: tree:${this.tree.name}, ` +
-                    `node:${this.id}, status:${status}, vars:{${varStr}} args:{${JSON.stringify(
-                        data.args
-                    )}}`
+                `[DEBUG] behavior3 -> ${indent}${this.name}: tree:${this.cfg.tree.name}, ` +
+                    `node:${this.id}, status:${status}, values:{${varStr}} args:${JSON.stringify(
+                        cfg.args
+                    )}`
             );
         }
 
         return status;
     }
 
-    yield<T = unknown>(env: TreeEnv, value?: T): Status {
-        env.set(this.__yield, value ?? true);
-        return "running";
-    }
-
-    resume<T = unknown>(env: TreeEnv): T | undefined {
-        return env.get(this.__yield) as T;
-    }
-
     error(msg: string) {
-        throw new Error(`${this.tree.name}->${this.name}#${this.id}: ${msg}`);
+        throw new Error(`${this.cfg.tree.name}->${this.name}#${this.id}: ${msg}`);
     }
 
     warn(msg: string) {
-        console.warn(`${this.tree.name}->${this.name}#${this.id}: ${msg}`);
+        console.warn(`${this.cfg.tree.name}->${this.name}#${this.id}: ${msg}`);
     }
 
     info(msg: string) {
-        console.info(`${this.tree.name}->${this.name}#${this.id}: ${msg}`);
+        console.info(`${this.cfg.tree.name}->${this.name}#${this.id}: ${msg}`);
     }
+
+    protected _checkOneof<V>(inputIndex: number, argValue: V | undefined, defaultValue?: V) {
+        const inputValue = this.input[inputIndex];
+        const inputName = this.cfg.input[inputIndex];
+        let value: V | undefined;
+        if (inputName) {
+            if (inputValue === undefined) {
+                const func = defaultValue === undefined ? this.error : this.warn;
+                func.call(this, `${this.cfg.tree.name}#${this.id}: missing input '${inputName}'`);
+            }
+            value = inputValue as V;
+        } else {
+            value = argValue;
+        }
+        return (value ?? defaultValue) as V;
+    }
+
+    abstract onTick(tree: Tree<Context, unknown>): Status;
+
+    abstract get descriptor(): DeepReadonly<NodeDef>;
 }

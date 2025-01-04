@@ -1,18 +1,19 @@
-import { Node, NodeDef, Process, Status } from "../../src/behavior3";
-import { Role, RoleTreeEnv } from "../role";
+import { Context, Node, NodeDef, Status, Tree } from "../../src/behavior3";
+import { Role } from "../role";
 
-export class GetHp extends Process {
-    constructor() {
-        super({
+export class GetHp extends Node {
+    override onTick(tree: Tree<Context, Role>): Status {
+        const owner = tree.owner;
+        this.output.push(owner.hp);
+        return "success";
+    }
+
+    override get descriptor(): Readonly<NodeDef> {
+        return {
             name: "GetHp",
             type: "Action",
             desc: "获取生命值",
             output: ["hp"],
-        });
-    }
-
-    override tick(node: Node, env: RoleTreeEnv): Status {
-        env.output.push((env.owner as Role).hp);
-        return "success";
+        };
     }
 }

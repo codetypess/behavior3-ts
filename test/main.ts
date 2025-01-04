@@ -1,6 +1,6 @@
 import assert from "assert";
-import { Tree, TreeRunner } from "../src/behavior3";
-import { RoleContext, RoleTreeEnv } from "./role";
+import { Tree } from "../src/behavior3";
+import { Role, RoleContext } from "./role";
 
 import * as fs from "fs";
 
@@ -8,19 +8,17 @@ const context = new RoleContext();
 
 fs.writeFileSync("example/node-config.b3-setting", context.exportNodeDefs());
 
-context.avators.push({ x: 200, y: 0, hp: 100, tree: null! });
-context.avators.push({ x: 0, y: 0, hp: 100, tree: null! });
+context.avators.push({ x: 200, y: 0, hp: 100 });
+context.avators.push({ x: 0, y: 0, hp: 100 });
 
-const createTreeRunner = (treePath: string) => {
-    const tree = new Tree(context, JSON.parse(fs.readFileSync(treePath, "utf-8")));
-    return new TreeRunner(new RoleTreeEnv(context), tree);
+const createTree = (owner: Role, treePath: string) => {
+    context.loadTree(treePath);
+    return new Tree<RoleContext, Role>(context, owner, treePath);
 };
 
 console.log("====================test hero=============================");
 // -- test hero
-const heroAi = createTreeRunner("./example/hero.json");
-heroAi.env.owner = context.avators[1];
-heroAi.env.owner.tree = heroAi;
+const heroAi = createTree(context.avators[1], "./example/hero.json");
 heroAi.tick();
 heroAi.tick();
 heroAi.tick();
@@ -36,15 +34,13 @@ context.time = 20;
 heroAi.tick();
 
 console.log("====================test monster=============================");
-const monsterAi = createTreeRunner("./example/monster.json");
-monsterAi.env.owner = context.avators[0];
-monsterAi.env.owner.hp = 100;
-monsterAi.env.owner.tree = monsterAi;
+const monsterAi = createTree(context.avators[0], "./example/monster.json");
+monsterAi.owner.hp = 100;
 monsterAi.tick();
 
-monsterAi.env.owner.hp = 20;
+monsterAi.owner.hp = 20;
 monsterAi.tick();
-monsterAi.env.context.time = 40;
+monsterAi.context.time = 40;
 monsterAi.tick();
 monsterAi.tick();
 
@@ -53,23 +49,23 @@ console.log("run end");
 console.log("====================test api=============================");
 const testTree = (
     name: string,
-    onTick?: (i: number, runner: TreeRunner<RoleTreeEnv>) => boolean
+    onTick?: (i: number, runner: Tree<RoleContext, Role>) => boolean
 ) => {
-    const runner = createTreeRunner(`./example/${name}.json`);
+    const tree = createTree({ hp: 100, x: 0, y: 0 }, `./example/${name}.json`);
     let i = 0;
     while (i < 100) {
         context.time++;
-        runner.tick();
+        tree.tick();
         if (onTick) {
-            if (!onTick(i, runner)) {
+            if (!onTick(i, tree)) {
                 break;
             }
-        } else if (runner.status === "success") {
+        } else if (tree.status === "success") {
             break;
         }
         i++;
     }
-    assert(runner.status === "success", `tree ${name} failed`);
+    assert(tree.status === "success", `tree ${name} failed`);
     console.log("");
 };
 testTree("test-sequence");
@@ -78,19 +74,19 @@ testTree("test-repeat-until-success");
 testTree("test-repeat-until-failure");
 testTree("test-timeout");
 testTree("test-once");
-testTree("test-listen", (i, runner) => {
+testTree("test-listen", (i, tree) => {
     if (i === 0) {
-        context.dispatch("hello", "world");
+        context.dispatch("hello", undefined, "world");
         context.dispatch("testOff");
-        context.off("testOff", runner.env);
+        context.off("testOff", tree);
         return true;
     } else if (i === 1) {
-        context.dispatch("hello", "world");
+        context.dispatch("hello", undefined, "world");
         context.dispatch("testOff");
-        context.offAll(runner.env);
+        context.offAll(tree);
         return true;
     } else {
-        context.dispatch("hello", "world");
+        context.dispatch("hello", undefined, "world");
         context.dispatch("testOff");
         return false;
     }

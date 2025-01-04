@@ -1,14 +1,27 @@
-import { Node } from "../../node";
-import { Process, Status } from "../../process";
-import { TreeEnv } from "../../tree-env";
+import type { Context, DeepReadonly } from "../../context";
+import { Node, NodeData, NodeDef, Status } from "../../node";
+import { Tree } from "../../tree";
 
-interface NodeArgs {
-    readonly value: string;
-}
+export class Calculate extends Node {
+    declare args: { readonly value: string };
 
-export class Calculate extends Process {
-    constructor() {
-        super({
+    override init(context: Context, cfg: NodeData) {
+        super.init(context, cfg);
+
+        if (typeof this.args.value !== "string" || this.args.value.length === 0) {
+            this.error(`args.value is not a expr string`);
+        }
+        context.compileCode(this.args.value);
+    }
+
+    override onTick(tree: Tree<Context, unknown>): Status {
+        const value = tree.blackboard.eval(this.args.value);
+        this.output.push(value);
+        return "success";
+    }
+
+    get descriptor(): DeepReadonly<NodeDef> {
+        return {
             name: "Calculate",
             type: "Action",
             children: 0,
@@ -19,21 +32,6 @@ export class Calculate extends Process {
             doc: `
                 + 做简单的数值公式计算，返回结果到输出
             `,
-        });
-    }
-
-    override init(node: Node) {
-        const args = node.args as unknown as NodeArgs;
-        if (typeof args.value !== "string" || args.value.length === 0) {
-            node.error(`args.value is not a expr string`);
-        }
-        node.tree.context.compileCode(args.value);
-    }
-
-    override tick(node: Node, env: TreeEnv): Status {
-        const args = node.args as unknown as NodeArgs;
-        const value = env.eval(args.value);
-        env.output.push(value);
-        return "success";
+        };
     }
 }

@@ -1,14 +1,39 @@
-import { Node } from "../../node";
-import { Process, Status } from "../../process";
-import { TreeEnv } from "../../tree-env";
+import type { Context, DeepReadonly } from "../../context";
+import { Node, NodeDef, Status } from "../../node";
+import { Tree } from "../../tree";
 
-interface NodeArgs {
-    readonly count: number;
-}
+export class Repeat extends Node {
+    declare args: { readonly count: number };
 
-export class Repeat extends Process {
-    constructor() {
-        super({
+    override onTick(tree: Tree<Context, unknown>): Status {
+        const count = this._checkOneof(0, this.args.count, Number.MAX_SAFE_INTEGER);
+
+        let i: number | undefined = tree.resume(this);
+
+        if (i !== undefined) {
+            if (tree.status === "running") {
+                this.error(`unexpected status error`);
+            } else if (tree.status === "failure") {
+                return "failure";
+            }
+            i++;
+        } else {
+            i = 0;
+        }
+
+        for (; i < count; i++) {
+            const status = this.children[0].tick(tree);
+            if (status === "running") {
+                return tree.yield(this, i);
+            } else if (status === "failure") {
+                return "failure";
+            }
+        }
+        return "success";
+    }
+
+    get descriptor(): DeepReadonly<NodeDef> {
+        return {
             name: "Repeat",
             type: "Decorator",
             children: 1,
@@ -28,34 +53,6 @@ export class Repeat extends Process {
                 + 当子节点返回 \`failure\` 时，退出遍历并返回 \`failure\` 状态
                 + 执行完所有子节点后，返回 \`success\`
             `,
-        });
-    }
-
-    override tick(node: Node, env: TreeEnv): Status {
-        const args = node.args as unknown as NodeArgs;
-        const count = this._checkOneof(node, env, 0, args.count, Number.MAX_SAFE_INTEGER);
-
-        let i: number | undefined = node.resume(env);
-
-        if (i !== undefined) {
-            if (env.status === "running") {
-                node.error(`unexpected status error`);
-            } else if (env.status === "failure") {
-                return "failure";
-            }
-            i++;
-        } else {
-            i = 0;
-        }
-
-        for (; i < count; i++) {
-            const status = node.children[0].tick(env);
-            if (status === "running") {
-                return node.yield(env, i);
-            } else if (status === "failure") {
-                return "failure";
-            }
-        }
-        return "success";
+        };
     }
 }

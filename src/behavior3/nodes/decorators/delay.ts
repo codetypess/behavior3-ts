@@ -1,15 +1,39 @@
-import { Node } from "../../node";
-import { Process, Status } from "../../process";
-import { TreeEnv } from "../../tree-env";
+import type { Context, DeepReadonly } from "../../context";
+import { Node, NodeDef, Status } from "../../node";
+import { Tree } from "../../tree";
 
-interface NodeArgs {
-    readonly delay: number;
-    readonly cacheVars?: Readonly<string[]>;
-}
+export class Delay extends Node {
+    declare args: {
+        readonly delay: number;
+        readonly cacheVars?: Readonly<string[]>;
+    };
 
-export class Delay extends Process {
-    constructor() {
-        super({
+    override onTick(tree: Tree<Context, unknown>): Status {
+        const args = this.args;
+        const delay = this._checkOneof(0, args.delay, 0);
+        const blackboard = tree.blackboard;
+        const keys = args.cacheVars ?? [];
+        const cacheArgs: unknown[] = keys.map((key) => blackboard.get(key));
+
+        tree.context.delay(
+            delay,
+            () => {
+                const cacheOldArgs: unknown[] = keys.map((key) => blackboard.get(key));
+                keys.forEach((key, i) => blackboard.set(key, cacheArgs[i]));
+                const level = tree.stack.length;
+                const status = this.children[0].tick(tree);
+                if (status === "running") {
+                    tree.stack.popTo(level);
+                }
+                keys.forEach((key, i) => blackboard.set(key, cacheOldArgs[i]));
+            },
+            tree
+        );
+        return "success";
+    }
+
+    get descriptor(): DeepReadonly<NodeDef> {
+        return {
             name: "Delay",
             type: "Decorator",
             children: 1,
@@ -32,30 +56,6 @@ export class Delay extends Process {
             doc: `
                 + 当延时触发时，执行第一个子节点，多个仅执行第一个
                 + 如果子节点返回 \`running\`，会中断执行并清理执行栈`,
-        });
-    }
-
-    override tick(node: Node, env: TreeEnv): Status {
-        const args = node.args as unknown as NodeArgs;
-        const delay = this._checkOneof(node, env, 0, args.delay, 0);
-
-        const keys = args.cacheVars ?? [];
-        const cacheArgs: unknown[] = keys.map((key) => env.get(key));
-
-        env.context.delay(
-            delay,
-            () => {
-                const cacheOldArgs: unknown[] = keys.map((key) => env.get(key));
-                keys.forEach((key, i) => env.set(key, cacheArgs[i]));
-                const level = env.stack.length;
-                const status = node.children[0].tick(env);
-                if (status === "running") {
-                    env.stack.popTo(level);
-                }
-                keys.forEach((key, i) => env.set(key, cacheOldArgs[i]));
-            },
-            env
-        );
-        return "success";
+        };
     }
 }

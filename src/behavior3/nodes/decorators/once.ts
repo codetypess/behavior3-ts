@@ -1,14 +1,41 @@
-import { Node } from "../../node";
-import { Process, Status } from "../../process";
-import { TreeEnv } from "../../tree-env";
+import { Blackboard } from "../../blackboard";
+import type { Context, DeepReadonly } from "../../context";
+import { Node, NodeData, NodeDef, Status } from "../../node";
+import { Tree } from "../../tree";
 
-interface NodeConsts {
-    readonly onceKey: string;
-}
+export class Once extends Node {
+    private _onceKey!: string;
 
-export class Once extends Process {
-    constructor() {
-        super({
+    override init(context: Context, cfg: NodeData): void {
+        super.init(context, cfg);
+        this._onceKey = Blackboard.makePrivateVar(this, "ONCE");
+    }
+
+    override onTick(tree: Tree<Context, unknown>): Status {
+        const onceKey = this._onceKey;
+        if (tree.blackboard.get(onceKey) === true) {
+            return "failure";
+        }
+
+        const isYield: boolean | undefined = tree.resume(this);
+        if (typeof isYield === "boolean") {
+            if (tree.status === "running") {
+                this.error(`unexpected status error`);
+            }
+            tree.blackboard.set(onceKey, true);
+            return "success";
+        }
+
+        const status = this.children[0].tick(tree);
+        if (status === "running") {
+            return tree.yield(this);
+        }
+        tree.blackboard.set(onceKey, true);
+        return "success";
+    }
+
+    get descriptor(): DeepReadonly<NodeDef> {
+        return {
             name: "Once",
             type: "Decorator",
             children: 1,
@@ -17,35 +44,6 @@ export class Once extends Process {
             doc: `
                 + 只能有一个子节点，多个仅执行第一个
                 + 第一次执行完全部子节点时返回 \`success\`，之后永远返回 \`failure\``,
-        });
-    }
-
-    override init(node: Node): Readonly<NodeConsts> {
-        return {
-            onceKey: TreeEnv.makePrivateVar(node, "ONCE"),
         };
-    }
-
-    override tick(node: Node, env: TreeEnv): Status {
-        const onceKey = (node.consts as Readonly<NodeConsts>).onceKey;
-        if (env.get(onceKey) === true) {
-            return "failure";
-        }
-
-        const isYield: boolean | undefined = node.resume(env);
-        if (typeof isYield === "boolean") {
-            if (env.status === "running") {
-                node.error(`unexpected status error`);
-            }
-            env.set(onceKey, true);
-            return "success";
-        }
-
-        const status = node.children[0].tick(env);
-        if (status === "running") {
-            return node.yield(env);
-        }
-        env.set(onceKey, true);
-        return "success";
     }
 }

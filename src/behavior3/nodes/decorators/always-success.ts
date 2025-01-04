@@ -1,10 +1,25 @@
-import { Node } from "../../node";
-import { Process, Status } from "../../process";
-import { TreeEnv } from "../../tree-env";
+import type { Context, DeepReadonly } from "../../context";
+import { Node, NodeDef, Status } from "../../node";
+import { Tree } from "../../tree";
 
-export class AlwaysSuccess extends Process {
-    constructor() {
-        super({
+export class AlwaysSuccess extends Node {
+    override onTick(tree: Tree<Context, unknown>): Status {
+        const isYield: boolean | undefined = tree.resume(this);
+        if (typeof isYield === "boolean") {
+            if (tree.status === "running") {
+                this.error(`unexpected status error`);
+            }
+            return "success";
+        }
+        const status = this.children[0].tick(tree);
+        if (status === "running") {
+            return tree.yield(this);
+        }
+        return "success";
+    }
+
+    get descriptor(): DeepReadonly<NodeDef> {
+        return {
             name: "AlwaysSuccess",
             type: "Decorator",
             children: 1,
@@ -14,21 +29,6 @@ export class AlwaysSuccess extends Process {
                 + 只能有一个子节点，多个仅执行第一个
                 + 不管子节点是否成功都返回 \`success\`
             `,
-        });
-    }
-
-    override tick(node: Node, env: TreeEnv): Status {
-        const isYield: boolean | undefined = node.resume(env);
-        if (typeof isYield === "boolean") {
-            if (env.status === "running") {
-                node.error(`unexpected status error`);
-            }
-            return "success";
-        }
-        const status = node.children[0].tick(env);
-        if (status === "running") {
-            return node.yield(env);
-        }
-        return "success";
+        };
     }
 }

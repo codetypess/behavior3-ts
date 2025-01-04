@@ -1,12 +1,28 @@
-import { Node } from "../../node";
-import { Process, Status } from "../../process";
-import { TreeEnv } from "../../tree-env";
+import type { Context, DeepReadonly } from "../../context";
+import { Node, NodeDef, Status } from "../../node";
+import { Tree } from "../../tree";
 
-type Input = [unknown[]];
+export class RandomIndex extends Node {
+    declare input: [unknown[]];
 
-export class RandomIndex extends Process {
-    constructor() {
-        super({
+    override onTick(tree: Tree<Context, unknown>): Status {
+        const [arr] = this.input;
+        if (!(arr instanceof Array) || arr.length === 0) {
+            return "failure";
+        }
+
+        const idx = Math.floor(Math.random() * arr.length);
+        const value = arr[idx];
+        if (value !== undefined && value !== null) {
+            this.output.push(value);
+            return "success";
+        } else {
+            return "failure";
+        }
+    }
+
+    get descriptor(): DeepReadonly<NodeDef> {
+        return {
             name: "RandomIndex",
             type: "Action",
             children: 0,
@@ -19,22 +35,6 @@ export class RandomIndex extends Process {
                 + 在输入数组中，随机返回其中一个
                 + 当输入数组为空时，或者没有合法元素，返回 \`failure\`
             `,
-        });
-    }
-
-    override tick(node: Node, env: TreeEnv): Status {
-        const [arr] = env.input as Input;
-        if (!(arr instanceof Array) || arr.length === 0) {
-            return "failure";
-        }
-
-        const idx = Math.floor(Math.random() * arr.length);
-        const value = arr[idx];
-        if (value !== undefined && value !== null) {
-            env.output.push(value);
-            return "success";
-        } else {
-            return "failure";
-        }
+        };
     }
 }

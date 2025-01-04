@@ -1,14 +1,26 @@
-import { Node } from "../../node";
-import { Process, Status } from "../../process";
-import { TreeEnv } from "../../tree-env";
+import type { Context, DeepReadonly } from "../../context";
+import { Node, NodeData, NodeDef, Status } from "../../node";
+import { Tree } from "../../tree";
 
-interface NodeArgs {
-    readonly value: string;
-}
+export class Check extends Node {
+    declare args: { readonly value: string };
 
-export class Check extends Process {
-    constructor() {
-        super({
+    override init(context: Context, cfg: NodeData): void {
+        super.init(context, cfg);
+
+        if (typeof this.args.value !== "string" || this.args.value.length === 0) {
+            this.error(`args.value is not a expr string`);
+        }
+        context.compileCode(this.args.value);
+    }
+
+    override onTick(tree: Tree<Context, unknown>): Status {
+        const value = tree.blackboard.eval(this.args.value);
+        return value ? "success" : "failure";
+    }
+
+    get descriptor(): DeepReadonly<NodeDef> {
+        return {
             name: "Check",
             type: "Condition",
             children: 0,
@@ -18,20 +30,6 @@ export class Check extends Process {
             doc: `
                 + 做简单数值公式判定，返回 \`success\` 或 \`failure\`
             `,
-        });
-    }
-
-    override init(node: Node) {
-        const args = node.args as unknown as NodeArgs;
-        if (typeof args.value !== "string" || args.value.length === 0) {
-            node.error(`args.value is not a expr string`);
-        }
-        node.tree.context.compileCode(args.value);
-    }
-
-    override tick(node: Node, env: TreeEnv): Status {
-        const args = node.args as unknown as NodeArgs;
-        const value = env.eval(args.value);
-        return value ? "success" : "failure";
+        };
     }
 }

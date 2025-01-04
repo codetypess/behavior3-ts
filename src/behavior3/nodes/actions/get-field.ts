@@ -1,16 +1,34 @@
-import { Node } from "../../node";
-import { Process, Status } from "../../process";
-import { TreeEnv } from "../../tree-env";
+import type { Context, DeepReadonly } from "../../context";
+import { Node, NodeDef, Status } from "../../node";
+import { Tree } from "../../tree";
 
-type Input = [{ [key: string]: unknown }, string | undefined];
+export class GetField extends Node {
+    declare input: [{ [key: string]: unknown }, string | undefined];
+    declare args: { readonly field?: string };
 
-type NodeArgs = {
-    field?: string;
-};
+    override onTick(tree: Tree<Context, unknown>): Status {
+        const [obj] = this.input;
+        if (typeof obj !== "object" || !obj) {
+            this.warn(`invalid object: ${obj}`);
+            return "failure";
+        }
 
-export class GetField extends Process {
-    constructor() {
-        super({
+        const args = this.args;
+        const field = this._checkOneof(1, args.field);
+        const value = obj[field];
+        if (typeof field !== "string" && typeof field !== "number") {
+            this.warn(`invalid field: ${field}`);
+            return "failure";
+        } else if (value !== undefined && value !== null) {
+            this.output.push(value);
+            return "success";
+        } else {
+            return "failure";
+        }
+    }
+
+    get descriptor(): DeepReadonly<NodeDef> {
+        return {
             name: "GetField",
             type: "Action",
             children: 0,
@@ -30,27 +48,6 @@ export class GetField extends Process {
                 + 合法元素不包括 \`undefined\` 和 \`null\`
                 + 只有获取到合法元素时候才会返回 \`success\`，否则返回 \`failure\`
             `,
-        });
-    }
-
-    override tick(node: Node, env: TreeEnv): Status {
-        const [obj] = env.input as Input;
-        if (typeof obj !== "object" || !obj) {
-            node.warn(`invalid object: ${obj}`);
-            return "failure";
-        }
-
-        const args = node.args as NodeArgs;
-        const field = this._checkOneof(node, env, 1, args.field);
-        const value = obj[field];
-        if (typeof field !== "string" && typeof field !== "number") {
-            node.warn(`invalid field: ${field}`);
-            return "failure";
-        } else if (value !== undefined && value !== null) {
-            env.output.push(value);
-            return "success";
-        } else {
-            return "failure";
-        }
+        };
     }
 }

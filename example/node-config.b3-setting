@@ -78,7 +78,7 @@
       },
       {
         "name": "multi",
-        "type": "boolean[]",
+        "type": "bool[]",
         "desc": "是否多目标"
       },
       {
@@ -119,7 +119,7 @@
     "args": [
       {
         "name": "value",
-        "type": "code",
+        "type": "expr",
         "desc": "计算公式"
       }
     ],
@@ -152,7 +152,7 @@
     "args": [
       {
         "name": "value",
-        "type": "code",
+        "type": "expr",
         "desc": "值"
       }
     ],
@@ -461,19 +461,19 @@
           },
           {
             "name": "行为树开始执行前",
-            "value": "beforeRunTree"
+            "value": "treeBeforeTicked"
           },
           {
             "name": "行为树执行完成后",
-            "value": "afterRunTree"
+            "value": "treeAfterTicked"
           },
           {
             "name": "行为树执行成功后",
-            "value": "afterRunTreeSuccess"
+            "value": "treeTickedSuccess"
           },
           {
             "name": "行为树执行失败后",
-            "value": "afterRunTreeFailure"
+            "value": "treeTickedFailure"
           },
           {
             "name": "行为树被清理",
@@ -662,7 +662,7 @@
       },
       {
         "name": "floor",
-        "type": "boolean?",
+        "type": "bool?",
         "desc": "是否向下取整"
       }
     ],

@@ -1,26 +1,17 @@
-import { Node, NodeDef, Process, Status } from "../../src/behavior3";
-import { Role, RoleTreeEnv } from "../role";
+import { Context, Node, NodeDef, Status, Tree } from "../../src/behavior3";
+import { Role } from "../role";
 
-type MoveToTargetInput = [Role | undefined];
-
-export class MoveToTarget extends Process {
+export class MoveToTarget extends Node {
     static SPEED = 50;
 
-    constructor() {
-        super({
-            name: "MoveToTarget",
-            type: "Action",
-            desc: "移动到目标",
-            input: ["目标"],
-        });
-    }
+    declare input: [Role | undefined];
 
-    override tick(node: Node, env: RoleTreeEnv): Status {
-        const [target] = env.input as MoveToTargetInput;
+    override onTick(tree: Tree<Context, Role>): Status {
+        const owner = tree.owner;
+        const [target] = this.input;
         if (!target) {
             return "failure";
         }
-        const owner = env.owner as Role;
         const { x, y } = owner;
         const { x: tx, y: ty } = target;
         if (Math.abs(x - tx) < MoveToTarget.SPEED && Math.abs(y - ty) < MoveToTarget.SPEED) {
@@ -38,6 +29,15 @@ export class MoveToTarget extends Process {
             owner.y = owner.y + MoveToTarget.SPEED * (ty > x ? 1 : -1);
         }
 
-        return node.yield(env);
+        return tree.yield(this);
+    }
+
+    get descriptor(): Readonly<NodeDef> {
+        return {
+            name: "MoveToTarget",
+            type: "Action",
+            desc: "移动到目标",
+            input: ["目标"],
+        };
     }
 }

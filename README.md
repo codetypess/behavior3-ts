@@ -79,14 +79,33 @@ export interface NodeDef {
 让我们来看一个简单的例子，在特定的范围（`w`, `h`）内寻找大于指定数量（`count`）的敌人，并把找到的敌人放在变量 `target` 中，这个节点的大致实现如下：
 
 ```typescript
-type NodeArgs = {
-    readonly w: number;
-    readonly h: number;
-};
+export class FindEnemy extends Node {
+    declare input: [number];
+    declare args: {
+        readonly w: number;
+        readonly h: number;
+    };
 
-type NodeInput = [number];
+    override onTick(tree: Tree<RoleContext, Role>): Status {
+        const [count] = this.input;
+        const { w, h } = this.args;
+        const { x, y } = tree.owner;
+        const list = tree.context.find((role: Role) => {
+            if (role === tree.owner) {
+                return false;
+            }
+            const tx = role.x;
+            const ty = role.y;
+            return Math.abs(x - tx) <= w && Math.abs(y - ty) <= h;
+        });
+        if (list.length >= count) {
+            this.output.push(...list);
+            return "success";
+        } else {
+            return "failure";
+        }
+    }
 
-export class FindEnemy extends Process {
     override get descriptor(): NodeDef {
         return {
             name: "FindEnemy",
@@ -99,26 +118,6 @@ export class FindEnemy extends Process {
             input: ["count"],
             output: ["target"],
         };
-    }
-
-    override run(node: Node, env: RoleTreeEnv) {
-        const [count] = node.input as NodeInput;
-        const { x, y } = env.owner;
-        const { w, h } = node.args as NodeArgs;
-        const list = env.context.find((role: Role) => {
-            if (role === env.owner) {
-                return false;
-            }
-            const tx = role.x;
-            const ty = role.y;
-            return Math.abs(x - tx) <= w && Math.abs(y - ty) <= h;
-        });
-        if (list.length >= count) {
-            env.output.push(...list);
-            return "success";
-        } else {
-            return "failure";
-        }
     }
 }
 ```

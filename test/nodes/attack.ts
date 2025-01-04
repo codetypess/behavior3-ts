@@ -1,11 +1,22 @@
-import { Node, Process, Status, TreeEnv } from "../../src/behavior3";
-import { Role } from "../role";
+import { Node, NodeDef, Status, Tree } from "../../src/behavior3";
+import { Role, RoleContext } from "../role";
 
-type AttackInput = [Role | undefined];
+export class Attack extends Node {
+    declare input: [Role | undefined];
 
-export class Attack extends Process {
-    constructor() {
-        super({
+    override onTick(tree: Tree<RoleContext, unknown>): Status {
+        const [enemy] = this.input;
+        if (!enemy) {
+            return "failure";
+        }
+        console.log("Do Attack");
+        enemy.hp -= 100;
+        tree.blackboard.set("ATTACKING", true);
+        return "success";
+    }
+
+    override get descriptor(): Readonly<NodeDef> {
+        return {
             name: "Attack",
             type: "Action",
             desc: "攻击",
@@ -58,17 +69,6 @@ export class Attack extends Process {
                     ],
                 },
             ],
-        });
-    }
-
-    override tick(node: Node, env: TreeEnv): Status {
-        const [enemy] = env.input as AttackInput;
-        if (!enemy) {
-            return "failure";
-        }
-        console.log("Do Attack");
-        enemy.hp -= 100;
-        env.set("ATTACKING", true);
-        return "success";
+        };
     }
 }

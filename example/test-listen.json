@@ -15,9 +15,6 @@
       {
         "id": 3,
         "name": "AlwaysSuccess",
-        "args": {
-          "message": "<------------- Listen"
-        },
         "children": [
           {
             "id": 4,
@@ -77,7 +74,7 @@
                     "id": 10,
                     "name": "Listen",
                     "args": {
-                      "event": "afterRunTree"
+                      "event": "treeAfterTicked"
                     },
                     "input": [
                       ""

@@ -1,19 +1,54 @@
-import { Node } from "../../node";
-import { Process, Status } from "../../process";
-import { Stack, TreeEnv } from "../../tree-env";
-
-interface NodeArgs {
-    readonly time?: number;
-}
+import type { Context, DeepReadonly } from "../../context";
+import { Node, NodeDef, Status } from "../../node";
+import { Stack } from "../../stack";
+import { Tree } from "../../tree";
 
 interface NodeYield {
     stack: Stack;
     expired: number;
 }
 
-export class Timeout extends Process {
-    constructor() {
-        super({
+export class Timeout extends Node {
+    declare args: { readonly time?: number };
+
+    override onTick(tree: Tree<Context, unknown>): Status {
+        const { stack, context } = tree;
+        const level = stack.length;
+        let last: NodeYield | undefined = tree.resume(this);
+        let status: Status = "failure";
+        if (last === undefined) {
+            status = this.children[0].tick(tree);
+        } else if (context.time >= last.expired) {
+            last.stack.clear();
+            return "failure";
+        } else {
+            last.stack.move(stack, 0, last.stack.length);
+            while (stack.length > level) {
+                const child = stack.top()!;
+                status = child.tick(tree);
+                if (status === "running") {
+                    break;
+                }
+            }
+        }
+
+        if (status === "running") {
+            if (last === undefined) {
+                const time = this._checkOneof(0, this.args.time, 0);
+                last = {
+                    stack: new Stack(tree),
+                    expired: context.time + time,
+                };
+            }
+            stack.move(last.stack, level, stack.length - level);
+            return tree.yield(this, last);
+        } else {
+            return status;
+        }
+    }
+
+    get descriptor(): DeepReadonly<NodeDef> {
+        return {
             name: "Timeout",
             type: "Decorator",
             children: 1,
@@ -33,42 +68,6 @@ export class Timeout extends Process {
                 + 当子节点执行超时或返回 \`failure\` 时，返回 \`failure\`
                 + 其余情况返回子节点的执行状态
             `,
-        });
-    }
-
-    override tick(node: Node, env: TreeEnv): Status {
-        const level = env.stack.length;
-        let last: NodeYield | undefined = node.resume(env);
-        let status: Status = "failure";
-        if (last === undefined) {
-            status = node.children[0].tick(env);
-        } else if (env.context.time >= last.expired) {
-            last.stack.clear();
-            return "failure";
-        } else {
-            last.stack.move(env.stack, 0, last.stack.length);
-            while (env.stack.length > level) {
-                const child = env.stack.top()!;
-                status = child.tick(env);
-                if (status === "running") {
-                    break;
-                }
-            }
-        }
-
-        if (status === "running") {
-            if (last === undefined) {
-                const arg = node.args as unknown as NodeArgs;
-                const time = this._checkOneof(node, env, 0, arg.time, 0);
-                last = {
-                    stack: new Stack(env),
-                    expired: env.context.time + time,
-                };
-            }
-            env.stack.move(last.stack, level, env.stack.length - level);
-            return node.yield(env, last);
-        } else {
-            return status;
-        }
+        };
     }
 }

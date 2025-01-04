@@ -1,10 +1,37 @@
-import { Node } from "../../node";
-import { Process, Status } from "../../process";
-import { TreeEnv } from "../../tree-env";
+import type { Context, DeepReadonly } from "../../context";
+import { Node, NodeDef, Status } from "../../node";
 
-export class Sequence extends Process {
-    constructor() {
-        super({
+import { Tree } from "../../tree";
+
+export class Sequence extends Node {
+    override onTick(tree: Tree<Context, unknown>): Status {
+        const last: number | undefined = tree.resume(this);
+        let i = 0;
+
+        if (typeof last === "number") {
+            if (tree.status === "success") {
+                i = last + 1;
+            } else if (tree.status === "failure") {
+                return "failure";
+            } else {
+                this.error(`unexpected status error: ${tree.status}`);
+            }
+        }
+
+        for (; i < this.children.length; i++) {
+            const status = this.children[i].tick(tree);
+            if (status === "failure") {
+                return "failure";
+            } else if (status === "running") {
+                return tree.yield(this, i);
+            }
+        }
+
+        return "success";
+    }
+
+    get descriptor(): DeepReadonly<NodeDef> {
+        return {
             name: "Sequence",
             type: "Composite",
             children: -1,
@@ -15,32 +42,6 @@ export class Sequence extends Process {
                 + 若子节点返回 \`failure\`，则直接返回 \`failure\` 状态
                 + 其余情况返回 \`running\` 状态
             `,
-        });
-    }
-
-    override tick(node: Node, env: TreeEnv): Status {
-        const last: number | undefined = node.resume(env);
-        let i = 0;
-
-        if (typeof last === "number") {
-            if (env.status === "success") {
-                i = last + 1;
-            } else if (env.status === "failure") {
-                return "failure";
-            } else {
-                node.error(`unexpected status error: ${env.status}`);
-            }
-        }
-
-        for (; i < node.children.length; i++) {
-            const status = node.children[i].tick(env);
-            if (status === "failure") {
-                return "failure";
-            } else if (status === "running") {
-                return node.yield(env, i);
-            }
-        }
-
-        return "success";
+        };
     }
 }

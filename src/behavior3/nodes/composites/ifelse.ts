@@ -1,10 +1,42 @@
-import { Node } from "../../node";
-import { Process, Status } from "../../process";
-import { TreeEnv } from "../../tree-env";
+import type { Context, DeepReadonly } from "../../context";
+import { Node, NodeDef, Status } from "../../node";
+import { Tree } from "../../tree";
 
-export class IfElse extends Process {
-    constructor() {
-        super({
+export class IfElse extends Node {
+    private _ifelse(tree: Tree<Context, unknown>, status: Exclude<Status, "running">) {
+        const i = status === "success" ? 1 : 2;
+        const childStatus = this.children[i].tick(tree);
+        if (childStatus === "running") {
+            return tree.yield(this, i);
+        } else {
+            return childStatus;
+        }
+    }
+
+    override onTick(tree: Tree<Context, unknown>): Status {
+        const i: number | undefined = tree.resume(this);
+        let status: Status = tree.status;
+        if (i !== undefined) {
+            if (status === "running") {
+                this.error(`unexpected status error`);
+            } else if (i === 0) {
+                return this._ifelse(tree, status);
+            } else {
+                return status;
+            }
+            return "failure";
+        }
+
+        status = this.children[0].tick(tree);
+        if (status === "running") {
+            return tree.yield(this, 0);
+        } else {
+            return this._ifelse(tree, status);
+        }
+    }
+
+    get descriptor(): DeepReadonly<NodeDef> {
+        return {
             name: "IfElse",
             type: "Composite",
             children: 3,
@@ -16,38 +48,6 @@ export class IfElse extends Process {
                 + 第二个子节点为条件为 \`success\` 时执行的节点
                 + 第三个子节点为条件为 \`failure\` 时执行的节点,
             `,
-        });
-    }
-
-    private _ifelse(node: Node, env: TreeEnv, status: Exclude<Status, "running">) {
-        const i = status === "success" ? 1 : 2;
-        const childStatus = node.children[i].tick(env);
-        if (childStatus === "running") {
-            return node.yield(env, i);
-        } else {
-            return childStatus;
-        }
-    }
-
-    override tick(node: Node, env: TreeEnv): Status {
-        const i: number | undefined = node.resume(env);
-        let status: Status = env.status;
-        if (i !== undefined) {
-            if (status === "running") {
-                node.error(`unexpected status error`);
-            } else if (i === 0) {
-                return this._ifelse(node, env, status);
-            } else {
-                return status;
-            }
-            return "failure";
-        }
-
-        status = node.children[0].tick(env);
-        if (status === "running") {
-            return node.yield(env, 0);
-        } else {
-            return this._ifelse(node, env, status);
-        }
+        };
     }
 }

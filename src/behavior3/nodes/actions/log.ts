@@ -1,11 +1,6 @@
-import { Node } from "../../node";
-import { Process, Status } from "../../process";
-import { TreeEnv } from "../../tree-env";
-
-interface NodeArgs {
-    readonly message: string;
-    readonly level: LogLevel;
-}
+import type { Context, DeepReadonly } from "../../context";
+import { Node, NodeDef, Status } from "../../node";
+import { Tree } from "../../tree";
 
 enum LogLevel {
     INFO = "info",
@@ -14,11 +9,33 @@ enum LogLevel {
     ERROR = "error",
 }
 
-type NodeInput = [unknown?];
+export class Log extends Node {
+    declare input: [unknown?];
+    declare args: {
+        readonly message: string;
+        readonly level: LogLevel;
+    };
 
-export class Log extends Process {
-    constructor() {
-        super({
+    override onTick(tree: Tree<Context, unknown>): Status {
+        const [inputMsg] = this.input;
+        const args = this.args;
+        const level = args.level ?? LogLevel.INFO;
+        let print = console.log;
+        if (level === LogLevel.INFO) {
+            print = console.info;
+        } else if (level === LogLevel.DEBUG) {
+            print = console.debug;
+        } else if (level === LogLevel.WARN) {
+            print = console.warn;
+        } else if (level === LogLevel.ERROR) {
+            print = console.error;
+        }
+        print.call(console, "behavior3 -> log:", args.message, inputMsg ?? "");
+        return "success";
+    }
+
+    get descriptor(): DeepReadonly<NodeDef> {
+        return {
             name: "Log",
             type: "Action",
             children: 0,
@@ -56,24 +73,6 @@ export class Log extends Process {
                     ],
                 },
             ],
-        });
-    }
-
-    override tick(node: Node, env: TreeEnv): Status {
-        const [inputMsg] = env.input as NodeInput;
-        const args = node.args as unknown as NodeArgs;
-        const level = args.level ?? LogLevel.INFO;
-        let print = console.log;
-        if (level === LogLevel.INFO) {
-            print = console.info;
-        } else if (level === LogLevel.DEBUG) {
-            print = console.debug;
-        } else if (level === LogLevel.WARN) {
-            print = console.warn;
-        } else if (level === LogLevel.ERROR) {
-            print = console.error;
-        }
-        print.call(console, "behavior3 -> log:", args.message, inputMsg ?? "");
-        return "success";
+        };
     }
 }

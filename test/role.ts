@@ -1,4 +1,6 @@
-import { Context, NodeDef, TreeEnv, TreeRunner } from "../src/behavior3";
+import * as fs from "fs";
+import { Context, Node, NodeDef, TreeData } from "../src/behavior3";
+import { DeepReadonly } from "../src/behavior3/context";
 import { Attack } from "./nodes/attack";
 import { FindEnemy } from "./nodes/find-enemy";
 import { GetHp } from "./nodes/get-hp";
@@ -14,7 +16,6 @@ export interface Role {
     hp: number;
     x: number;
     y: number;
-    tree: TreeRunner<RoleTreeEnv>;
 }
 
 export interface Position {
@@ -22,28 +23,31 @@ export interface Position {
     y: number;
 }
 
-export class RoleTreeEnv extends TreeEnv<RoleContext> {
-    owner!: Role;
-}
-
 export class RoleContext extends Context {
     avators: Role[] = [];
 
     constructor() {
         super();
-        this.registerProcess(Attack);
-        this.registerProcess(FindEnemy);
-        this.registerProcess(GetHp);
-        this.registerProcess(Idle);
-        this.registerProcess(IsStatus);
-        this.registerProcess(MoveToPos);
-        this.registerProcess(MoveToTarget);
+        this.registerNode(Attack);
+        this.registerNode(FindEnemy);
+        this.registerNode(GetHp);
+        this.registerNode(Idle);
+        this.registerNode(IsStatus);
+        this.registerNode(MoveToPos);
+        this.registerNode(MoveToTarget);
 
         // 用于加速执行表达式，此代码可以通过脚本扫描所有行为树，预先生成代码，然后注册到 Context 中
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         this.registerCode("hp > 50", (envars: any) => {
             return envars.hp > 50;
         });
+    }
+
+    override loadTree(path: string): Promise<Node> {
+        const treeData = JSON.parse(fs.readFileSync(path, "utf-8")) as TreeData;
+        const rootNode = this._createNode(treeData.root, treeData);
+        this.trees[path] = rootNode;
+        return Promise.resolve(rootNode);
     }
 
     override get time() {
@@ -59,12 +63,11 @@ export class RoleContext extends Context {
     }
 
     exportNodeDefs() {
-        const defs: NodeDef[] = [];
-        for (const v of this._processResolvers.values()) {
-            const descriptor = v.descriptor;
+        const defs: DeepReadonly<NodeDef>[] = [];
+        Object.values(this.nodeDefs).forEach((descriptor) => {
             defs.push(descriptor);
             if (descriptor.name === "Listen") {
-                descriptor.args?.[0].options?.push(
+                (descriptor as NodeDef).args?.[0].options?.push(
                     ...[
                         {
                             name: "testOff",
@@ -77,7 +80,7 @@ export class RoleContext extends Context {
                     ]
                 );
             }
-        }
+        });
         defs.sort((a, b) => a.name.localeCompare(b.name));
         let str = JSON.stringify(defs, null, 2);
         str = str.replace(/"doc": "\\n +/g, '"doc": "');
