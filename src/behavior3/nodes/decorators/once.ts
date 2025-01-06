@@ -19,7 +19,7 @@ export class Once extends Node {
 
         const isYield: boolean | undefined = tree.resume(this);
         if (typeof isYield === "boolean") {
-            if (tree.status === "running") {
+            if (tree.lastNodeStatus === "running") {
                 this.error(`unexpected status error`);
             }
             tree.blackboard.set(onceKey, true);

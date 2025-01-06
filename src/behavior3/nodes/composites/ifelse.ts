@@ -15,7 +15,7 @@ export class IfElse extends Node {
 
     override onTick(tree: Tree<Context, unknown>): Status {
         const i: number | undefined = tree.resume(this);
-        let status: Status = tree.status;
+        let status: Status = tree.lastNodeStatus;
         if (i !== undefined) {
             if (status === "running") {
                 this.error(`unexpected status error`);

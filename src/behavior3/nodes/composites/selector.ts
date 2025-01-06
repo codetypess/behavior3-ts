@@ -8,9 +8,9 @@ export class Selector extends Node {
         let i = 0;
 
         if (typeof last === "number") {
-            if (tree.status === "failure") {
+            if (tree.lastNodeStatus === "failure") {
                 i = last + 1;
-            } else if (tree.status === "success") {
+            } else if (tree.lastNodeStatus === "success") {
                 return "success";
             } else {
                 this.error(`unexpected status error`);

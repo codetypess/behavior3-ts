@@ -15,7 +15,7 @@ export class Switch extends Node {
 
     override onTick(tree: Tree<Context, unknown>): Status {
         let step: number | undefined = tree.resume(this);
-        let status = tree.status;
+        let status = tree.lastNodeStatus;
         if (typeof step === "number") {
             if (status === "running") {
                 this.error(`unexpected status error`);

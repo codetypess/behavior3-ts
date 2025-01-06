@@ -9,12 +9,12 @@ export class Sequence extends Node {
         let i = 0;
 
         if (typeof last === "number") {
-            if (tree.status === "success") {
+            if (tree.lastNodeStatus === "success") {
                 i = last + 1;
-            } else if (tree.status === "failure") {
+            } else if (tree.lastNodeStatus === "failure") {
                 return "failure";
             } else {
-                this.error(`unexpected status error: ${tree.status}`);
+                this.error(`unexpected status error: ${tree.lastNodeStatus}`);
             }
         }
 

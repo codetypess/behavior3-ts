@@ -18,6 +18,8 @@ export const enum TreeEvent {
     TICKED_FAILURE = "treeTickedFailure",
 }
 
+export type TreeStatus = Status | "interrupted";
+
 export class Tree<C extends Context, Owner> {
     readonly context: C;
     readonly owner: Owner;
@@ -29,13 +31,14 @@ export class Tree<C extends Context, Owner> {
 
     protected _ticking: boolean = false;
 
-    private _root?: Node;
-
     /** @private */
-    __status: Status = "success";
+    __lastNodeStatus: Status = "success";
 
     /** @private */
     __interrupted: boolean = false;
+
+    private _root?: Node;
+    private _status: TreeStatus = "success";
 
     constructor(context: C, owner: Owner, path: string) {
         this.context = context;
@@ -46,12 +49,16 @@ export class Tree<C extends Context, Owner> {
         this._loadTree();
     }
 
-    get root() {
-        return this._root;
+    get ready() {
+        return !!this._root;
     }
 
     get status() {
-        return this.__status;
+        return this._status;
+    }
+
+    get lastNodeStatus() {
+        return this.__lastNodeStatus;
     }
 
     get ticking() {
@@ -65,29 +72,25 @@ export class Tree<C extends Context, Owner> {
         }
     }
 
-    private _dispatch(event: string) {
-        this.context.dispatch(event, this);
-    }
-
     clear() {
         // force run clear
         const interrupted = this.__interrupted;
         this.__interrupted = false;
-        this._dispatch(TreeEvent.CLEANED);
+        this.context.dispatch(TreeEvent.CLEANED, this);
         this.__interrupted = interrupted;
 
         this.interrupt();
         this.debug = false;
         this.__interrupted = false;
-        this.__status = "success";
+        this._status = "success";
         this.stack.clear();
         this.blackboard.clear();
         this.context.offAll(this);
     }
 
     interrupt() {
-        if (this.__status === "running" || this._ticking) {
-            this._dispatch(TreeEvent.INTERRUPTED);
+        if (this._status === "running" || this._ticking) {
+            this.context.dispatch(TreeEvent.INTERRUPTED, this);
             this.__interrupted = true;
             if (!this._ticking) {
                 this._doInterrupt();
@@ -104,8 +107,8 @@ export class Tree<C extends Context, Owner> {
         return this.blackboard.get(node.__yield) as V;
     }
 
-    tick(): Status {
-        const { stack, root } = this;
+    tick(): TreeStatus {
+        const { stack, _root: root } = this;
 
         if (!root) {
             return "failure";
@@ -125,24 +128,24 @@ export class Tree<C extends Context, Owner> {
         if (stack.length > 0) {
             let node = stack.top();
             while (node) {
-                this.__status = node.tick(this);
-                if (this.__status === "running") {
+                this._status = node.tick(this);
+                if (this._status === "running") {
                     break;
                 } else {
                     node = stack.top();
                 }
             }
         } else {
-            this._dispatch(TreeEvent.BEFORE_TICKED);
-            this.__status = root.tick(this);
+            this.context.dispatch(TreeEvent.BEFORE_TICKED, this);
+            this._status = root.tick(this);
         }
 
-        if (this.__status === "success") {
-            this._dispatch(TreeEvent.AFTER_TICKED);
-            this._dispatch(TreeEvent.TICKED_SUCCESS);
-        } else if (this.__status === "failure") {
-            this._dispatch(TreeEvent.AFTER_TICKED);
-            this._dispatch(TreeEvent.TICKED_FAILURE);
+        if (this._status === "success") {
+            this.context.dispatch(TreeEvent.AFTER_TICKED, this);
+            this.context.dispatch(TreeEvent.TICKED_SUCCESS, this);
+        } else if (this._status === "failure") {
+            this.context.dispatch(TreeEvent.AFTER_TICKED, this);
+            this.context.dispatch(TreeEvent.TICKED_FAILURE, this);
         }
 
         if (this.__interrupted) {
@@ -151,12 +154,12 @@ export class Tree<C extends Context, Owner> {
 
         this._ticking = false;
 
-        return this.__status;
+        return this._status;
     }
 
     private _doInterrupt() {
         const values = this.blackboard.values;
-        this.__status = "failure";
+        this._status = "interrupted";
         this.stack.clear();
         for (const key in values) {
             if (Blackboard.isTempVar(key)) {

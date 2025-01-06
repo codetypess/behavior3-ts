@@ -9,11 +9,11 @@ export class Assert extends Node {
         const args = this.args;
         const isYield: boolean | undefined = tree.resume(this);
         if (typeof isYield === "boolean") {
-            if (tree.status === "running") {
+            if (tree.lastNodeStatus === "running") {
                 this.error(`unexpected status error`);
             }
 
-            if (tree.status === "success") {
+            if (tree.lastNodeStatus === "success") {
                 return "success";
             } else {
                 this.error(args.message);

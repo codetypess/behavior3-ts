@@ -10,7 +10,7 @@ export class RepeatUntilFailure extends Node {
         let count: number | undefined = tree.resume(this);
 
         if (typeof count === "number") {
-            if (tree.status === "failure") {
+            if (tree.lastNodeStatus === "failure") {
                 return "success";
             } else if (count >= maxLoop) {
                 return "failure";

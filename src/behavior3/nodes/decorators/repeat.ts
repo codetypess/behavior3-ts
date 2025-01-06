@@ -11,9 +11,9 @@ export class Repeat extends Node {
         let i: number | undefined = tree.resume(this);
 
         if (i !== undefined) {
-            if (tree.status === "running") {
+            if (tree.lastNodeStatus === "running") {
                 this.error(`unexpected status error`);
-            } else if (tree.status === "failure") {
+            } else if (tree.lastNodeStatus === "failure") {
                 return "failure";
             }
             i++;

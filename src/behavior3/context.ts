@@ -53,7 +53,7 @@ export type DeepReadonly<T> =
     T extends object ? { readonly [K in keyof T]: DeepReadonly<T[K]> } :
     T;
 
-export class Context {
+export abstract class Context {
     readonly nodeDefs: Record<string, DeepReadonly<NodeDef>> = {};
     readonly trees: Record<string, Node> = {};
 
@@ -104,9 +104,7 @@ export class Context {
         this.registerNode(Wait);
     }
 
-    loadTree(path: string): Promise<Node> {
-        throw new Error("Method not implemented.");
-    }
+    abstract loadTree(path: string): Promise<Node>;
 
     get time() {
         return this._time;
@@ -230,7 +228,7 @@ export class Context {
         const descriptor = this.nodeDefs[cfg.name];
 
         if (!NodeCls || !descriptor) {
-            throw new Error(`behavior3: node '${cfg.name}' not found`);
+            throw new Error(`behavior3: node '${cfg.name}' not found in tree '${treeCfg.name}'`);
         }
 
         cfg.input ||= [];

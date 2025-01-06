@@ -150,6 +150,15 @@ export abstract class Node {
         return this._children;
     }
 
+    private _tryTick(tree: Tree<Context, unknown>) {
+        try {
+            return this.onTick(tree);
+        } catch (e) {
+            console.error(e);
+            return "failure";
+        }
+    }
+
     tick(tree: Tree<Context, unknown>): Status {
         const { stack, blackboard } = tree;
         const { cfg, input, output } = this;
@@ -165,7 +174,7 @@ export abstract class Node {
             input.push(blackboard.get(varName));
         });
 
-        const status = this.onTick(tree);
+        const status = this._tryTick(tree);
 
         if (tree.__interrupted) {
             return "running";
@@ -178,7 +187,7 @@ export abstract class Node {
             blackboard.set(this.__yield, true);
         }
 
-        tree.__status = status;
+        tree.__lastNodeStatus = status;
 
         if (cfg.debug || tree.debug) {
             let varStr = "";

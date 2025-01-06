@@ -6,10 +6,10 @@ export class Invert extends Node {
     override onTick(tree: Tree<Context, unknown>): Status {
         const isYield: boolean | undefined = tree.resume(this);
         if (typeof isYield === "boolean") {
-            if (tree.status === "running") {
+            if (tree.lastNodeStatus === "running") {
                 this.error(`unexpected status error`);
             }
-            return this._invert(tree.status);
+            return this._invert(tree.lastNodeStatus);
         }
         const status = this.children[0].tick(tree);
         if (status === "running") {

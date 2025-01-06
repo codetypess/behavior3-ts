@@ -16,9 +16,9 @@ export class Filter extends Node {
         let newArr: unknown[];
         if (last instanceof Array) {
             [i, newArr] = last;
-            if (tree.status === "running") {
+            if (tree.lastNodeStatus === "running") {
                 this.error(`unexpected status error`);
-            } else if (tree.status === "success") {
+            } else if (tree.lastNodeStatus === "success") {
                 newArr.push(arr[i]);
             }
             i++;
