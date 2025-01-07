@@ -6,20 +6,22 @@ import { Tree } from "../../tree";
 export class Sequence extends Node {
     override onTick(tree: Tree<Context, unknown>): Status {
         const last: number | undefined = tree.resume(this);
+        const children = this.children;
+        const lastNodeStatus = tree.lastNodeStatus;
         let i = 0;
 
         if (typeof last === "number") {
-            if (tree.lastNodeStatus === "success") {
+            if (lastNodeStatus === "success") {
                 i = last + 1;
-            } else if (tree.lastNodeStatus === "failure") {
+            } else if (lastNodeStatus === "failure") {
                 return "failure";
             } else {
-                this.error(`unexpected status error: ${tree.lastNodeStatus}`);
+                this.error(`unexpected status error: ${lastNodeStatus}`);
             }
         }
 
-        for (; i < this.children.length; i++) {
-            const status = this.children[i].tick(tree);
+        for (; i < children.length; i++) {
+            const status = children[i].tick(tree);
             if (status === "failure") {
                 return "failure";
             } else if (status === "running") {

@@ -7,13 +7,13 @@ export class Repeat extends Node {
 
     override onTick(tree: Tree<Context, unknown>): Status {
         const count = this._checkOneof(0, this.args.count, Number.MAX_SAFE_INTEGER);
-
+        const lastNodeStatus = tree.lastNodeStatus;
         let i: number | undefined = tree.resume(this);
 
         if (i !== undefined) {
-            if (tree.lastNodeStatus === "running") {
+            if (lastNodeStatus === "running") {
                 this.error(`unexpected status error`);
-            } else if (tree.lastNodeStatus === "failure") {
+            } else if (lastNodeStatus === "failure") {
                 return "failure";
             }
             i++;

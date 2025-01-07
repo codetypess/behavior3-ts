@@ -5,20 +5,22 @@ import { Tree } from "../../tree";
 export class Selector extends Node {
     override onTick(tree: Tree<Context, unknown>): Status {
         const last: number | undefined = tree.resume(this);
+        const children = this.children;
+        const lastNodeStatus = tree.lastNodeStatus;
         let i = 0;
 
         if (typeof last === "number") {
-            if (tree.lastNodeStatus === "failure") {
+            if (lastNodeStatus === "failure") {
                 i = last + 1;
-            } else if (tree.lastNodeStatus === "success") {
+            } else if (lastNodeStatus === "success") {
                 return "success";
             } else {
                 this.error(`unexpected status error`);
             }
         }
 
-        for (; i < this.children.length; i++) {
-            const status = this.children[i].tick(tree);
+        for (; i < children.length; i++) {
+            const status = children[i].tick(tree);
             if (status === "success") {
                 return "success";
             } else if (status === "running") {

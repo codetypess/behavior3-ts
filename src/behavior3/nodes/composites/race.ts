@@ -8,20 +8,20 @@ const EMPTY_STACK: Stack = new Stack(null!);
 export class Race extends Node {
     override onTick(tree: Tree<Context, unknown>): Status {
         const last: Stack[] = tree.resume(this) ?? [];
-        const level = tree.stack.length;
+        const stack = tree.stack;
+        const level = stack.length;
+        const children = this.children;
         let count = 0;
 
-        for (let i = 0; i < this.children.length; i++) {
-            let child = this.children[i];
-            let stack = last[i];
+        for (let i = 0; i < children.length; i++) {
+            let childStack = last[i];
             let status: Status = "failure";
-            if (stack === undefined) {
-                status = child.tick(tree);
-            } else if (stack.length > 0) {
-                stack.move(tree.stack, 0, stack.length);
-                while (tree.stack.length > level) {
-                    child = tree.stack.top()!;
-                    status = child.tick(tree);
+            if (childStack === undefined) {
+                status = children[i].tick(tree);
+            } else if (childStack.length > 0) {
+                childStack.move(stack, 0, childStack.length);
+                while (stack.length > level) {
+                    status = stack.top()!.tick(tree);
                     if (status === "running") {
                         break;
                     }
@@ -29,22 +29,22 @@ export class Race extends Node {
             }
 
             if (status === "running") {
-                if (stack === undefined) {
-                    stack = new Stack(tree);
+                if (childStack === undefined) {
+                    childStack = new Stack(tree);
                 }
-                tree.stack.move(stack, level, tree.stack.length - level);
+                stack.move(childStack, level, stack.length - level);
             } else if (status === "success") {
                 last.forEach((v) => v !== EMPTY_STACK && v.clear());
                 return "success";
             } else {
                 count++;
-                stack = EMPTY_STACK;
+                childStack = EMPTY_STACK;
             }
 
-            last[i] = stack;
+            last[i] = childStack;
         }
 
-        if (count === this.children.length) {
+        if (count === children.length) {
             return "failure";
         } else {
             return tree.yield(this, last);

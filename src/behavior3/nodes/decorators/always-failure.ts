@@ -5,8 +5,9 @@ import { Tree } from "../../tree";
 export class AlwaysFailure extends Node {
     override onTick(tree: Tree<Context, unknown>): Status {
         const isYield: boolean | undefined = tree.resume(this);
+        const lastNodeStatus = tree.lastNodeStatus;
         if (typeof isYield === "boolean") {
-            if (tree.lastNodeStatus === "running") {
+            if (lastNodeStatus === "running") {
                 this.error(`unexpected status error`);
             }
             return "failure";

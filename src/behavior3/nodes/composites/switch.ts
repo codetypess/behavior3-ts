@@ -15,28 +15,30 @@ export class Switch extends Node {
 
     override onTick(tree: Tree<Context, unknown>): Status {
         let step: number | undefined = tree.resume(this);
-        let status = tree.lastNodeStatus;
+        const lastNodeStatus = tree.lastNodeStatus;
+        const children = this.children;
+
         if (typeof step === "number") {
-            if (status === "running") {
+            if (lastNodeStatus === "running") {
                 this.error(`unexpected status error`);
             }
             if (step % 2 === 0) {
-                if (status === "success") {
+                if (lastNodeStatus === "success") {
                     step += 1; // do second node in case
                 } else {
                     step += 2; // next case
                 }
             } else {
-                return status;
+                return lastNodeStatus;
             }
         } else {
             step = 0;
         }
 
-        for (let i = step >>> 1; i < this.children.length; i++) {
-            const [first, second] = this.children[i].children;
+        for (let i = step >>> 1; i < children.length; i++) {
+            const [first, second] = children[i].children;
             if (step % 2 === 0) {
-                status = first.tick(tree);
+                const status = first.tick(tree);
                 if (status === "running") {
                     return tree.yield(this, step);
                 } else if (status === "success") {
@@ -46,7 +48,7 @@ export class Switch extends Node {
                 }
             }
             if (step % 2 === 1) {
-                status = second.tick(tree);
+                const status = second.tick(tree);
                 if (status === "running") {
                     return tree.yield(this, step);
                 }

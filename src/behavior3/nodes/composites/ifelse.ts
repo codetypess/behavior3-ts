@@ -15,19 +15,19 @@ export class IfElse extends Node {
 
     override onTick(tree: Tree<Context, unknown>): Status {
         const i: number | undefined = tree.resume(this);
-        let status: Status = tree.lastNodeStatus;
+        const lastNodeStatus = tree.lastNodeStatus;
         if (i !== undefined) {
-            if (status === "running") {
+            if (lastNodeStatus === "running") {
                 this.error(`unexpected status error`);
             } else if (i === 0) {
-                return this._ifelse(tree, status);
+                return this._ifelse(tree, lastNodeStatus);
             } else {
-                return status;
+                return lastNodeStatus;
             }
             return "failure";
         }
 
-        status = this.children[0].tick(tree);
+        const status = this.children[0].tick(tree);
         if (status === "running") {
             return tree.yield(this, 0);
         } else {

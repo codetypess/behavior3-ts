@@ -8,12 +8,13 @@ export class Assert extends Node {
     override onTick(tree: Tree<Context, unknown>): Status {
         const args = this.args;
         const isYield: boolean | undefined = tree.resume(this);
+        const lastNodeStatus = tree.lastNodeStatus;
         if (typeof isYield === "boolean") {
-            if (tree.lastNodeStatus === "running") {
+            if (lastNodeStatus === "running") {
                 this.error(`unexpected status error`);
             }
 
-            if (tree.lastNodeStatus === "success") {
+            if (lastNodeStatus === "success") {
                 return "success";
             } else {
                 this.error(args.message);

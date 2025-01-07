@@ -108,7 +108,7 @@ export class Tree<C extends Context, Owner> {
     }
 
     tick(): TreeStatus {
-        const { stack, _root: root } = this;
+        const { context, stack, _root: root } = this;
 
         if (!root) {
             return "failure";
@@ -136,16 +136,16 @@ export class Tree<C extends Context, Owner> {
                 }
             }
         } else {
-            this.context.dispatch(TreeEvent.BEFORE_TICKED, this);
+            context.dispatch(TreeEvent.BEFORE_TICKED, this);
             this._status = root.tick(this);
         }
 
         if (this._status === "success") {
-            this.context.dispatch(TreeEvent.AFTER_TICKED, this);
-            this.context.dispatch(TreeEvent.TICKED_SUCCESS, this);
+            context.dispatch(TreeEvent.AFTER_TICKED, this);
+            context.dispatch(TreeEvent.TICKED_SUCCESS, this);
         } else if (this._status === "failure") {
-            this.context.dispatch(TreeEvent.AFTER_TICKED, this);
-            this.context.dispatch(TreeEvent.TICKED_FAILURE, this);
+            context.dispatch(TreeEvent.AFTER_TICKED, this);
+            context.dispatch(TreeEvent.TICKED_FAILURE, this);
         }
 
         if (this.__interrupted) {
