@@ -5,8 +5,8 @@ import { Tree } from "../../tree";
 export class Check extends Node {
     declare args: { readonly value: string };
 
-    override init(context: Context, cfg: NodeData): void {
-        super.init(context, cfg);
+    override init(context: Context, cfg: NodeData, parent: Node | null): void {
+        super.init(context, cfg, parent);
 
         if (typeof this.args.value !== "string" || this.args.value.length === 0) {
             this.error(`args.value is not a expr string`);

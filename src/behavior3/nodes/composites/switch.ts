@@ -3,8 +3,8 @@ import { Node, NodeData, NodeDef, Status } from "../../node";
 import { Tree } from "../../tree";
 
 export class Switch extends Node {
-    override init(context: Context, cfg: NodeData): void {
-        super.init(context, cfg);
+    override init(context: Context, cfg: NodeData, parent: Node | null): void {
+        super.init(context, cfg, parent);
 
         this.children.forEach((v) => {
             if (v.name !== "Case") {

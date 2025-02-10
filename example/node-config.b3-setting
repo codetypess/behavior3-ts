@@ -8,7 +8,7 @@
       "|running"
     ],
     "desc": "始终返回失败",
-    "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 不管子节点是否成功都返回 `failure`\n"
+    "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 当子节点返回 `running` 时，返回 `running`\n+ 其它情况，不管子节点是否成功都返回 `failure`\n"
   },
   {
     "name": "AlwaysRunning",
@@ -29,7 +29,7 @@
       "|running"
     ],
     "desc": "始终返回成功",
-    "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 不管子节点是否成功都返回 `success`\n"
+    "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 当子节点返回 `running` 时，返回 `running`\n+ 其它情况，不管子节点是否成功都返回 `success`\n"
   },
   {
     "name": "Assert",
@@ -409,6 +409,15 @@
       }
     ],
     "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 只有当子节点的执行状态与指定状态相同时才返回 `success`，其余返回失败\n+ 若子节点返回 `running` 状态，将中断子节点并清理子节点的执行栈"
+  },
+  {
+    "name": "JustSuccess",
+    "type": "Action",
+    "children": 0,
+    "status": [
+      "success"
+    ],
+    "desc": "什么都不干，只返回成功"
   },
   {
     "name": "Let",

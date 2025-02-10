@@ -4,6 +4,7 @@ import { Index } from "./nodes/actions";
 import { Calculate } from "./nodes/actions/calculate";
 import { Concat } from "./nodes/actions/concat";
 import { GetField } from "./nodes/actions/get-field";
+import { JustSuccess } from "./nodes/actions/just-success";
 import { Let } from "./nodes/actions/let";
 import { Log } from "./nodes/actions/log";
 import { Now } from "./nodes/actions/now";
@@ -40,7 +41,8 @@ import { TreeData } from "./tree";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Constructor<T, A extends any[] = any[]> = new (...args: A) => T;
-export type Callback<A extends unknown[] = unknown[]> = (...args: A) => void;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type Callback<A extends any[] = any[]> = (...args: A) => void;
 export type ObjectType = { [k: string]: unknown };
 export type TargetType = object | string | number;
 export type TagType = unknown;
@@ -57,11 +59,11 @@ export abstract class Context {
     readonly nodeDefs: Record<string, DeepReadonly<NodeDef>> = {};
     readonly trees: Record<string, Node> = {};
 
-    protected _evaluators: Record<string, Evaluator> = {};
     protected _time: number = 0;
-    protected _delays: Map<Callback, [TagType, number]> = new Map();
-    protected _listenerMap: Map<string, Map<TargetType, Map<Callback, TagType>>> = new Map();
 
+    private _evaluators: Record<string, Evaluator> = {};
+    private _delays: Map<Callback, [TagType, number]> = new Map();
+    private _listenerMap: Map<string, Map<TargetType, Map<Callback, TagType>>> = new Map();
     private _nodeClasses: Record<string, Constructor<Node>> = {};
 
     constructor() {
@@ -82,6 +84,7 @@ export abstract class Context {
         this.registerNode(Index);
         this.registerNode(Invert);
         this.registerNode(IsNull);
+        this.registerNode(JustSuccess);
         this.registerNode(Let);
         this.registerNode(Listen);
         this.registerNode(Log);
@@ -223,7 +226,7 @@ export abstract class Context {
         this._nodeClasses[descriptor.name] = cls;
     }
 
-    protected _createNode(cfg: NodeData, treeCfg: TreeData) {
+    protected _createNode(cfg: NodeData, treeCfg: TreeData, parent: Node | null = null) {
         const NodeCls = this._nodeClasses[cfg.name];
         const descriptor = this.nodeDefs[cfg.name];
 
@@ -241,11 +244,11 @@ export abstract class Context {
 
         for (const childCfg of cfg.children) {
             if (!childCfg.disabled) {
-                (node.children as Node[]).push(this._createNode(childCfg, treeCfg));
+                (node.children as Node[]).push(this._createNode(childCfg, treeCfg, node));
             }
         }
 
-        node.init(this, cfg);
+        node.init(this, cfg, parent);
 
         if (
             descriptor.children !== undefined &&

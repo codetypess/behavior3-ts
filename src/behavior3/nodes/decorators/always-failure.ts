@@ -28,7 +28,8 @@ export class AlwaysFailure extends Node {
             desc: "始终返回失败",
             doc: `
                 + 只能有一个子节点，多个仅执行第一个
-                + 不管子节点是否成功都返回 \`failure\`
+                + 当子节点返回 \`running\` 时，返回 \`running\`
+                + 其它情况，不管子节点是否成功都返回 \`failure\`
             `,
         };
     }

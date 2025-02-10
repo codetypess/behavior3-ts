@@ -116,6 +116,7 @@ export abstract class Node {
 
     private _children: Node[] = [];
     private _cfg!: DeepReadonly<NodeData>;
+    private _parent: Node | null = null;
     private _yield?: string;
 
     constructor() {
@@ -124,8 +125,9 @@ export abstract class Node {
         }
     }
 
-    init(context: Context, cfg: NodeData) {
+    init(context: Context, cfg: NodeData, parent: Node | null) {
         this._cfg = cfg;
+        this._parent = parent;
         Object.keys(cfg.args).forEach((k) => ((this.args as ObjectType)[k] = cfg.args[k]));
     }
 
@@ -144,6 +146,10 @@ export abstract class Node {
 
     get name() {
         return this.cfg.name;
+    }
+
+    get parent() {
+        return this._parent;
     }
 
     get children(): Readonly<Node[]> {

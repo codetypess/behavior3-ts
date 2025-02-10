@@ -6,8 +6,9 @@ import { Tree } from "../../tree";
 export class Once extends Node {
     private _onceKey!: string;
 
-    override init(context: Context, cfg: NodeData): void {
-        super.init(context, cfg);
+    override init(context: Context, cfg: NodeData, parent: Node | null): void {
+        super.init(context, cfg, parent);
+
         this._onceKey = Blackboard.makePrivateVar(this, "ONCE");
     }
 
