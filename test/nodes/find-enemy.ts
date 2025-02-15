@@ -36,6 +36,7 @@ export class FindEnemy extends Node {
             name: "FindEnemy",
             type: "Action",
             desc: "寻找敌人",
+            output: ["敌人"],
             args: [
                 { name: "w", type: "int", desc: "宽度" },
                 { name: "h", type: "int", desc: "高度" },

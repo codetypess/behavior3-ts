@@ -20,55 +20,8 @@ export class Attack extends Node {
             name: "Attack",
             type: "Action",
             desc: "攻击",
-            input: ["目标敌人", "技能..."],
-            output: ["结果", "数值..."],
-            args: [
-                {
-                    name: "distance",
-                    type: "int?",
-                    desc: "攻击距离",
-                },
-                {
-                    name: "range",
-                    type: "int",
-                    desc: "距离",
-                },
-                {
-                    name: "enemy",
-                    type: "string[]",
-                    desc: "敌人",
-                },
-                {
-                    name: "multi",
-                    type: "bool[]",
-                    desc: "是否多目标",
-                },
-                {
-                    name: "data",
-                    type: "json[]",
-                    desc: "数据",
-                },
-                {
-                    name: "velocity",
-                    type: "float[]",
-                    desc: "速度",
-                },
-                {
-                    name: "target",
-                    type: "enum[]",
-                    desc: "目标",
-                    options: [
-                        {
-                            name: "敌人",
-                            value: "enemy",
-                        },
-                        {
-                            name: "自己",
-                            value: "self",
-                        },
-                    ],
-                },
-            ],
+            input: ["目标敌人"],
+            args: [],
         };
     }
 }
