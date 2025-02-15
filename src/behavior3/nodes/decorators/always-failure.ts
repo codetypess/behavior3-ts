@@ -19,7 +19,7 @@ export class AlwaysFailure extends Node {
         return "failure";
     }
 
-    get descriptor(): DeepReadonly<NodeDef> {
+    static override get descriptor(): DeepReadonly<NodeDef> {
         return {
             name: "AlwaysFailure",
             type: "Decorator",

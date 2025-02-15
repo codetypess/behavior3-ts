@@ -21,7 +21,7 @@ export class RandomIndex extends Node {
         }
     }
 
-    get descriptor(): DeepReadonly<NodeDef> {
+    static override get descriptor(): DeepReadonly<NodeDef> {
         return {
             name: "RandomIndex",
             type: "Action",

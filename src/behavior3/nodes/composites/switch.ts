@@ -3,8 +3,8 @@ import { Node, NodeData, NodeDef, Status } from "../../node";
 import { Tree } from "../../tree";
 
 export class Switch extends Node {
-    override init(context: Context, cfg: NodeData, parent: Node | null): void {
-        super.init(context, cfg, parent);
+    constructor(context: Context, cfg: NodeData) {
+        super(context, cfg);
 
         this.children.forEach((v) => {
             if (v.name !== "Case") {
@@ -59,7 +59,7 @@ export class Switch extends Node {
         return "failure";
     }
 
-    get descriptor(): DeepReadonly<NodeDef> {
+    static override get descriptor(): DeepReadonly<NodeDef> {
         return {
             name: "Switch",
             type: "Composite",
@@ -80,7 +80,7 @@ export class Case extends Node {
         throw new Error("tick children by Switch");
     }
 
-    get descriptor(): DeepReadonly<NodeDef> {
+    static override get descriptor(): DeepReadonly<NodeDef> {
         return {
             name: "Case",
             type: "Composite",

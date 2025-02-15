@@ -50,7 +50,7 @@ export class Filter extends Node {
         return newArr.length === 0 ? "failure" : "success";
     }
 
-    get descriptor(): DeepReadonly<NodeDef> {
+    static override get descriptor(): DeepReadonly<NodeDef> {
         return {
             name: "Filter",
             type: "Decorator",

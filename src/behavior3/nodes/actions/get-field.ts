@@ -27,7 +27,7 @@ export class GetField extends Node {
         }
     }
 
-    get descriptor(): DeepReadonly<NodeDef> {
+    static override get descriptor(): DeepReadonly<NodeDef> {
         return {
             name: "GetField",
             type: "Action",

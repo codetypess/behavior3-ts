@@ -14,7 +14,7 @@ export class Includes extends Node {
         return index >= 0 ? "success" : "failure";
     }
 
-    get descriptor(): DeepReadonly<NodeDef> {
+    static override get descriptor(): DeepReadonly<NodeDef> {
         return {
             name: "Includes",
             type: "Condition",

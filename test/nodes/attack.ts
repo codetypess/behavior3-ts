@@ -15,7 +15,7 @@ export class Attack extends Node {
         return "success";
     }
 
-    override get descriptor(): Readonly<NodeDef> {
+    static override get descriptor(): Readonly<NodeDef> {
         return {
             name: "Attack",
             type: "Action",

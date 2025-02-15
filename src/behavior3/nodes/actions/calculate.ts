@@ -5,8 +5,8 @@ import { Tree } from "../../tree";
 export class Calculate extends Node {
     declare args: { readonly value: string };
 
-    override init(context: Context, cfg: NodeData, parent: Node | null): void {
-        super.init(context, cfg, parent);
+    constructor(context: Context, cfg: NodeData) {
+        super(context, cfg);
 
         if (typeof this.args.value !== "string" || this.args.value.length === 0) {
             this.error(`args.value is not a expr string`);
@@ -20,7 +20,7 @@ export class Calculate extends Node {
         return "success";
     }
 
-    get descriptor(): DeepReadonly<NodeDef> {
+    static override get descriptor(): DeepReadonly<NodeDef> {
         return {
             name: "Calculate",
             type: "Action",

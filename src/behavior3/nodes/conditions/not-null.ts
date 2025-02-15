@@ -14,7 +14,7 @@ export class NotNull extends Node {
         }
     }
 
-    get descriptor(): DeepReadonly<NodeDef> {
+    static override get descriptor(): DeepReadonly<NodeDef> {
         return {
             name: "NotNull",
             type: "Condition",

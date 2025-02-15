@@ -15,7 +15,7 @@ export class MoveToPos extends Node {
         return "success";
     }
 
-    override get descriptor(): Readonly<NodeDef> {
+    static override get descriptor(): Readonly<NodeDef> {
         return {
             name: "MoveToPos",
             type: "Action",

@@ -18,7 +18,7 @@ export class IsStatus extends Node {
         return status === args.status ? "success" : "failure";
     }
 
-    override get descriptor(): Readonly<NodeDef> {
+    static override get descriptor(): Readonly<NodeDef> {
         return {
             name: "IsStatus",
             type: "Condition",

@@ -106,7 +106,7 @@ export class FindEnemy extends Node {
         }
     }
 
-    override get descriptor(): NodeDef {
+    static override get descriptor(): NodeDef {
         return {
             name: "FindEnemy",
             type: "Action",

@@ -7,7 +7,7 @@ export class Idle extends Node {
         return "success";
     }
 
-    override get descriptor(): Readonly<NodeDef> {
+    static override get descriptor(): Readonly<NodeDef> {
         return {
             name: "Idle",
             type: "Action",

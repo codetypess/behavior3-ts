@@ -6,8 +6,8 @@ import { Tree } from "../../tree";
 export class Once extends Node {
     private _onceKey!: string;
 
-    override init(context: Context, cfg: NodeData, parent: Node | null): void {
-        super.init(context, cfg, parent);
+    constructor(context: Context, cfg: NodeData) {
+        super(context, cfg);
 
         this._onceKey = Blackboard.makePrivateVar(this, "ONCE");
     }
@@ -35,7 +35,7 @@ export class Once extends Node {
         return "success";
     }
 
-    get descriptor(): DeepReadonly<NodeDef> {
+    static override get descriptor(): DeepReadonly<NodeDef> {
         return {
             name: "Once",
             type: "Decorator",

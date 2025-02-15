@@ -29,7 +29,7 @@ export class RepeatUntilFailure extends Node {
         }
     }
 
-    get descriptor(): DeepReadonly<NodeDef> {
+    static override get descriptor(): DeepReadonly<NodeDef> {
         return {
             name: "RepeatUntilFailure",
             type: "Decorator",

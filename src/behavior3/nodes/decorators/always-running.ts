@@ -8,7 +8,7 @@ export class AlwaysRunning extends Node {
         return "running";
     }
 
-    get descriptor(): DeepReadonly<NodeDef> {
+    static override get descriptor(): DeepReadonly<NodeDef> {
         return {
             name: "AlwaysRunning",
             type: "Decorator",

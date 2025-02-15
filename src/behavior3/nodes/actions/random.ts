@@ -22,7 +22,7 @@ export class Random extends Node {
         return "success";
     }
 
-    get descriptor(): DeepReadonly<NodeDef> {
+    static override get descriptor(): DeepReadonly<NodeDef> {
         return {
             name: "Random",
             type: "Action",

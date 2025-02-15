@@ -31,7 +31,7 @@ export class FindEnemy extends Node {
         }
     }
 
-    override get descriptor(): Readonly<NodeDef> {
+    static override get descriptor(): Readonly<NodeDef> {
         return {
             name: "FindEnemy",
             type: "Action",

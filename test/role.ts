@@ -45,7 +45,7 @@ export class RoleContext extends Context {
 
     override loadTree(path: string): Promise<Node> {
         const treeData = JSON.parse(fs.readFileSync(path, "utf-8")) as TreeData;
-        const rootNode = this._createNode(treeData.root, treeData);
+        const rootNode = this._createTree(treeData);
         this.trees[path] = rootNode;
         return Promise.resolve(rootNode);
     }

@@ -26,7 +26,7 @@ export class Wait extends Node {
         }
     }
 
-    get descriptor(): DeepReadonly<NodeDef> {
+    static override get descriptor(): DeepReadonly<NodeDef> {
         return {
             name: "Wait",
             type: "Action",

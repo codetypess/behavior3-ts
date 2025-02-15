@@ -33,7 +33,7 @@ export class Assert extends Node {
         return "success";
     }
 
-    get descriptor(): DeepReadonly<NodeDef> {
+    static override get descriptor(): DeepReadonly<NodeDef> {
         return {
             name: "Assert",
             type: "Decorator",

@@ -22,7 +22,7 @@ export class Invert extends Node {
         return status === "failure" ? "success" : "failure";
     }
 
-    get descriptor(): DeepReadonly<NodeDef> {
+    static override get descriptor(): DeepReadonly<NodeDef> {
         return {
             name: "Invert",
             type: "Decorator",

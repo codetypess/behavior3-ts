@@ -32,7 +32,7 @@ export class MoveToTarget extends Node {
         return tree.yield(this);
     }
 
-    get descriptor(): Readonly<NodeDef> {
+    static override get descriptor(): Readonly<NodeDef> {
         return {
             name: "MoveToTarget",
             type: "Action",

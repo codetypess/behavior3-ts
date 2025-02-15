@@ -24,7 +24,7 @@ export class Index extends Node {
         return "failure";
     }
 
-    get descriptor(): DeepReadonly<NodeDef> {
+    static override get descriptor(): DeepReadonly<NodeDef> {
         return {
             name: "Index",
             type: "Action",

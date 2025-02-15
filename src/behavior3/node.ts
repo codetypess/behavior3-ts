@@ -114,21 +114,26 @@ export abstract class Node {
     readonly input: unknown[] = [];
     readonly output: unknown[] = [];
 
+    protected readonly _context: Context;
+
     private _children: Node[] = [];
     private _cfg!: DeepReadonly<NodeData>;
     private _parent: Node | null = null;
     private _yield?: string;
 
-    constructor() {
-        if (this.tick !== Node.prototype.tick) {
-            throw new Error("don't override 'tick' function");
-        }
-    }
-
-    init(context: Context, cfg: NodeData, parent: Node | null) {
+    constructor(context: Context, cfg: NodeData) {
+        this._context = context;
         this._cfg = cfg;
-        this._parent = parent;
         Object.keys(cfg.args).forEach((k) => ((this.args as ObjectType)[k] = cfg.args[k]));
+
+        for (const childCfg of cfg.children) {
+            childCfg.tree = cfg.tree;
+            if (!childCfg.disabled) {
+                const child = Node.create(context, childCfg);
+                child._parent = this;
+                this._children.push(child);
+            }
+        }
     }
 
     /** @private */
@@ -244,5 +249,43 @@ export abstract class Node {
 
     abstract onTick(tree: Tree<Context, unknown>): Status;
 
-    abstract get descriptor(): DeepReadonly<NodeDef>;
+    static get descriptor(): DeepReadonly<NodeDef> {
+        throw new Error(`descriptor not found in '${this.name}'`);
+    }
+
+    static create(context: Context, cfg: NodeData) {
+        const NodeCls = context.nodeCtors[cfg.name];
+        const descriptor = context.nodeDefs[cfg.name];
+
+        if (!NodeCls || !descriptor) {
+            throw new Error(`behavior3: node '${cfg.name}' not found in tree '${cfg.tree.name}'`);
+        }
+
+        cfg.input ||= [];
+        cfg.output ||= [];
+        cfg.children ||= [];
+        cfg.args ||= {};
+
+        const node = new NodeCls(context, cfg);
+
+        if (node.tick !== Node.prototype.tick) {
+            throw new Error("don't override 'tick' function");
+        }
+
+        if (
+            descriptor.children !== undefined &&
+            descriptor.children !== -1 &&
+            descriptor.children !== node.children.length
+        ) {
+            if (descriptor.children === 0) {
+                node.warn(`no children is required`);
+            } else if (node.children.length < descriptor.children) {
+                node.error(`at least ${descriptor.children} children are required`);
+            } else {
+                node.warn(`exactly ${descriptor.children} children`);
+            }
+        }
+
+        return node;
+    }
 }

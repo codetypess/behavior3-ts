@@ -51,7 +51,7 @@ export class Race extends Node {
         }
     }
 
-    get descriptor(): DeepReadonly<NodeDef> {
+    static override get descriptor(): DeepReadonly<NodeDef> {
         return {
             name: "Race",
             type: "Composite",

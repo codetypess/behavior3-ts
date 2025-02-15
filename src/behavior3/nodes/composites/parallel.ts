@@ -50,7 +50,7 @@ export class Parallel extends Node {
         }
     }
 
-    get descriptor(): DeepReadonly<NodeDef> {
+    static override get descriptor(): DeepReadonly<NodeDef> {
         return {
             name: "Parallel",
             type: "Composite",

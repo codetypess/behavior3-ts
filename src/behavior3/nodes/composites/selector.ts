@@ -31,7 +31,7 @@ export class Selector extends Node {
         return "failure";
     }
 
-    get descriptor(): DeepReadonly<NodeDef> {
+    static override get descriptor(): DeepReadonly<NodeDef> {
         return {
             name: "Selector",
             type: "Composite",

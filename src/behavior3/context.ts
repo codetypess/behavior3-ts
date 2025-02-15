@@ -1,5 +1,5 @@
 import { Evaluator, ExpressionEvaluator } from "./evaluator";
-import { Node, NodeData, NodeDef } from "./node";
+import { Node, NodeDef } from "./node";
 import { Index } from "./nodes/actions";
 import { Calculate } from "./nodes/actions/calculate";
 import { Concat } from "./nodes/actions/concat";
@@ -41,6 +41,9 @@ import { TreeData } from "./tree";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Constructor<T, A extends any[] = any[]> = new (...args: A) => T;
+export type NodeContructor<T extends Node> = Constructor<T, ConstructorParameters<typeof Node>> & {
+    descriptor: DeepReadonly<NodeDef>;
+};
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Callback<A extends any[] = any[]> = (...args: A) => void;
 export type ObjectType = { [k: string]: unknown };
@@ -57,6 +60,7 @@ export type DeepReadonly<T> =
 
 export abstract class Context {
     readonly nodeDefs: Record<string, DeepReadonly<NodeDef>> = {};
+    readonly nodeCtors: Record<string, NodeContructor<Node>> = {};
     readonly trees: Record<string, Node> = {};
 
     protected _time: number = 0;
@@ -64,7 +68,6 @@ export abstract class Context {
     private _evaluators: Record<string, Evaluator> = {};
     private _delays: Map<Callback, [TagType, number]> = new Map();
     private _listenerMap: Map<string, Map<TargetType, Map<Callback, TagType>>> = new Map();
-    private _nodeClasses: Record<string, Constructor<Node>> = {};
 
     constructor() {
         this.registerNode(AlwaysFailure);
@@ -219,51 +222,14 @@ export abstract class Context {
         this._evaluators[code] = evaluator;
     }
 
-    registerNode<T extends Node>(cls: Constructor<T>) {
-        const node = new cls();
-        const descriptor = node.descriptor;
+    registerNode<T extends Node>(cls: NodeContructor<T>) {
+        const descriptor = cls.descriptor;
         this.nodeDefs[descriptor.name] = descriptor;
-        this._nodeClasses[descriptor.name] = cls;
+        this.nodeCtors[descriptor.name] = cls;
     }
 
-    protected _createNode(cfg: NodeData, treeCfg: TreeData, parent: Node | null = null) {
-        const NodeCls = this._nodeClasses[cfg.name];
-        const descriptor = this.nodeDefs[cfg.name];
-
-        if (!NodeCls || !descriptor) {
-            throw new Error(`behavior3: node '${cfg.name}' not found in tree '${treeCfg.name}'`);
-        }
-
-        cfg.input ||= [];
-        cfg.output ||= [];
-        cfg.children ||= [];
-        cfg.args ||= {};
-        cfg.tree = treeCfg;
-
-        const node = new NodeCls();
-
-        for (const childCfg of cfg.children) {
-            if (!childCfg.disabled) {
-                (node.children as Node[]).push(this._createNode(childCfg, treeCfg, node));
-            }
-        }
-
-        node.init(this, cfg, parent);
-
-        if (
-            descriptor.children !== undefined &&
-            descriptor.children !== -1 &&
-            descriptor.children !== node.children.length
-        ) {
-            if (descriptor.children === 0) {
-                node.warn(`no children is required`);
-            } else if (node.children.length < descriptor.children) {
-                node.error(`at least ${descriptor.children} children are required`);
-            } else {
-                node.warn(`exactly ${descriptor.children} children`);
-            }
-        }
-
-        return node;
+    protected _createTree(treeCfg: TreeData) {
+        treeCfg.root.tree = treeCfg;
+        return Node.create(this, treeCfg.root);
     }
 }
