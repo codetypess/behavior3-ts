@@ -1,5 +1,5 @@
 import { Evaluator, ExpressionEvaluator } from "./evaluator";
-import { Node, NodeDef } from "./node";
+import { Node, NodeData, NodeDef } from "./node";
 import { Index } from "./nodes/actions";
 import { Calculate } from "./nodes/actions/calculate";
 import { Concat } from "./nodes/actions/concat";
@@ -45,10 +45,11 @@ export type NodeContructor<T extends Node> = Constructor<T, ConstructorParameter
     descriptor: DeepReadonly<NodeDef>;
 };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type Callback<A extends any[] = any[]> = (...args: A) => void;
+export type Callback<A extends any[] = any[]> = (...args: A) => unknown;
 export type ObjectType = { [k: string]: unknown };
 export type TargetType = object | string | number;
 export type TagType = unknown;
+export type Nullable<T> = T | null | undefined;
 
 // prettier-ignore
 export type DeepReadonly<T> =
@@ -58,6 +59,12 @@ export type DeepReadonly<T> =
     T extends object ? { readonly [K in keyof T]: DeepReadonly<T[K]> } :
     T;
 
+type DelayEntry = {
+    callback: Callback;
+    tag: TagType;
+    expired: number;
+};
+
 export abstract class Context {
     readonly nodeDefs: Record<string, DeepReadonly<NodeDef>> = {};
     readonly nodeCtors: Record<string, NodeContructor<Node>> = {};
@@ -65,9 +72,9 @@ export abstract class Context {
 
     protected _time: number = 0;
 
-    private _evaluators: Record<string, Evaluator> = {};
-    private _delays: Map<Callback, [TagType, number]> = new Map();
-    private _listenerMap: Map<string, Map<TargetType, Map<Callback, TagType>>> = new Map();
+    private readonly _evaluators: Record<string, Evaluator> = {};
+    private readonly _delayers: DelayEntry[] = [];
+    private readonly _listenerMap: Map<string, Map<TargetType, Map<Callback, TagType>>> = new Map();
 
     constructor() {
         this.registerNode(AlwaysFailure);
@@ -118,17 +125,32 @@ export abstract class Context {
 
     delay(time: number, callback: Callback, tag: TagType) {
         const expired = time + this._time;
-        this._delays.set(callback, [tag, expired]);
+        const delayers = this._delayers;
+
+        let idx = delayers.findIndex((v) => v.callback === callback);
+        if (idx >= 0) {
+            delayers.splice(idx, 1);
+        }
+
+        idx = delayers.findIndex((v) => v.expired > expired);
+        if (idx >= 0) {
+            delayers.splice(idx, 0, { callback, tag, expired });
+        } else {
+            delayers.push({ callback, tag, expired });
+        }
     }
 
     update(dt: number): void {
         this._time += dt;
-        this._delays.forEach(([_, expired], callback) => {
+
+        const delayers = this._delayers;
+        if (delayers.length > 0) {
+            const expired = delayers[0].expired;
             if (expired <= this._time) {
-                this._delays.delete(callback);
+                const { callback } = delayers.shift()!;
                 callback();
             }
-        });
+        }
     }
 
     on(event: string, callback: Callback, tag: TagType): void;
@@ -201,11 +223,12 @@ export abstract class Context {
             });
         });
 
-        this._delays.forEach(([value], callback) => {
-            if (value === tag) {
-                this._delays.delete(callback);
+        const delayers = this._delayers;
+        for (let i = delayers.length - 1; i >= 0; i--) {
+            if (delayers[i].tag === tag) {
+                delayers.splice(i, 1);
             }
-        });
+        }
     }
 
     compileCode(code: string) {
@@ -229,7 +252,16 @@ export abstract class Context {
     }
 
     protected _createTree(treeCfg: TreeData) {
-        treeCfg.root.tree = treeCfg;
+        const traverse = (cfg: NodeData) => {
+            cfg.tree = treeCfg;
+            cfg.input ||= [];
+            cfg.output ||= [];
+            cfg.children ||= [];
+            cfg.args ||= {};
+            cfg.children.forEach(traverse);
+        };
+        traverse(treeCfg.root);
+
         return Node.create(this, treeCfg.root);
     }
 }

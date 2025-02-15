@@ -1,5 +1,5 @@
 import { Blackboard } from "./blackboard";
-import type { Context, DeepReadonly, ObjectType } from "./context";
+import type { Context, DeepReadonly, NodeContructor, Nullable, ObjectType } from "./context";
 import type { Tree, TreeData } from "./tree";
 
 export type Status = "success" | "failure" | "running";
@@ -116,9 +116,9 @@ export abstract class Node {
 
     protected readonly _context: Context;
 
-    private _children: Node[] = [];
-    private _cfg!: DeepReadonly<NodeData>;
     private _parent: Node | null = null;
+    private _children: Node[] = [];
+    private _cfg: DeepReadonly<NodeData>;
     private _yield?: string;
 
     constructor(context: Context, cfg: NodeData) {
@@ -127,7 +127,6 @@ export abstract class Node {
         Object.keys(cfg.args).forEach((k) => ((this.args as ObjectType)[k] = cfg.args[k]));
 
         for (const childCfg of cfg.children) {
-            childCfg.tree = cfg.tree;
             if (!childCfg.disabled) {
                 const child = Node.create(context, childCfg);
                 child._parent = this;
@@ -254,17 +253,12 @@ export abstract class Node {
     }
 
     static create(context: Context, cfg: NodeData) {
-        const NodeCls = context.nodeCtors[cfg.name];
-        const descriptor = context.nodeDefs[cfg.name];
+        const NodeCls = context.nodeCtors[cfg.name] as Nullable<NodeContructor<Node>>;
+        const descriptor = context.nodeDefs[cfg.name] as Nullable<NodeDef>;
 
         if (!NodeCls || !descriptor) {
-            throw new Error(`behavior3: node '${cfg.name}' not found in tree '${cfg.tree.name}'`);
+            throw new Error(`behavior3: node '${cfg.tree.name}->${cfg.name}' is not registered`);
         }
-
-        cfg.input ||= [];
-        cfg.output ||= [];
-        cfg.children ||= [];
-        cfg.args ||= {};
 
         const node = new NodeCls(context, cfg);
 

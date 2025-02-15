@@ -54,7 +54,7 @@ const testTree = (
     const tree = createTree({ hp: 100, x: 0, y: 0 }, `./example/${name}.json`);
     let i = 0;
     while (i < 100) {
-        context.time++;
+        context.update(1);
         tree.tick();
         if (onTick) {
             if (!onTick(i, tree)) {
