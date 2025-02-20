@@ -20,12 +20,15 @@ export const enum TreeEvent {
 
 export type TreeStatus = Status | "interrupted";
 
+let treeId = 0;
+
 export class Tree<C extends Context, Owner> {
     readonly context: C;
     readonly owner: Owner;
     readonly path: string;
     readonly blackboard: Blackboard;
     readonly stack: Stack;
+    readonly id: number = ++treeId;
 
     debug: boolean = false;
 

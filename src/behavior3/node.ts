@@ -120,11 +120,19 @@ export abstract class Node {
     private _children: Node[] = [];
     private _cfg: DeepReadonly<NodeData>;
     private _yield?: string;
+    private _argObjectKeys: Record<string, string> = {};
 
     constructor(context: Context, cfg: NodeData) {
         this._context = context;
         this._cfg = cfg;
-        Object.keys(cfg.args).forEach((k) => ((this.args as ObjectType)[k] = cfg.args[k]));
+        Object.keys(cfg.args).forEach((k) => {
+            const value = cfg.args[k];
+            if (value && typeof value === "object") {
+                this._argObjectKeys[k] = JSON.stringify(value);
+            } else {
+                (this.args as ObjectType)[k] = value;
+            }
+        });
 
         for (const childCfg of cfg.children) {
             if (!childCfg.disabled) {
@@ -171,7 +179,7 @@ export abstract class Node {
 
     tick(tree: Tree<Context, unknown>): Status {
         const { stack, blackboard } = tree;
-        const { cfg, input, output } = this;
+        const { cfg, input, output, args } = this;
 
         if (stack.top() !== this) {
             stack.push(this);
@@ -179,6 +187,10 @@ export abstract class Node {
 
         input.length = 0;
         output.length = 0;
+
+        for (const k in this._argObjectKeys) {
+            (args as ObjectType)[k] = JSON.parse(this._argObjectKeys[k]);
+        }
 
         cfg.input.forEach((varName) => {
             input.push(blackboard.get(varName));
@@ -208,7 +220,7 @@ export abstract class Node {
             }
             const indent = tree.debug ? " ".repeat(stack.length) : "";
             console.debug(
-                `[DEBUG] behavior3 -> ${indent}${this.name}: tree:${this.cfg.tree.name}, ` +
+                `[DEBUG] behavior3 -> ${indent}${this.name}: tree:${this.cfg.tree.name} tree_id:${tree.id}, ` +
                     `node:${this.id}, status:${status}, values:{${varStr}} args:${JSON.stringify(
                         cfg.args
                     )}`
