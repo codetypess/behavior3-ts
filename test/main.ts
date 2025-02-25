@@ -1,8 +1,7 @@
-import assert from "assert";
+import assert from "node:assert";
+import * as fs from "node:fs";
 import { Tree } from "../src/behavior3";
 import { Role, RoleContext } from "./role";
-
-import * as fs from "fs";
 
 const context = new RoleContext();
 

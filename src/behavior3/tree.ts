@@ -53,6 +53,7 @@ export class Tree<C extends Context, Owner> {
     }
 
     get ready() {
+        this._root = this._root || this.context.trees[this.path];
         return !!this._root;
     }
 

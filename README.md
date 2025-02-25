@@ -189,15 +189,30 @@ export class FindEnemy extends Node {
 
 ## 运行测试用例
 
+-   Deno 安装
+
+    -   windows powershell
+        ```powershell
+        irm https://deno.land/install.ps1 | iex
+        ```
+    -   macos & linux terminal
+        ```bash
+        curl -fsSL https://deno.land/install.sh | sh
+        ```
+    -   macos
+        ```bash
+        brew install deno
+        ```
+
 -   导出节点定义
 
-```
-// fs.writeFileSync("example/node-config.b3-setting", context.exportNodeDefs());
-tsx test/main.ts
-```
+    ```bash
+    // fs.writeFileSync("example/node-config.b3-setting", context.exportNodeDefs());
+    deno task start
+    ```
 
 -   运行测试
 
-```
-npx tsx test/main.ts
-```
+    ```bash
+    deno task start
+    ```
