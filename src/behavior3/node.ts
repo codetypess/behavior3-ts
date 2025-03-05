@@ -260,7 +260,7 @@ export abstract class Node {
 
     abstract onTick(tree: Tree<Context, unknown>): Status;
 
-    static get descriptor(): DeepReadonly<NodeDef> {
+    static get descriptor(): NodeDef {
         throw new Error(`descriptor not found in '${this.name}'`);
     }
 

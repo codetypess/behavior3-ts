@@ -1,4 +1,4 @@
-import type { Context, DeepReadonly } from "../../context";
+import type { Context } from "../../context";
 import { Node, NodeData, NodeDef, Status } from "../../node";
 import { Tree } from "../../tree";
 
@@ -59,7 +59,7 @@ export class Switch extends Node {
         return "failure";
     }
 
-    static override get descriptor(): DeepReadonly<NodeDef> {
+    static override get descriptor(): NodeDef {
         return {
             name: "Switch",
             type: "Composite",
@@ -80,7 +80,7 @@ export class Case extends Node {
         throw new Error("tick children by Switch");
     }
 
-    static override get descriptor(): DeepReadonly<NodeDef> {
+    static override get descriptor(): NodeDef {
         return {
             name: "Case",
             type: "Composite",

@@ -1,5 +1,5 @@
 import { Blackboard } from "../../blackboard";
-import type { Context, DeepReadonly } from "../../context";
+import type { Context } from "../../context";
 import { Node, NodeData, NodeDef, Status } from "../../node";
 import { Tree } from "../../tree";
 
@@ -35,7 +35,7 @@ export class Once extends Node {
         return "success";
     }
 
-    static override get descriptor(): DeepReadonly<NodeDef> {
+    static override get descriptor(): NodeDef {
         return {
             name: "Once",
             type: "Decorator",

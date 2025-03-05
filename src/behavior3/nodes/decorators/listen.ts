@@ -1,4 +1,4 @@
-import type { Context, DeepReadonly, TargetType } from "../../context";
+import type { Context, TargetType } from "../../context";
 import { Node, NodeDef, Status } from "../../node";
 import { Tree, TreeEvent } from "../../tree";
 
@@ -70,7 +70,7 @@ export class Listen extends Node {
         return "success";
     }
 
-    static override get descriptor(): DeepReadonly<NodeDef> {
+    static override get descriptor(): NodeDef {
         return {
             name: "Listen",
             type: "Decorator",

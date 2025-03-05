@@ -1,4 +1,4 @@
-import type { Context, DeepReadonly } from "../../context";
+import type { Context } from "../../context";
 import { Node, NodeDef, Status } from "../../node";
 import { Tree } from "../../tree";
 
@@ -8,7 +8,7 @@ export class Now extends Node {
         return "success";
     }
 
-    static override get descriptor(): DeepReadonly<NodeDef> {
+    static override get descriptor(): NodeDef {
         return {
             name: "Now",
             type: "Action",

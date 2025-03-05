@@ -42,7 +42,7 @@ import { TreeData } from "./tree";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Constructor<T, A extends any[] = any[]> = new (...args: A) => T;
 export type NodeContructor<T extends Node> = Constructor<T, ConstructorParameters<typeof Node>> & {
-    descriptor: DeepReadonly<NodeDef>;
+    descriptor: NodeDef;
 };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Callback<A extends any[] = any[]> = (...args: A) => unknown;

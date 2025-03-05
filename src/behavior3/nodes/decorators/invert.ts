@@ -1,4 +1,4 @@
-import type { Context, DeepReadonly } from "../../context";
+import type { Context } from "../../context";
 import { Node, NodeDef, Status } from "../../node";
 import { Tree } from "../../tree";
 
@@ -22,7 +22,7 @@ export class Invert extends Node {
         return status === "failure" ? "success" : "failure";
     }
 
-    static override get descriptor(): DeepReadonly<NodeDef> {
+    static override get descriptor(): NodeDef {
         return {
             name: "Invert",
             type: "Decorator",
