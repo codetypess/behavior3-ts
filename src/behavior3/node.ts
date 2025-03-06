@@ -1,5 +1,5 @@
 import { Blackboard } from "./blackboard";
-import type { Context, DeepReadonly, NodeContructor, Nullable, ObjectType } from "./context";
+import type { Context, DeepReadonly, NodeContructor, ObjectType } from "./context";
 import type { Tree, TreeData } from "./tree";
 
 export type Status = "success" | "failure" | "running";
@@ -265,8 +265,8 @@ export abstract class Node {
     }
 
     static create(context: Context, cfg: NodeData) {
-        const NodeCls = context.nodeCtors[cfg.name] as Nullable<NodeContructor<Node>>;
-        const descriptor = context.nodeDefs[cfg.name] as Nullable<NodeDef>;
+        const NodeCls = context.nodeCtors[cfg.name] as NodeContructor<Node> | undefined;
+        const descriptor = context.nodeDefs[cfg.name] as NodeDef | undefined;
 
         if (!NodeCls || !descriptor) {
             throw new Error(`behavior3: node '${cfg.tree.name}->${cfg.name}' is not registered`);

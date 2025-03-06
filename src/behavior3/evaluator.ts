@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 import type { ObjectType } from "./context";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

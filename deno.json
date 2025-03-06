@@ -6,7 +6,8 @@
     }
   },
   "tasks": {
-    "start": "deno --allow-all test/main.ts"
+    "start": "deno --allow-all test/main.ts",
+    "check": "deno check ."
   },
   "compilerOptions": {
     "noImplicitAny": true,

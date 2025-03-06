@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any ban-types
 import { Evaluator, ExpressionEvaluator } from "./evaluator";
 import { Node, NodeData, NodeDef } from "./node";
 import { Index } from "./nodes/actions";
@@ -49,7 +50,6 @@ export type Callback<A extends any[] = any[]> = (...args: A) => unknown;
 export type ObjectType = { [k: string]: unknown };
 export type TargetType = object | string | number;
 export type TagType = unknown;
-export type Nullable<T> = T | null | undefined;
 
 // prettier-ignore
 export type DeepReadonly<T> =
