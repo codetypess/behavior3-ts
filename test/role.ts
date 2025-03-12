@@ -84,9 +84,6 @@ export class RoleContext extends Context {
             }
         });
         defs.sort((a, b) => a.name.localeCompare(b.name));
-        let str = JSON.stringify(defs, null, 2);
-        str = str.replace(/"doc": "\\n +/g, '"doc": "');
-        str = str.replace(/\\n +/g, "\\n");
-        return str;
+        return JSON.stringify(defs, null, 2);
     }
 }

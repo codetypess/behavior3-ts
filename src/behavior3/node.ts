@@ -114,6 +114,8 @@ export abstract class Node {
     readonly input: unknown[] = [];
     readonly output: unknown[] = [];
 
+    active: boolean;
+
     protected readonly _context: Context;
 
     private _parent: Node | null = null;
@@ -125,6 +127,7 @@ export abstract class Node {
     constructor(context: Context, cfg: NodeData) {
         this._context = context;
         this._cfg = cfg;
+        this.active = !cfg.disabled;
         Object.keys(cfg.args).forEach((k) => {
             const value = cfg.args[k];
             if (value && typeof value === "object") {
@@ -178,6 +181,10 @@ export abstract class Node {
     }
 
     tick(tree: Tree<Context, unknown>): Status {
+        if (this.active) {
+            return "failure";
+        }
+
         const { stack, blackboard } = tree;
         const { cfg, input, output, args } = this;
 

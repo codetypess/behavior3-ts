@@ -247,6 +247,17 @@ export abstract class Context {
 
     registerNode<T extends Node>(cls: NodeContructor<T>) {
         const descriptor = cls.descriptor;
+        if (descriptor.doc) {
+            let doc = descriptor.doc.replace(/^[\r\n]+/, "");
+            const leadingSpace = doc.match(/^ */)?.[0];
+            if (leadingSpace) {
+                doc = doc
+                    .substring(leadingSpace.length)
+                    .replace(new RegExp(`[\r\n]${leadingSpace}`, "g"), "\n")
+                    .replace(/ +$/, "");
+            }
+            descriptor.doc = doc;
+        }
         this.nodeDefs[descriptor.name] = descriptor;
         this.nodeCtors[descriptor.name] = cls;
     }

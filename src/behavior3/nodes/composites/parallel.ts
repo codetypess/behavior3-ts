@@ -5,6 +5,18 @@ import { Tree } from "../../tree";
 
 const EMPTY_STACK: Stack = new Stack(null!);
 
+/**
+ * Parallel node executes all child nodes simultaneously.
+ *
+ * The execution flow is:
+ * 1. Execute all child nodes in parallel
+ * 2. If any child returns `running`, store its state and continue next tick
+ * 3. Return `running` until all children complete
+ * 4. When all children complete, return `success`
+ *
+ * Each child's execution state is tracked independently, allowing true parallel behavior.
+ * The node only succeeds when all children have completed successfully.
+ */
 export class Parallel extends Node {
     override onTick(tree: Tree<Context, unknown>): Status {
         const last: Stack[] = tree.resume(this) ?? [];

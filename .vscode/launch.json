@@ -11,7 +11,15 @@
       "cwd": "${workspaceFolder}",
       "env": {},
       "runtimeExecutable": "deno",
-      "runtimeArgs": ["run", "--inspect-wait", "-A", "${file}", "--allow-all", "--build", "web"],
+      "runtimeArgs": [
+        "run",
+        "--inspect-wait",
+        "-A",
+        "test/main.ts",
+        "--allow-all",
+        "--build",
+        "web"
+      ],
       "attachSimplePort": 9229
     }
   ]

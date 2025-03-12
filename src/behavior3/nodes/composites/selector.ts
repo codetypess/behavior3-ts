@@ -2,6 +2,17 @@ import type { Context } from "../../context";
 import { Node, NodeDef, Status } from "../../node";
 import { Tree } from "../../tree";
 
+/**
+ * Selector composite node that executes children in order.
+ * Returns:
+ * - `success`: if any child returns `success`
+ * - `failure`: when all children return `failure`
+ * - `running`: if a child returns `running`
+ *
+ * Executes children sequentially until one succeeds or all fail.
+ * If a child returns `running`, the selector will yield and resume
+ * from that child on next tick.
+ */
 export class Selector extends Node {
     override onTick(tree: Tree<Context, unknown>): Status {
         const last: number | undefined = tree.resume(this);

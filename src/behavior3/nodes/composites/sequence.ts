@@ -3,6 +3,17 @@ import { Node, NodeDef, Status } from "../../node";
 
 import { Tree } from "../../tree";
 
+/**
+ * Sequence composite node that executes children in order.
+ * Returns:
+ * - `success`: when all children return `success`
+ * - `failure`: if any child returns `failure`
+ * - `running`: if a child returns `running`
+ *
+ * Executes children sequentially until one fails or all succeed.
+ * If a child returns `running`, the sequence will yield and resume
+ * from that child on next tick.
+ */
 export class Sequence extends Node {
     override onTick(tree: Tree<Context, unknown>): Status {
         const last: number | undefined = tree.resume(this);

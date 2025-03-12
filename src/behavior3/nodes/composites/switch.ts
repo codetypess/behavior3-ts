@@ -2,6 +2,23 @@ import type { Context } from "../../context";
 import { Node, NodeData, NodeDef, Status } from "../../node";
 import { Tree } from "../../tree";
 
+/**
+ * Switch node that executes cases in order until one matches.
+ *
+ * Each child must be a Case node with exactly 2 children:
+ * 1. The condition node that determines if this case matches
+ * 2. The action node to execute if condition returns `success`
+ *
+ * The execution flow is:
+ * 1. Execute first child (condition) of each case in order
+ * 2. If condition returns `success`, execute second child (action)
+ * 3. Return the status of the action node
+ * 4. If no case matches, return `failure`
+ *
+ * Similar to a switch statement, cases are evaluated in order
+ * until a matching condition is found. Only the action of the
+ * first matching case is executed.
+ */
 export class Switch extends Node {
     constructor(context: Context, cfg: NodeData) {
         super(context, cfg);
