@@ -49,12 +49,15 @@ export class Tree<C extends Context, Owner> {
         this.path = path;
         this.blackboard = new Blackboard(this);
         this.stack = new Stack(this);
-        this._loadTree();
+        this.context.loadTree(this.path);
+    }
+
+    get root() {
+        return (this._root ||= this.context.trees[this.path]);
     }
 
     get ready() {
-        this._root = this._root || this.context.trees[this.path];
-        return !!this._root;
+        return !!this.root;
     }
 
     get status() {
@@ -67,13 +70,6 @@ export class Tree<C extends Context, Owner> {
 
     get ticking() {
         return this._ticking;
-    }
-
-    private async _loadTree() {
-        this._root = this.context.trees[this.path];
-        if (!this._root) {
-            this._root = await this.context.loadTree(this.path);
-        }
     }
 
     clear() {
@@ -112,7 +108,7 @@ export class Tree<C extends Context, Owner> {
     }
 
     tick(): TreeStatus {
-        const { context, stack, _root: root } = this;
+        const { context, stack, root } = this;
 
         if (!root) {
             return "failure";
