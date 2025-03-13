@@ -19,7 +19,7 @@ const EMPTY_STACK: Stack = new Stack(null!);
  * The node only fails if all children fail.
  */
 export class Race extends Node {
-    override onTick(tree: Tree<Context, unknown>): Status {
+    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         const last: Stack[] = tree.resume(this) ?? [];
         const stack = tree.stack;
         const level = stack.length;

@@ -9,7 +9,7 @@ export class SetField extends Node {
         readonly value?: unknown;
     };
 
-    override onTick(tree: Tree<Context, unknown>): Status {
+    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         const [obj] = this.input;
         if (typeof obj !== "object" || !obj) {
             this.warn(`invalid object: ${obj}`);

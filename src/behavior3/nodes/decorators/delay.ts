@@ -8,7 +8,7 @@ export class Delay extends Node {
         readonly cacheVars?: Readonly<string[]>;
     };
 
-    override onTick(tree: Tree<Context, unknown>): Status {
+    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         const args = this.args;
         const delay = this._checkOneof(0, args.delay, 0);
         const blackboard = tree.blackboard;

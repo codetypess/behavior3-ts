@@ -5,7 +5,7 @@ import { Tree } from "../../tree";
 export class Filter extends Node {
     declare input: [unknown[]];
 
-    override onTick(tree: Tree<Context, unknown>): Status {
+    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         const [arr] = this.input;
         if (!(arr instanceof Array) || arr.length === 0) {
             return "failure";
@@ -16,9 +16,9 @@ export class Filter extends Node {
         let newArr: unknown[];
         if (last instanceof Array) {
             [i, newArr] = last;
-            if (tree.lastNodeStatus === "running") {
+            if (status === "running") {
                 this.error(`unexpected status error`);
-            } else if (tree.lastNodeStatus === "success") {
+            } else if (status === "success") {
                 newArr.push(arr[i]);
             }
             i++;
@@ -31,7 +31,7 @@ export class Filter extends Node {
 
         for (i = 0; i < arr.length; i++) {
             tree.blackboard.set(this.cfg.output[0], arr[i]);
-            const status = filter.tick(tree);
+            status = filter.tick(tree);
             if (status === "running") {
                 if (last instanceof Array) {
                     last[0] = i;

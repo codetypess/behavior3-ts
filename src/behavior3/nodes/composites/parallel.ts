@@ -18,7 +18,7 @@ const EMPTY_STACK: Stack = new Stack(null!);
  * The node only succeeds when all children have completed successfully.
  */
 export class Parallel extends Node {
-    override onTick(tree: Tree<Context, unknown>): Status {
+    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         const last: Stack[] = tree.resume(this) ?? [];
         const stack = tree.stack;
         const level = stack.length;

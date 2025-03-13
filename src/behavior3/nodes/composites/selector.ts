@@ -14,16 +14,15 @@ import { Tree } from "../../tree";
  * from that child on next tick.
  */
 export class Selector extends Node {
-    override onTick(tree: Tree<Context, unknown>): Status {
+    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         const last: number | undefined = tree.resume(this);
         const children = this.children;
-        const lastNodeStatus = tree.lastNodeStatus;
         let i = 0;
 
         if (typeof last === "number") {
-            if (lastNodeStatus === "failure") {
+            if (status === "failure") {
                 i = last + 1;
-            } else if (lastNodeStatus === "success") {
+            } else if (status === "success") {
                 return "success";
             } else {
                 this.error(`unexpected status error`);
@@ -31,7 +30,7 @@ export class Selector extends Node {
         }
 
         for (; i < children.length; i++) {
-            const status = children[i].tick(tree);
+            status = children[i].tick(tree);
             if (status === "success") {
                 return "success";
             } else if (status === "running") {

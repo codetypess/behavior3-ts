@@ -15,24 +15,23 @@ import { Tree } from "../../tree";
  * from that child on next tick.
  */
 export class Sequence extends Node {
-    override onTick(tree: Tree<Context, unknown>): Status {
+    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         const last: number | undefined = tree.resume(this);
         const children = this.children;
-        const lastNodeStatus = tree.lastNodeStatus;
         let i = 0;
 
         if (typeof last === "number") {
-            if (lastNodeStatus === "success") {
+            if (status === "success") {
                 i = last + 1;
-            } else if (lastNodeStatus === "failure") {
+            } else if (status === "failure") {
                 return "failure";
             } else {
-                this.error(`unexpected status error: ${lastNodeStatus}`);
+                this.error(`unexpected status error: ${status}`);
             }
         }
 
         for (; i < children.length; i++) {
-            const status = children[i].tick(tree);
+            status = children[i].tick(tree);
             if (status === "failure") {
                 return "failure";
             } else if (status === "running") {

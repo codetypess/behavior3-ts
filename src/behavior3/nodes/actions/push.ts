@@ -5,7 +5,7 @@ import { Tree } from "../../tree";
 export class Push extends Node {
     declare input: [unknown[], unknown];
 
-    override onTick(tree: Tree<Context, unknown>): Status {
+    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         const [arr, element] = this.input;
         if (!Array.isArray(arr)) {
             return "failure";

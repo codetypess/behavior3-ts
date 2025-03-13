@@ -8,7 +8,7 @@ export class Wait extends Node {
         readonly random?: number;
     };
 
-    override onTick(tree: Tree<Context, unknown>): Status {
+    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         const t: number | undefined = tree.resume(this);
         if (typeof t === "number") {
             if (tree.context.time >= t) {

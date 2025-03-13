@@ -5,7 +5,7 @@ import { Tree } from "../../tree";
 export class IsNull extends Node {
     declare input: [unknown];
 
-    override onTick(tree: Tree<Context, unknown>): Status {
+    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         const [value] = this.input;
         if (value === undefined || value === null) {
             return "success";

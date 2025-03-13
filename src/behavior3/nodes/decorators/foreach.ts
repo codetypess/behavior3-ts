@@ -6,14 +6,14 @@ export class Foreach extends Node {
     declare input: [unknown[]];
     declare output: [string];
 
-    override onTick(tree: Tree<Context, unknown>): Status {
+    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         const [arr] = this.input;
         const [varname] = this.cfg.output;
         let i: number | undefined = tree.resume(this);
         if (i !== undefined) {
-            if (tree.lastNodeStatus === "running") {
+            if (status === "running") {
                 this.error(`unexpected status error`);
-            } else if (tree.lastNodeStatus === "failure") {
+            } else if (status === "failure") {
                 return "failure";
             }
             i++;
@@ -23,7 +23,7 @@ export class Foreach extends Node {
 
         for (; i < arr.length; i++) {
             tree.blackboard.set(varname, arr[i]);
-            const status = this.children[0].tick(tree);
+            status = this.children[0].tick(tree);
             if (status === "running") {
                 return tree.yield(this, i);
             } else if (status === "failure") {

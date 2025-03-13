@@ -5,7 +5,7 @@ import { Tree } from "../../tree";
 export class Let extends Node {
     declare args: { readonly value?: unknown };
 
-    override onTick(tree: Tree<Context, unknown>): Status {
+    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         const value = this._checkOneof(0, this.args.value, null);
         this.output.push(value);
         return "success";

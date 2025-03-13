@@ -3,15 +3,15 @@ import { Node, NodeDef, Status } from "../../node";
 import { Tree } from "../../tree";
 
 export class AlwaysSuccess extends Node {
-    override onTick(tree: Tree<Context, unknown>): Status {
+    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         const isYield: boolean | undefined = tree.resume(this);
         if (typeof isYield === "boolean") {
-            if (tree.lastNodeStatus === "running") {
+            if (status === "running") {
                 this.error(`unexpected status error`);
             }
             return "success";
         }
-        const status = this.children[0].tick(tree);
+        status = this.children[0].tick(tree);
         if (status === "running") {
             return tree.yield(this);
         }

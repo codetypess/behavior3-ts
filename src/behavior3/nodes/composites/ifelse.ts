@@ -27,21 +27,20 @@ export class IfElse extends Node {
         }
     }
 
-    override onTick(tree: Tree<Context, unknown>): Status {
+    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         const i: number | undefined = tree.resume(this);
-        const lastNodeStatus = tree.lastNodeStatus;
         if (i !== undefined) {
-            if (lastNodeStatus === "running") {
+            if (status === "running") {
                 this.error(`unexpected status error`);
             } else if (i === 0) {
-                return this._ifelse(tree, lastNodeStatus);
+                return this._ifelse(tree, status);
             } else {
-                return lastNodeStatus;
+                return status;
             }
             return "failure";
         }
 
-        const status = this.children[0].tick(tree);
+        status = this.children[0].tick(tree);
         if (status === "running") {
             return tree.yield(this, 0);
         } else {

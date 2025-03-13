@@ -30,23 +30,22 @@ export class Switch extends Node {
         });
     }
 
-    override onTick(tree: Tree<Context, unknown>): Status {
+    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         let step: number | undefined = tree.resume(this);
-        const lastNodeStatus = tree.lastNodeStatus;
         const children = this.children;
 
         if (typeof step === "number") {
-            if (lastNodeStatus === "running") {
+            if (status === "running") {
                 this.error(`unexpected status error`);
             }
             if (step % 2 === 0) {
-                if (lastNodeStatus === "success") {
+                if (status === "success") {
                     step += 1; // do second node in case
                 } else {
                     step += 2; // next case
                 }
             } else {
-                return lastNodeStatus;
+                return status;
             }
         } else {
             step = 0;
@@ -55,7 +54,7 @@ export class Switch extends Node {
         for (let i = step >>> 1; i < children.length; i++) {
             const [first, second] = children[i].children;
             if (step % 2 === 0) {
-                const status = first.tick(tree);
+                status = first.tick(tree);
                 if (status === "running") {
                     return tree.yield(this, step);
                 } else if (status === "success") {
@@ -65,7 +64,7 @@ export class Switch extends Node {
                 }
             }
             if (step % 2 === 1) {
-                const status = second.tick(tree);
+                status = second.tick(tree);
                 if (status === "running") {
                     return tree.yield(this, step);
                 }
@@ -93,7 +92,7 @@ export class Switch extends Node {
 }
 
 export class Case extends Node {
-    override onTick(tree: Tree<Context, unknown>): Status {
+    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         throw new Error("tick children by Switch");
     }
 

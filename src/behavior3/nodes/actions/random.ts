@@ -9,7 +9,7 @@ export class Random extends Node {
         readonly floor?: boolean;
     };
 
-    override onTick(tree: Tree<Context, unknown>): Status {
+    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         const args = this.args;
         const MAX_INT = Number.MAX_SAFE_INTEGER;
         const min = this._checkOneof(0, args.min, MAX_INT);

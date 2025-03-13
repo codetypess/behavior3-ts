@@ -5,12 +5,12 @@ import { Tree } from "../../tree";
 export class RepeatUntilSuccess extends Node {
     declare args: { readonly maxLoop?: number };
 
-    override onTick(tree: Tree<Context, unknown>): Status {
+    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         const maxLoop = this._checkOneof(0, this.args.maxLoop, Number.MAX_SAFE_INTEGER);
         let count: number | undefined = tree.resume(this);
 
         if (typeof count === "number") {
-            if (tree.lastNodeStatus === "success") {
+            if (status === "success") {
                 return "success";
             } else if (count >= maxLoop) {
                 return "failure";
@@ -21,7 +21,7 @@ export class RepeatUntilSuccess extends Node {
             count = 1;
         }
 
-        const status = this.children[0].tick(tree);
+        status = this.children[0].tick(tree);
         if (status === "success") {
             return "success";
         } else {

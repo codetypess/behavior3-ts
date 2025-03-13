@@ -14,7 +14,7 @@ export class Check extends Node {
         context.compileCode(this.args.value);
     }
 
-    override onTick(tree: Tree<Context, unknown>): Status {
+    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         const value = tree.blackboard.eval(this.args.value);
         return value ? "success" : "failure";
     }

@@ -6,7 +6,7 @@ export class Index extends Node {
     declare input: [unknown[], number | undefined];
     declare args: { readonly index: number };
 
-    override onTick(tree: Tree<Context, unknown>): Status {
+    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         const [arr] = this.input;
         if (arr instanceof Array) {
             const index = this._checkOneof(1, this.args.index);

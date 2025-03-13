@@ -3,7 +3,7 @@ import { Node, NodeDef, Status } from "../../node";
 import { Tree } from "../../tree";
 
 export class Now extends Node {
-    override onTick(tree: Tree<Context, unknown>): Status {
+    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         this.output.push(tree.context.time);
         return "success";
     }

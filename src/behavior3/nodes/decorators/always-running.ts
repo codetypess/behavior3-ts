@@ -3,7 +3,7 @@ import { Node, NodeDef, Status } from "../../node";
 import { Tree } from "../../tree";
 
 export class AlwaysRunning extends Node {
-    override onTick(tree: Tree<Context, unknown>): Status {
+    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         this.children[0].tick(tree);
         return "running";
     }

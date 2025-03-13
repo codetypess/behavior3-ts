@@ -34,7 +34,7 @@ export class Listen extends Node {
         }
     }
 
-    override onTick(tree: Tree<Context, unknown>): Status {
+    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         let [target] = this.input;
         const args = this.args;
 

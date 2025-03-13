@@ -11,11 +11,11 @@ interface NodeYield {
 export class Timeout extends Node {
     declare args: { readonly time?: number };
 
-    override onTick(tree: Tree<Context, unknown>): Status {
+    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         const { stack, context } = tree;
         const level = stack.length;
         let last: NodeYield | undefined = tree.resume(this);
-        let status: Status = "failure";
+        status = "failure";
         if (last === undefined) {
             status = this.children[0].tick(tree);
         } else if (context.time >= last.expired) {

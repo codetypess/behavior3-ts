@@ -35,7 +35,7 @@ export class Tree<C extends Context, Owner> {
     protected _ticking: boolean = false;
 
     /** @private */
-    __lastNodeStatus: Status = "success";
+    __lastStatus: Status = "success";
 
     /** @private */
     __interrupted: boolean = false;
@@ -52,7 +52,7 @@ export class Tree<C extends Context, Owner> {
         this.context.loadTree(this.path);
     }
 
-    get root() {
+    get root(): Node | undefined {
         return (this._root ||= this.context.trees[this.path]);
     }
 
@@ -62,10 +62,6 @@ export class Tree<C extends Context, Owner> {
 
     get status() {
         return this._status;
-    }
-
-    get lastNodeStatus() {
-        return this.__lastNodeStatus;
     }
 
     get ticking() {

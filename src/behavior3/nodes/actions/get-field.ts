@@ -6,7 +6,7 @@ export class GetField extends Node {
     declare input: [{ [key: string]: unknown }, string | undefined];
     declare args: { readonly field?: string };
 
-    override onTick(tree: Tree<Context, unknown>): Status {
+    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         const [obj] = this.input;
         if (typeof obj !== "object" || !obj) {
             this.warn(`invalid object: ${obj}`);

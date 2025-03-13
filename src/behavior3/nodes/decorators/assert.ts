@@ -5,23 +5,22 @@ import { Tree } from "../../tree";
 export class Assert extends Node {
     declare args: { readonly message: string };
 
-    override onTick(tree: Tree<Context, unknown>): Status {
+    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         const args = this.args;
         const isYield: boolean | undefined = tree.resume(this);
-        const lastNodeStatus = tree.lastNodeStatus;
         if (typeof isYield === "boolean") {
-            if (lastNodeStatus === "running") {
+            if (status === "running") {
                 this.error(`unexpected status error`);
             }
 
-            if (lastNodeStatus === "success") {
+            if (status === "success") {
                 return "success";
             } else {
                 this.error(args.message);
             }
         }
 
-        const status = this.children[0].tick(tree);
+        status = this.children[0].tick(tree);
         if (status === "success") {
             return "success";
         } else if (status === "running") {

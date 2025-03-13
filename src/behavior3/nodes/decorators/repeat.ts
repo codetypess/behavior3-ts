@@ -5,15 +5,14 @@ import { Tree } from "../../tree";
 export class Repeat extends Node {
     declare args: { readonly count: number };
 
-    override onTick(tree: Tree<Context, unknown>): Status {
+    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         const count = this._checkOneof(0, this.args.count, Number.MAX_SAFE_INTEGER);
-        const lastNodeStatus = tree.lastNodeStatus;
         let i: number | undefined = tree.resume(this);
 
         if (i !== undefined) {
-            if (lastNodeStatus === "running") {
+            if (status === "running") {
                 this.error(`unexpected status error`);
-            } else if (lastNodeStatus === "failure") {
+            } else if (status === "failure") {
                 return "failure";
             }
             i++;
@@ -22,7 +21,7 @@ export class Repeat extends Node {
         }
 
         for (; i < count; i++) {
-            const status = this.children[0].tick(tree);
+            status = this.children[0].tick(tree);
             if (status === "running") {
                 return tree.yield(this, i);
             } else if (status === "failure") {

@@ -173,7 +173,7 @@ export abstract class Node {
 
     private _tryTick(tree: Tree<Context, unknown>) {
         try {
-            return this.onTick(tree);
+            return this.onTick(tree, tree.__lastStatus);
         } catch (e) {
             console.error(e);
             return "failure";
@@ -181,7 +181,7 @@ export abstract class Node {
     }
 
     tick(tree: Tree<Context, unknown>): Status {
-        if (this.active) {
+        if (!this.active) {
             return "failure";
         }
 
@@ -216,7 +216,7 @@ export abstract class Node {
             blackboard.set(this.__yield, true);
         }
 
-        tree.__lastNodeStatus = status;
+        tree.__lastStatus = status;
 
         if (cfg.debug || tree.debug) {
             let varStr = "";
@@ -265,7 +265,13 @@ export abstract class Node {
         return (value ?? defaultValue) as V;
     }
 
-    abstract onTick(tree: Tree<Context, unknown>): Status;
+    /**
+     * Executes the node's behavior tree logic.
+     * @param tree The behavior tree instance
+     * @param status The status of the last node
+     * @returns The execution status: `success`, `failure`, or `running`
+     */
+    abstract onTick(tree: Tree<Context, unknown>, status: Status): Status;
 
     static get descriptor(): NodeDef {
         throw new Error(`descriptor not found in '${this.name}'`);

@@ -5,7 +5,7 @@ import { Tree } from "../../tree";
 export class Concat extends Node {
     declare input: [unknown[], unknown[]];
 
-    override onTick(tree: Tree<Context, unknown>): Status {
+    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         const [arr1, arr2] = this.input;
         if (!Array.isArray(arr1) || !Array.isArray(arr2)) {
             return "failure";
