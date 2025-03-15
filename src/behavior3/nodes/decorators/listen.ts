@@ -14,7 +14,12 @@ const builtinEventOptions = [
 export class Listen extends Node {
     declare args: { readonly event: string };
     declare input: [TargetType | TargetType[] | undefined];
-    declare output: [string?, string?];
+    declare output: [
+        target?: string,
+        arg0?: string,
+        arg1?: string
+        // argN?:string
+    ];
 
     protected _isBuiltinEvent(event: string): boolean {
         return !!builtinEventOptions.find((e) => e.value === event);
@@ -30,7 +35,12 @@ export class Listen extends Node {
             tree.blackboard.set(eventTargetKey, eventTarget);
         }
         if (eventArgsKey) {
-            tree.blackboard.set(eventArgsKey, eventArgs);
+            for (let i = 1; i < this.cfg.output.length; i++) {
+                const key = this.cfg.output[i];
+                if (key) {
+                    tree.blackboard.set(key, eventArgs[i - 1]);
+                }
+            }
         }
     }
 
@@ -78,7 +88,7 @@ export class Listen extends Node {
             status: ["success"],
             desc: "侦听事件",
             input: ["目标对象?"],
-            output: ["事件参数?", "事件目标?"],
+            output: ["事件目标?", "事件参数..."],
             args: [
                 {
                     name: "event",
