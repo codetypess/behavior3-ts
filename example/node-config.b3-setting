@@ -672,7 +672,7 @@
     "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 当子节点返回 `failure` 时，退出遍历并返回 `failure` 状态\n+ 执行完所有子节点后，返回 `success`\n"
   },
   {
-    "name": "RepeatUntilFailure",
+    "name": "RetryUntilFailure",
     "type": "Decorator",
     "children": 1,
     "status": [
@@ -682,19 +682,19 @@
     ],
     "desc": "一直尝试直到子节点返回失败",
     "input": [
-      "最大循环次数?"
+      "最大尝试次数?"
     ],
     "args": [
       {
-        "name": "maxLoop",
+        "name": "count",
         "type": "int?",
-        "desc": "最大循环次数"
+        "desc": "最大尝试次数"
       }
     ],
     "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 只有当子节点返回 `failure` 时，才返回 `success`，其它情况返回 `running` 状态\n+ 如果设定了尝试次数，超过指定次数则返回 `failure`"
   },
   {
-    "name": "RepeatUntilSuccess",
+    "name": "RetryUntilSuccess",
     "type": "Decorator",
     "children": 1,
     "status": [
@@ -704,13 +704,13 @@
     ],
     "desc": "一直尝试直到子节点返回成功",
     "input": [
-      "最大循环次数?"
+      "最大尝试次数?"
     ],
     "args": [
       {
-        "name": "maxLoop",
+        "name": "count",
         "type": "int?",
-        "desc": "最大循环次数"
+        "desc": "最大尝试次数"
       }
     ],
     "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 只有当子节点返回 `success` 时，才返回 `success`，其它情况返回 `running` 状态\n+ 如果设定了尝试次数，超过指定次数则返回 `failure`"

@@ -8,7 +8,7 @@
         "id": 2,
         "name": "Log",
         "args": {
-          "message": "-------------> RepeatUntilFailure",
+          "message": "-------------> RetryUntilFailure",
           "level": "info"
         }
       },
@@ -18,9 +18,9 @@
         "children": [
           {
             "id": 4,
-            "name": "RepeatUntilFailure",
+            "name": "RetryUntilFailure",
             "args": {
-              "maxLoop": 3
+              "count": 3
             },
             "input": [
               ""
@@ -56,9 +56,9 @@
             "children": [
               {
                 "id": 9,
-                "name": "RepeatUntilFailure",
+                "name": "RetryUntilFailure",
                 "args": {
-                  "maxLoop": 3
+                  "count": 3
                 },
                 "input": [
                   ""
@@ -123,7 +123,7 @@
         "id": 17,
         "name": "Log",
         "args": {
-          "message": "<------------- RepeatUntilFailure",
+          "message": "<------------- RetryUntilFailure",
           "level": "info"
         }
       }

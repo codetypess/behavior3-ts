@@ -178,8 +178,8 @@ export class FindEnemy extends Node {
 -   Listen 监听事件并执行子节点
 -   Once 只执行一次
 -   Repeat 重复执行子节点
--   RepeatUntilFailure 重复执行子节点直到返回失败
--   RepeatUntilSuccess 重复执行子节点直到返回成功
+-   RetryUntilFailure 一直尝试执行子节点直到返回失败
+-   RetryUntilSuccess 一直尝试执行子节点直到返回成功
 -   Timeout 限定时间内执行子节点
 
 ## 编辑器

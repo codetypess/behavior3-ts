@@ -35,8 +35,8 @@ import { Invert } from "./nodes/decorators/invert";
 import { Listen } from "./nodes/decorators/listen";
 import { Once } from "./nodes/decorators/once";
 import { Repeat } from "./nodes/decorators/repeat";
-import { RepeatUntilFailure } from "./nodes/decorators/repeat-until-failure";
-import { RepeatUntilSuccess } from "./nodes/decorators/repeat-until-success";
+import { RetryUntilFailure } from "./nodes/decorators/retry-until-failure";
+import { RetryUntilSuccess } from "./nodes/decorators/retry-until-success";
 import { Timeout } from "./nodes/decorators/timeout";
 import { TreeData } from "./tree";
 
@@ -107,8 +107,8 @@ export abstract class Context {
         this.registerNode(Random);
         this.registerNode(RandomIndex);
         this.registerNode(Repeat);
-        this.registerNode(RepeatUntilFailure);
-        this.registerNode(RepeatUntilSuccess);
+        this.registerNode(RetryUntilFailure);
+        this.registerNode(RetryUntilSuccess);
         this.registerNode(Selector);
         this.registerNode(Sequence);
         this.registerNode(SetField);

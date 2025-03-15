@@ -2,17 +2,17 @@ import type { Context } from "../../context";
 import { Node, NodeDef, Status } from "../../node";
 import { Tree } from "../../tree";
 
-export class RepeatUntilFailure extends Node {
-    declare args: { readonly maxLoop?: number };
+export class RetryUntilFailure extends Node {
+    declare args: { readonly count?: number };
 
     override onTick(tree: Tree<Context, unknown>, status: Status): Status {
-        const maxLoop = this._checkOneof(0, this.args.maxLoop, Number.MAX_SAFE_INTEGER);
+        const maxTryTimes = this._checkOneof(0, this.args.count, Number.MAX_SAFE_INTEGER);
         let count: number | undefined = tree.resume(this);
 
         if (typeof count === "number") {
             if (status === "failure") {
                 return "success";
-            } else if (count >= maxLoop) {
+            } else if (count >= maxTryTimes) {
                 return "failure";
             } else {
                 count++;
@@ -31,17 +31,17 @@ export class RepeatUntilFailure extends Node {
 
     static override get descriptor(): NodeDef {
         return {
-            name: "RepeatUntilFailure",
+            name: "RetryUntilFailure",
             type: "Decorator",
             children: 1,
             status: ["!success", "!failure", "|running"],
             desc: "一直尝试直到子节点返回失败",
-            input: ["最大循环次数?"],
+            input: ["最大尝试次数?"],
             args: [
                 {
-                    name: "maxLoop",
+                    name: "count",
                     type: "int?",
-                    desc: "最大循环次数",
+                    desc: "最大尝试次数",
                 },
             ],
             doc: `

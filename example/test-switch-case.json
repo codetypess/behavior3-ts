@@ -63,7 +63,7 @@
                 "children": [
                   {
                     "id": 10,
-                    "name": "RepeatUntilSuccess",
+                    "name": "RetryUntilSuccess",
                     "args": {},
                     "input": [],
                     "children": [

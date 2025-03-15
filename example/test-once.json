@@ -23,9 +23,9 @@
             "children": [
               {
                 "id": 5,
-                "name": "RepeatUntilSuccess",
+                "name": "RetryUntilSuccess",
                 "args": {
-                  "maxLoop": 2
+                  "count": 2
                 },
                 "input": [
                   ""

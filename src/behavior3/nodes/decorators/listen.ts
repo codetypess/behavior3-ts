@@ -49,7 +49,7 @@ export class Listen extends Node {
             return (...eventArgs: unknown[]) => {
                 this._processOutput(tree, eventTarget, ...eventArgs);
                 const level = tree.stack.length;
-                const status = this.children[0].tick(tree);
+                status = this.children[0].tick(tree);
                 if (status === "running") {
                     tree.stack.popTo(level);
                 }
