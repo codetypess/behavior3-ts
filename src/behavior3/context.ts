@@ -59,7 +59,7 @@ export type DeepReadonly<T> =
     T extends object ? { readonly [K in keyof T]: DeepReadonly<T[K]> } :
     T;
 
-type DelayEntry = {
+type TimerEntry = {
     callback: Callback;
     tag: TagType;
     expired: number;
@@ -73,8 +73,8 @@ export abstract class Context {
     protected _time: number = 0;
 
     private readonly _evaluators: Record<string, Evaluator> = {};
-    private readonly _delayers: DelayEntry[] = [];
-    private readonly _listenerMap: Map<string, Map<TargetType, Map<Callback, TagType>>> = new Map();
+    private readonly _timers: TimerEntry[] = [];
+    private readonly _listeners: Map<string, Map<TargetType, Map<Callback, TagType>>> = new Map();
 
     constructor() {
         this.registerNode(AlwaysFailure);
@@ -123,38 +123,61 @@ export abstract class Context {
         return this._time;
     }
 
+    /**
+     * Schedules a callback to be executed after a specified delay, same callback will be replaced.
+     *
+     * @param time The delay in seconds before the callback is executed
+     * @param callback The function to call after the delay
+     * @param tag The tag used to identify which timers to remove
+     */
     delay(time: number, callback: Callback, tag: TagType) {
         const expired = time + this._time;
-        const delayers = this._delayers;
+        const timers = this._timers;
 
-        let idx = delayers.findIndex((v) => v.callback === callback);
+        let idx = timers.findIndex((v) => v.callback === callback);
         if (idx >= 0) {
-            delayers.splice(idx, 1);
+            timers.splice(idx, 1);
         }
 
-        idx = delayers.findIndex((v) => v.expired > expired);
+        idx = timers.findIndex((v) => v.expired > expired);
         if (idx >= 0) {
-            delayers.splice(idx, 0, { callback, tag, expired });
+            timers.splice(idx, 0, { callback, tag, expired });
         } else {
-            delayers.push({ callback, tag, expired });
+            timers.push({ callback, tag, expired });
         }
     }
 
     update(dt: number): void {
         this._time += dt;
 
-        const delayers = this._delayers;
-        if (delayers.length > 0) {
-            const expired = delayers[0].expired;
-            if (expired <= this._time) {
-                const { callback } = delayers.shift()!;
+        const timers = this._timers;
+        while (timers.length > 0) {
+            if (timers[0].expired <= this._time) {
+                const { callback } = timers.shift()!;
                 callback();
+            } else {
+                break;
             }
         }
     }
 
+    /**
+     * Registers a listener for an event.
+     *
+     * @param event The event name to listen for
+     * @param callback The function to call when the event occurs
+     * @param tag The tag used to identify which listeners to remove
+     */
     on(event: string, callback: Callback, tag: TagType): void;
 
+    /**
+     * Registers a listener for an event on a specific target.
+     *
+     * @param event The event name to listen for
+     * @param target The target object to listen for the event on
+     * @param callback The function to call when the event occurs
+     * @param tag The tag used to identify which listeners to remove
+     */
     on(event: string, target: TargetType, callback: Callback, tag: TagType): void;
 
     on(
@@ -167,28 +190,37 @@ export abstract class Context {
         let callback: Callback;
         if (typeof callbackOrTarget === "function") {
             callback = callbackOrTarget as Callback;
-            tag = tagOrCallback as object;
+            tag = tagOrCallback;
             target = this as TargetType;
         } else {
             target = callbackOrTarget as TargetType;
             callback = tagOrCallback as Callback;
         }
 
-        let listenerMap = this._listenerMap.get(event);
-        if (!listenerMap) {
-            listenerMap = new Map();
-            this._listenerMap.set(event, listenerMap);
+        let listeners = this._listeners.get(event);
+        if (!listeners) {
+            listeners = new Map();
+            this._listeners.set(event, listeners);
         }
-        let targetListeners = listenerMap.get(target);
+        let targetListeners = listeners.get(target);
         if (!targetListeners) {
             targetListeners = new Map();
-            listenerMap.set(target, targetListeners);
+            listeners.set(target, targetListeners);
         }
-        targetListeners.set(callback, tag!);
+        targetListeners.set(callback, tag);
     }
 
+    /**
+     * Dispatches an event to all listeners registered for the specified event.
+     * If a target is provided, only listeners registered for that target will be notified.
+     * Otherwise, listeners registered for the context(default target) will be notified.
+     *
+     * @param event The event name to dispatch
+     * @param target Optional target object that the event is associated with
+     * @param args Additional arguments to pass to the event listeners
+     */
     dispatch(event: string, target?: TargetType | this, ...args: unknown[]) {
-        this._listenerMap
+        this._listeners
             .get(event)
             ?.get(target ?? this)
             ?.forEach((_, callback) => {
@@ -196,8 +228,14 @@ export abstract class Context {
             });
     }
 
+    /**
+     * Removes all listeners for the specified event that match the given tag.
+     *
+     * @param event The event name to remove listeners from
+     * @param tag The tag used to identify which listeners to remove
+     */
     off(event: string, tag: TagType) {
-        this._listenerMap.get(event)?.forEach((targetListeners, target, listeners) => {
+        this._listeners.get(event)?.forEach((targetListeners, target, listeners) => {
             targetListeners.forEach((value, key) => {
                 if (value === tag) {
                     targetListeners.delete(key);
@@ -209,8 +247,14 @@ export abstract class Context {
         });
     }
 
+    /**
+     * Removes all listeners for the specified tag from the context.
+     * This includes both event listeners and timers.
+     *
+     * @param tag The tag used to identify which listeners to remove
+     */
     offAll(tag: TagType) {
-        this._listenerMap.forEach((listeners) => {
+        this._listeners.forEach((listeners) => {
             listeners.forEach((targetListeners, target) => {
                 targetListeners.forEach((value, key) => {
                     if (value === tag) {
@@ -223,10 +267,10 @@ export abstract class Context {
             });
         });
 
-        const delayers = this._delayers;
-        for (let i = delayers.length - 1; i >= 0; i--) {
-            if (delayers[i].tag === tag) {
-                delayers.splice(i, 1);
+        const timers = this._timers;
+        for (let i = timers.length - 1; i >= 0; i--) {
+            if (timers[i].tag === tag) {
+                timers.splice(i, 1);
             }
         }
     }
