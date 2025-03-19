@@ -15,6 +15,7 @@ export class RandomIndex extends Node {
         const value = arr[idx];
         if (value !== undefined && value !== null) {
             this.output.push(value);
+            this.output.push(idx);
             return "success";
         } else {
             return "failure";
@@ -29,7 +30,7 @@ export class RandomIndex extends Node {
             status: ["success", "failure"],
             desc: "随机返回输入的其中一个!",
             input: ["输入目标"],
-            output: ["随机目标"],
+            output: ["随机目标", "索引?"],
             doc: `
                 + 合法元素不包括 \`undefined\` 和 \`null\`
                 + 在输入数组中，随机返回其中一个

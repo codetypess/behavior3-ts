@@ -209,7 +209,8 @@
       "数组"
     ],
     "output": [
-      "变量"
+      "变量",
+      "索引?"
     ],
     "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 遍历输入数组，将当前元素写入`变量`\n+ 当子节点返回 `failure` 时，退出遍历并返回 `failure` 状态\n+ 执行完所有子节点后，返回 `success`"
   },
@@ -497,6 +498,120 @@
     ]
   },
   {
+    "name": "Math",
+    "type": "Action",
+    "desc": "执行数学运算",
+    "input": [
+      "参数..."
+    ],
+    "output": [
+      "结果"
+    ],
+    "status": [
+      "success",
+      "failure"
+    ],
+    "args": [
+      {
+        "name": "op",
+        "type": "enum",
+        "desc": "数学运算类型",
+        "options": [
+          {
+            "name": "绝对值",
+            "value": "abs"
+          },
+          {
+            "name": "向上取整",
+            "value": "ceil"
+          },
+          {
+            "name": "向下取整",
+            "value": "floor"
+          },
+          {
+            "name": "四舍五入",
+            "value": "round"
+          },
+          {
+            "name": "符号",
+            "value": "sign"
+          },
+          {
+            "name": "正弦",
+            "value": "sin"
+          },
+          {
+            "name": "余弦",
+            "value": "cos"
+          },
+          {
+            "name": "正切",
+            "value": "tan"
+          },
+          {
+            "name": "反正切2",
+            "value": "atan2"
+          },
+          {
+            "name": "幂运算",
+            "value": "pow"
+          },
+          {
+            "name": "平方根",
+            "value": "sqrt"
+          },
+          {
+            "name": "自然对数",
+            "value": "log"
+          },
+          {
+            "name": "最小值",
+            "value": "min"
+          },
+          {
+            "name": "最大值",
+            "value": "max"
+          },
+          {
+            "name": "随机数",
+            "value": "random"
+          },
+          {
+            "name": "随机整数",
+            "value": "randInt"
+          },
+          {
+            "name": "随机浮点数",
+            "value": "randFloat"
+          },
+          {
+            "name": "求和",
+            "value": "sum"
+          },
+          {
+            "name": "平均值",
+            "value": "average"
+          },
+          {
+            "name": "乘积",
+            "value": "product"
+          }
+        ]
+      },
+      {
+        "name": "value1",
+        "type": "float?",
+        "desc": "参数1（优先使用）"
+      },
+      {
+        "name": "value2",
+        "type": "float?",
+        "desc": "参数2（优先使用）"
+      }
+    ]
+  },
+  {
     "name": "MoveToPos",
     "type": "Action",
     "desc": "移动到位置",
@@ -597,41 +712,6 @@
     "doc": "+ 并行执行所有子节点\n+ 当有子节点返回 `success` 时，立即返回 `success` 状态，并中断其他子节点\n+ 如果所有子节点返回 `failure` 则返回 `failure`"
   },
   {
-    "name": "Random",
-    "type": "Action",
-    "children": 0,
-    "status": [
-      "success"
-    ],
-    "desc": "返回一个随机数",
-    "input": [
-      "最小值?",
-      "最大值?"
-    ],
-    "args": [
-      {
-        "name": "min",
-        "type": "float?",
-        "desc": "最小值",
-        "oneof": "最小值"
-      },
-      {
-        "name": "max",
-        "type": "float?",
-        "desc": "最大值",
-        "oneof": "最大值"
-      },
-      {
-        "name": "floor",
-        "type": "bool?",
-        "desc": "是否向下取整"
-      }
-    ],
-    "output": [
-      "随机数"
-    ]
-  },
-  {
     "name": "RandomIndex",
     "type": "Action",
     "children": 0,
@@ -644,7 +724,8 @@
       "输入目标"
     ],
     "output": [
-      "随机目标"
+      "随机目标",
+      "索引?"
     ],
     "doc": "+ 合法元素不包括 `undefined` 和 `null`\n+ 在输入数组中，随机返回其中一个\n+ 当输入数组为空时，或者没有合法元素，返回 `failure`\n"
   },

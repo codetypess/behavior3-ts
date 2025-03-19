@@ -4,22 +4,28 @@ import type { ObjectType } from "./context";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Evaluator = (envars: any) => unknown;
 
-const enum TokenType {
-    NUMBER,
-    STRING,
-    BOOLEAN,
-    DOT,
-    GT,
-    GE,
-    EQ,
-    NEQ,
-    LT,
-    LE,
-    ADD,
-    SUB,
-    MUL,
-    DIV,
+enum TokenType {
+    NUMBER = "n",
+    STRING = "s",
+    BOOLEAN = "b",
+    NEGATION = "-N",
+    POSITIVE = "+N",
+    DOT = ".",
+    GT = ">",
+    GE = ">=",
+    EQ = "==",
+    NEQ = "!=",
+    LT = "<",
+    LE = "<=",
+    ADD = "+",
+    SUB = "-",
+    MUL = "*",
+    DIV = "/",
+    MOD = "%",
+    QUESTION = "?",
+    COLON = ":",
 }
+
 type Token = {
     type: TokenType;
     value?: string | number | boolean | null;
@@ -31,7 +37,7 @@ export class ExpressionEvaluator {
 
     constructor(expression: string) {
         expression = expression.replace(/\s/g, "");
-        const tokens = expression.match(/\d+\.\d+|\w+|\d+|>=|<=|==|!=|>|<|[-+*/().]/g);
+        const tokens = expression.match(/\d+\.\d+|\w+|\d+|>=|<=|==|!=|>|<|\?|:|\.|[-+*%/()]/g);
         if (!tokens) {
             throw new Error("Invalid expression");
         }
@@ -50,6 +56,15 @@ export class ExpressionEvaluator {
                 type === TokenType.STRING
             ) {
                 stack.push(token.value);
+            } else if (type === TokenType.QUESTION) {
+                const condition = stack.pop()!;
+                const trueValue = stack.pop()!;
+                const falseValue = stack.pop()!;
+                stack.push(this._toValue<unknown>(condition, false) ? trueValue : falseValue);
+            } else if (type === TokenType.POSITIVE) {
+                stack.push(this._toValue(stack.pop()!, false));
+            } else if (type === TokenType.NEGATION) {
+                stack.push(-this._toValue(stack.pop()!, false));
             } else {
                 const b = stack.pop()!;
                 const a = stack.pop()!;
@@ -60,21 +75,27 @@ export class ExpressionEvaluator {
                         break;
                     }
                     case TokenType.GT:
-                        return this._toValue(a) > this._toValue(b);
+                        stack.push(this._toValue(a) > this._toValue(b));
+                        break;
                     case TokenType.GE:
-                        return this._toValue(a) >= this._toValue(b);
+                        stack.push(this._toValue(a) >= this._toValue(b));
+                        break;
                     case TokenType.EQ:
-                        return (
+                        stack.push(
                             this._toValue<unknown>(a, false) === this._toValue<unknown>(b, false)
                         );
+                        break;
                     case TokenType.NEQ:
-                        return (
+                        stack.push(
                             this._toValue<unknown>(a, false) !== this._toValue<unknown>(b, false)
                         );
+                        break;
                     case TokenType.LT:
-                        return this._toValue(a) < this._toValue(b);
+                        stack.push(this._toValue(a) < this._toValue(b));
+                        break;
                     case TokenType.LE:
-                        return this._toValue(a) <= this._toValue(b);
+                        stack.push(this._toValue(a) <= this._toValue(b));
+                        break;
                     case TokenType.ADD:
                         stack.push(this._toValue(a) + this._toValue(b));
                         break;
@@ -87,6 +108,16 @@ export class ExpressionEvaluator {
                     case TokenType.DIV:
                         stack.push(this._toValue(a) / this._toValue(b));
                         break;
+                    case TokenType.MOD:
+                        stack.push(this._toValue(a) % this._toValue(b));
+                        break;
+                    case TokenType.COLON: {
+                        stack.push(this._toValue(a));
+                        stack.push(this._toValue(b));
+                        break;
+                    }
+                    default:
+                        throw new Error(`unsupport operator: ${type}`);
                 }
             }
         }
@@ -128,21 +159,29 @@ export class ExpressionEvaluator {
 
     private _precedence(operator: string): number {
         switch (operator) {
-            case "<":
-            case "<=":
-            case "==":
-            case "!=":
-            case ">":
-            case ">=":
+            case TokenType.QUESTION: // 三元运算符优先级最低
+                return 0;
+            case TokenType.COLON:
                 return 1;
-            case "+":
-            case "-":
+            case TokenType.LT:
+            case TokenType.LE:
+            case TokenType.EQ:
+            case TokenType.NEQ:
+            case TokenType.GT:
+            case TokenType.GE:
+            case TokenType.MOD:
                 return 2;
-            case "*":
-            case "/":
+            case TokenType.ADD:
+            case TokenType.SUB:
                 return 3;
-            case ".":
+            case TokenType.MUL:
+            case TokenType.DIV:
                 return 4;
+            case TokenType.NEGATION:
+            case TokenType.POSITIVE:
+                return 5;
+            case TokenType.DOT:
+                return 6;
             default:
                 return 0;
         }
@@ -150,38 +189,59 @@ export class ExpressionEvaluator {
 
     private _toToken(operator: string): Token {
         switch (operator) {
-            case "<":
-                return { type: TokenType.LT };
-            case "<=":
-                return { type: TokenType.LE };
-            case "==":
-                return { type: TokenType.EQ };
-            case "!=":
-                return { type: TokenType.NEQ };
-            case ">":
-                return { type: TokenType.GT };
-            case ">=":
-                return { type: TokenType.GE };
-            case "+":
-                return { type: TokenType.ADD };
-            case "-":
-                return { type: TokenType.SUB };
-            case "*":
-                return { type: TokenType.MUL };
-            case "/":
-                return { type: TokenType.DIV };
-            case ".":
-                return { type: TokenType.DOT };
+            case TokenType.NEGATION:
+            case TokenType.POSITIVE:
+            case TokenType.QUESTION:
+            case TokenType.COLON:
+            case TokenType.LT:
+            case TokenType.LE:
+            case TokenType.EQ:
+            case TokenType.NEQ:
+            case TokenType.GT:
+            case TokenType.GE:
+            case TokenType.ADD:
+            case TokenType.SUB:
+            case TokenType.MUL:
+            case TokenType.DIV:
+            case TokenType.DOT:
+            case TokenType.MOD:
+                return { type: operator };
             default:
                 throw new Error(`unsupport operator: ${operator}`);
         }
+    }
+
+    private _isOperator(token: string) {
+        return (
+            token === TokenType.QUESTION ||
+            token === TokenType.COLON ||
+            token === TokenType.LT ||
+            token === TokenType.LE ||
+            token === TokenType.EQ ||
+            token === TokenType.NEQ ||
+            token === TokenType.GT ||
+            token === TokenType.GE ||
+            token === TokenType.ADD ||
+            token === TokenType.SUB ||
+            token === TokenType.MUL ||
+            token === TokenType.DIV ||
+            token === TokenType.DOT ||
+            token === TokenType.MOD
+        );
     }
 
     private _convertToPostfix(infix: string[]) {
         const outputQueue: Token[] = [];
         const operatorStack: string[] = [];
 
-        infix.forEach((token) => {
+        for (let i = 0; i < infix.length; i++) {
+            let token = infix[i];
+            if (token === "-" || token === "+") {
+                const last = infix[i - 1];
+                if (last === undefined || this._isOperator(last)) {
+                    token = token === "-" ? TokenType.NEGATION : TokenType.POSITIVE;
+                }
+            }
             if (/^\d+|\d+\.\d+$/.test(token)) {
                 outputQueue.push({
                     type: TokenType.NUMBER,
@@ -212,7 +272,7 @@ export class ExpressionEvaluator {
                 }
                 operatorStack.push(token);
             }
-        });
+        }
 
         while (operatorStack.length) {
             outputQueue.push(this._toToken(operatorStack.pop()!));

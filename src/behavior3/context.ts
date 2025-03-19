@@ -8,9 +8,9 @@ import { GetField } from "./nodes/actions/get-field";
 import { JustSuccess } from "./nodes/actions/just-success";
 import { Let } from "./nodes/actions/let";
 import { Log } from "./nodes/actions/log";
+import { MathNode } from "./nodes/actions/math";
 import { Now } from "./nodes/actions/now";
 import { Push } from "./nodes/actions/push";
-import { Random } from "./nodes/actions/random";
 import { RandomIndex } from "./nodes/actions/random-index";
 import { SetField } from "./nodes/actions/set-field";
 import { Wait } from "./nodes/actions/wait";
@@ -51,13 +51,14 @@ export type ObjectType = { [k: string]: unknown };
 export type TargetType = object | string | number;
 export type TagType = unknown;
 
-// prettier-ignore
-export type DeepReadonly<T> =
-    T extends (infer U)[] ? ReadonlyArray<DeepReadonly<U>> :
-    // eslint-disable-next-line @typescript-eslint/ban-types
-    T extends Function ? T :
-    T extends object ? { readonly [K in keyof T]: DeepReadonly<T[K]> } :
-    T;
+export type DeepReadonly<T> = T extends object
+    ? {
+          readonly [P in keyof T]: DeepReadonly<T[P]>;
+      }
+    : T;
+
+// 对象属性值非null 非undefined
+export type ExcludeNull<T> = { [P in keyof T]: NonNullable<T[P]> };
 
 type TimerEntry = {
     callback: Callback;
@@ -98,13 +99,13 @@ export abstract class Context {
         this.registerNode(Let);
         this.registerNode(Listen);
         this.registerNode(Log);
+        this.registerNode(MathNode);
         this.registerNode(NotNull);
         this.registerNode(Now);
         this.registerNode(Once);
         this.registerNode(Parallel);
         this.registerNode(Push);
         this.registerNode(Race);
-        this.registerNode(Random);
         this.registerNode(RandomIndex);
         this.registerNode(Repeat);
         this.registerNode(RetryUntilFailure);
