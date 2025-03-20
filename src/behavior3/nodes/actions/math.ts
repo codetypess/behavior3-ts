@@ -1,38 +1,50 @@
 import type { Context } from "../../context";
-import { Node, NodeDef, Status } from "../../node";
+import { Node, NodeData, NodeDef, Status } from "../../node";
 import type { Tree } from "../../tree";
 
-type Op =
+enum Op {
     // 基础运算
-    | "abs"
-    | "ceil"
-    | "floor"
-    | "round"
-    | "sign"
+    abs = 0,
+    ceil = 1,
+    floor = 2,
+    round = 3,
+    sign = 4,
     // 三角函数
-    | "sin"
-    | "cos"
-    | "tan"
-    | "atan2"
+    sin = 5,
+    cos = 6,
+    tan = 7,
+    atan2 = 8,
     // 幂和对数
-    | "pow"
-    | "sqrt"
-    | "log"
+    pow = 9,
+    sqrt = 10,
+    log = 11,
     // 最值运算
-    | "min"
-    | "max"
+    min = 12,
+    max = 13,
     // 随机数
-    | "random" // 返回 [0,1) 之间的随机数
-    | "randInt" // 返回指定范围内的随机整数 [min, max]
-    | "randFloat" // 返回指定范围内的随机浮点数 [min, max)
+    random = 14,
+    randInt = 15,
+    randFloat = 16,
     // 其他运算
-    | "sum"
-    | "average"
-    | "product";
+    sum = 17,
+    average = 18,
+    product = 19,
+}
 
 export class MathNode extends Node {
+    private _op: Op;
+
+    constructor(context: Context, cfg: NodeData) {
+        super(context, cfg);
+        this._op = Op[cfg.args.op as keyof typeof Op];
+        if (this._op === undefined) {
+            throw new Error(`unknown op: ${cfg.args.op}`);
+        }
+    }
+
     override onTick(tree: Tree<Context, unknown>, status: Status): Status {
-        const args = this.args as { op: Op; value1?: number; value2?: number };
+        const op = this._op;
+        const args = this.args as { value1?: number; value2?: number };
         const inputValues = this.input.filter((value) => value !== undefined).map(Number);
 
         // 优先使用常量参数，如果没有则使用输入参数
@@ -54,177 +66,171 @@ export class MathNode extends Node {
             values.push(...inputValues.slice(2));
         }
 
-        if (
-            values.length === 0 &&
-            args.op !== "random" &&
-            args.op !== "randInt" &&
-            args.op !== "randFloat"
-        ) {
+        if (values.length === 0 && op !== Op.random && op !== Op.randInt && op !== Op.randFloat) {
             this.error("至少需要一个输入值");
             return "failure";
         }
 
-        try {
-            let result: number;
-            switch (args.op) {
-                case "abs": {
-                    if (values.length !== 1) {
-                        this.error("abs运算只需要一个参数");
-                        return "failure";
-                    }
-                    result = Math.abs(values[0]);
-                    break;
-                }
-                case "ceil": {
-                    if (values.length !== 1) {
-                        this.error("ceil运算只需要一个参数");
-                        return "failure";
-                    }
-                    result = Math.ceil(values[0]);
-                    break;
-                }
-                case "floor": {
-                    if (values.length !== 1) {
-                        this.error("floor运算只需要一个参数");
-                        return "failure";
-                    }
-                    result = Math.floor(values[0]);
-                    break;
-                }
-                case "round": {
-                    if (values.length !== 1) {
-                        this.error("round运算只需要一个参数");
-                        return "failure";
-                    }
-                    result = Math.round(values[0]);
-                    break;
-                }
-                case "sin": {
-                    if (values.length !== 1) {
-                        this.error("sin运算只需要一个参数");
-                        return "failure";
-                    }
-                    result = Math.sin(values[0]);
-                    break;
-                }
-                case "cos": {
-                    if (values.length !== 1) {
-                        this.error("cos运算只需要一个参数");
-                        return "failure";
-                    }
-                    result = Math.cos(values[0]);
-                    break;
-                }
-                case "tan": {
-                    if (values.length !== 1) {
-                        this.error("tan运算只需要一个参数");
-                        return "failure";
-                    }
-                    result = Math.tan(values[0]);
-                    break;
-                }
-                case "pow": {
-                    if (values.length !== 2) {
-                        this.error("pow运算需要两个参数");
-                        return "failure";
-                    }
-                    result = Math.pow(values[0], values[1]);
-                    break;
-                }
-                case "sqrt": {
-                    if (values.length !== 1) {
-                        this.error("sqrt运算只需要一个参数");
-                        return "failure";
-                    }
-                    result = Math.sqrt(values[0]);
-                    break;
-                }
-                case "log": {
-                    if (values.length !== 1) {
-                        this.error("log运算只需要一个参数");
-                        return "failure";
-                    }
-                    result = Math.log(values[0]);
-                    break;
-                }
-                case "min": {
-                    result = Math.min(...values);
-                    break;
-                }
-                case "max": {
-                    result = Math.max(...values);
-                    break;
-                }
-                case "sum": {
-                    result = values.reduce((a, b) => a + b, 0);
-                    break;
-                }
-                case "average": {
-                    result = values.reduce((a, b) => a + b, 0) / values.length;
-                    break;
-                }
-                case "product": {
-                    result = values.reduce((a, b) => a * b, 1);
-                    break;
-                }
-                case "sign": {
-                    if (values.length !== 1) {
-                        this.error("sign运算只需要一个参数");
-                        return "failure";
-                    }
-                    result = Math.sign(values[0]);
-                    break;
-                }
-                case "atan2": {
-                    if (values.length !== 2) {
-                        this.error("atan2运算需要两个参数");
-                        return "failure";
-                    }
-                    result = Math.atan2(values[0], values[1]);
-                    break;
-                }
-                case "random": {
-                    result = Math.random();
-                    break;
-                }
-                case "randInt": {
-                    if (values.length !== 2) {
-                        this.error("randInt运算需要两个参数（最小值和最大值）");
-                        return "failure";
-                    }
-                    const min = Math.ceil(values[0]);
-                    const max = Math.floor(values[1]);
-                    if (min > max) {
-                        this.error("最小值不能大于最大值");
-                        return "failure";
-                    }
-                    result = Math.floor(Math.random() * (max - min + 1)) + min;
-                    break;
-                }
-                case "randFloat": {
-                    if (values.length !== 2) {
-                        this.error("randFloat运算需要两个参数（最小值和最大值）");
-                        return "failure";
-                    }
-                    if (values[0] > values[1]) {
-                        this.error("最小值不能大于最大值");
-                        return "failure";
-                    }
-                    result = Math.random() * (values[1] - values[0]) + values[0];
-                    break;
-                }
-                default: {
-                    this.error(`未知的运算类型: ${args.op}`);
+        let result: number;
+        switch (op) {
+            case Op.abs: {
+                if (values.length !== 1) {
+                    this.error("abs运算只需要一个参数");
                     return "failure";
                 }
+                result = Math.abs(values[0]);
+                break;
             }
+            case Op.ceil: {
+                if (values.length !== 1) {
+                    this.error("ceil运算只需要一个参数");
+                    return "failure";
+                }
+                result = Math.ceil(values[0]);
+                break;
+            }
+            case Op.floor: {
+                if (values.length !== 1) {
+                    this.error("floor运算只需要一个参数");
+                    return "failure";
+                }
+                result = Math.floor(values[0]);
+                break;
+            }
+            case Op.round: {
+                if (values.length !== 1) {
+                    this.error("round运算只需要一个参数");
+                    return "failure";
+                }
+                result = Math.round(values[0]);
+                break;
+            }
+            case Op.sin: {
+                if (values.length !== 1) {
+                    this.error("sin运算只需要一个参数");
+                    return "failure";
+                }
+                result = Math.sin(values[0]);
+                break;
+            }
+            case Op.cos: {
+                if (values.length !== 1) {
+                    this.error("cos运算只需要一个参数");
+                    return "failure";
+                }
+                result = Math.cos(values[0]);
+                break;
+            }
+            case Op.tan: {
+                if (values.length !== 1) {
+                    this.error("tan运算只需要一个参数");
+                    return "failure";
+                }
+                result = Math.tan(values[0]);
+                break;
+            }
+            case Op.pow: {
+                if (values.length !== 2) {
+                    this.error("pow运算需要两个参数");
+                    return "failure";
+                }
+                result = Math.pow(values[0], values[1]);
+                break;
+            }
+            case Op.sqrt: {
+                if (values.length !== 1) {
+                    this.error("sqrt运算只需要一个参数");
+                    return "failure";
+                }
+                result = Math.sqrt(values[0]);
+                break;
+            }
+            case Op.log: {
+                if (values.length !== 1) {
+                    this.error("log运算只需要一个参数");
+                    return "failure";
+                }
+                result = Math.log(values[0]);
+                break;
+            }
+            case Op.min: {
+                result = Math.min(...values);
+                break;
+            }
+            case Op.max: {
+                result = Math.max(...values);
+                break;
+            }
+            case Op.sum: {
+                result = values.reduce((a, b) => a + b, 0);
+                break;
+            }
+            case Op.average: {
+                result = values.reduce((a, b) => a + b, 0) / values.length;
+                break;
+            }
+            case Op.product: {
+                result = values.reduce((a, b) => a * b, 1);
+                break;
+            }
+            case Op.sign: {
+                if (values.length !== 1) {
+                    this.error("sign运算只需要一个参数");
+                    return "failure";
+                }
+                result = Math.sign(values[0]);
+                break;
+            }
+            case Op.atan2: {
+                if (values.length !== 2) {
+                    this.error("atan2运算需要两个参数");
+                    return "failure";
+                }
+                result = Math.atan2(values[0], values[1]);
+                break;
+            }
+            case Op.random: {
+                result = Math.random();
+                break;
+            }
+            case Op.randInt: {
+                if (values.length !== 2) {
+                    this.error("randInt运算需要两个参数（最小值和最大值）");
+                    return "failure";
+                }
+                const min = Math.ceil(values[0]);
+                const max = Math.floor(values[1]);
+                if (min > max) {
+                    this.error("最小值不能大于最大值");
+                    return "failure";
+                }
+                result = Math.floor(Math.random() * (max - min + 1)) + min;
+                break;
+            }
+            case Op.randFloat: {
+                if (values.length !== 2) {
+                    this.error("randFloat运算需要两个参数（最小值和最大值）");
+                    return "failure";
+                }
+                if (values[0] > values[1]) {
+                    this.error("最小值不能大于最大值");
+                    return "failure";
+                }
+                result = Math.random() * (values[1] - values[0]) + values[0];
+                break;
+            }
+            default: {
+                return "failure";
+            }
+        }
 
-            this.output.push(result);
-            return "success";
-        } catch (error) {
-            this.error(`计算错误: ${error}`);
+        if (isNaN(result)) {
+            this.error(`result is NaN: ${result}`);
             return "failure";
         }
+
+        this.output.push(result);
+        return "success";
     }
 
     static override get descriptor(): NodeDef {
@@ -242,31 +248,31 @@ export class MathNode extends Node {
                     desc: "数学运算类型",
                     options: [
                         // 基础运算
-                        { name: "绝对值", value: "abs" },
-                        { name: "向上取整", value: "ceil" },
-                        { name: "向下取整", value: "floor" },
-                        { name: "四舍五入", value: "round" },
-                        { name: "符号", value: "sign" },
+                        { name: "绝对值", value: Op[Op.abs] },
+                        { name: "向上取整", value: Op[Op.ceil] },
+                        { name: "向下取整", value: Op[Op.floor] },
+                        { name: "四舍五入", value: Op[Op.round] },
+                        { name: "符号", value: Op[Op.sign] },
                         // 三角函数
-                        { name: "正弦", value: "sin" },
-                        { name: "余弦", value: "cos" },
-                        { name: "正切", value: "tan" },
-                        { name: "反正切2", value: "atan2" },
+                        { name: "正弦", value: Op[Op.sin] },
+                        { name: "余弦", value: Op[Op.cos] },
+                        { name: "正切", value: Op[Op.tan] },
+                        { name: "反正切2", value: Op[Op.atan2] },
                         // 幂和对数
-                        { name: "幂运算", value: "pow" },
-                        { name: "平方根", value: "sqrt" },
-                        { name: "自然对数", value: "log" },
+                        { name: "幂运算", value: Op[Op.pow] },
+                        { name: "平方根", value: Op[Op.sqrt] },
+                        { name: "自然对数", value: Op[Op.log] },
                         // 最值运算
-                        { name: "最小值", value: "min" },
-                        { name: "最大值", value: "max" },
+                        { name: "最小值", value: Op[Op.min] },
+                        { name: "最大值", value: Op[Op.max] },
                         // 随机数
-                        { name: "随机数", value: "random" },
-                        { name: "随机整数", value: "randInt" },
-                        { name: "随机浮点数", value: "randFloat" },
+                        { name: "随机数", value: Op[Op.random] },
+                        { name: "随机整数", value: Op[Op.randInt] },
+                        { name: "随机浮点数", value: Op[Op.randFloat] },
                         // 其他运算
-                        { name: "求和", value: "sum" },
-                        { name: "平均值", value: "average" },
-                        { name: "乘积", value: "product" },
+                        { name: "求和", value: Op[Op.sum] },
+                        { name: "平均值", value: Op[Op.average] },
+                        { name: "乘积", value: Op[Op.product] },
                     ],
                 },
                 {
