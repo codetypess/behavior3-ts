@@ -21,7 +21,7 @@ export class Once extends Node {
         const isYield: boolean | undefined = tree.resume(this);
         if (typeof isYield === "boolean") {
             if (status === "running") {
-                this.error(`unexpected status error`);
+                this.throw(`unexpected status error`);
             }
             tree.blackboard.set(onceKey, true);
             return "success";

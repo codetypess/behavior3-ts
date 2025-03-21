@@ -175,7 +175,11 @@ export abstract class Node {
         try {
             return this.onTick(tree, tree.__lastStatus);
         } catch (e) {
-            console.error(e);
+            if (e instanceof Error) {
+                this.error(`${e.message}\n ${e.stack}`);
+            } else {
+                console.error(e);
+            }
             return "failure";
         }
     }
@@ -237,13 +241,30 @@ export abstract class Node {
         return status;
     }
 
-    error(msg: string) {
+    /**
+     * throw an error
+     */
+    throw(msg: string) {
         throw new Error(`${this.cfg.tree.name}->${this.name}#${this.id}: ${msg}`);
     }
 
+    /**
+     * use console.error to print error message
+     */
+    error(msg: string) {
+        console.error(`${this.cfg.tree.name}->${this.name}#${this.id}: ${msg}`);
+    }
+
+    /**
+     * use console.warn to print warning message
+     */
     warn(msg: string) {
         console.warn(`${this.cfg.tree.name}->${this.name}#${this.id}: ${msg}`);
     }
+
+    /**
+     * use console.info to print info message
+     */
 
     info(msg: string) {
         console.info(`${this.cfg.tree.name}->${this.name}#${this.id}: ${msg}`);
@@ -255,7 +276,7 @@ export abstract class Node {
         let value: V | undefined;
         if (inputName) {
             if (inputValue === undefined) {
-                const func = defaultValue === undefined ? this.error : this.warn;
+                const func = defaultValue === undefined ? this.throw : this.warn;
                 func.call(this, `${this.cfg.tree.name}#${this.id}: missing input '${inputName}'`);
             }
             value = inputValue as V;
@@ -299,7 +320,7 @@ export abstract class Node {
             if (descriptor.children === 0) {
                 node.warn(`no children is required`);
             } else if (node.children.length < descriptor.children) {
-                node.error(`at least ${descriptor.children} children are required`);
+                node.throw(`at least ${descriptor.children} children are required`);
             } else {
                 node.warn(`exactly ${descriptor.children} children`);
             }

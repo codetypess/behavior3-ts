@@ -9,7 +9,7 @@ export class Calculate extends Node {
         super(context, cfg);
 
         if (typeof this.args.value !== "string" || this.args.value.length === 0) {
-            this.error(`args.value is not a expr string`);
+            this.throw(`args.value is not a expr string`);
         }
         context.compileCode(this.args.value);
     }

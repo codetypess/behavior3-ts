@@ -11,6 +11,7 @@ enum TokenType {
     NEGATION = "-N",
     POSITIVE = "+N",
     DOT = ".",
+    NOT = "!",
     GT = ">",
     GE = ">=",
     EQ = "==",
@@ -24,6 +25,14 @@ enum TokenType {
     MOD = "%",
     QUESTION = "?",
     COLON = ":",
+    AND = "&&",
+    OR = "||",
+    BAND = "&",
+    BOR = "|",
+    BXOR = "^",
+    SHL = "<<",
+    SHR = ">>",
+    SHRU = ">>>",
 }
 
 type Token = {
@@ -37,7 +46,9 @@ export class ExpressionEvaluator {
 
     constructor(expression: string) {
         expression = expression.replace(/\s/g, "");
-        const tokens = expression.match(/\d+\.\d+|\w+|\d+|>=|<=|==|!=|>|<|\?|:|\.|[-+*%/()]/g);
+        const tokens = expression.match(
+            /\d+\.\d+|\w+|\d+|!|<<|>>>|>>|>=|<=|==|!=|>|<|&&|&|\|\||\||\^|\?|:|\.|[-+*%/()]/g
+        );
         if (!tokens) {
             throw new Error("Invalid expression");
         }
@@ -65,6 +76,8 @@ export class ExpressionEvaluator {
                 stack.push(this._toValue(stack.pop()!, false));
             } else if (type === TokenType.NEGATION) {
                 stack.push(-this._toValue(stack.pop()!, false));
+            } else if (type === TokenType.NOT) {
+                stack.push(!this._toValue(stack.pop()!, false));
             } else {
                 const b = stack.pop()!;
                 const a = stack.pop()!;
@@ -116,6 +129,30 @@ export class ExpressionEvaluator {
                         stack.push(this._toValue(b));
                         break;
                     }
+                    case TokenType.SHL:
+                        stack.push(this._toValue(a) << this._toValue(b));
+                        break;
+                    case TokenType.SHR:
+                        stack.push(this._toValue(a) >> this._toValue(b));
+                        break;
+                    case TokenType.SHRU:
+                        stack.push(this._toValue(a) >>> this._toValue(b));
+                        break;
+                    case TokenType.BAND:
+                        stack.push(this._toValue(a) & this._toValue(b));
+                        break;
+                    case TokenType.BOR:
+                        stack.push(this._toValue(a) | this._toValue(b));
+                        break;
+                    case TokenType.BXOR:
+                        stack.push(this._toValue(a) ^ this._toValue(b));
+                        break;
+                    case TokenType.AND:
+                        stack.push(this._toValue(a) && this._toValue(b));
+                        break;
+                    case TokenType.OR:
+                        stack.push(this._toValue(a) || this._toValue(b));
+                        break;
                     default:
                         throw new Error(`unsupport operator: ${type}`);
                 }
@@ -160,28 +197,43 @@ export class ExpressionEvaluator {
     private _precedence(operator: string): number {
         switch (operator) {
             case TokenType.QUESTION: // 三元运算符优先级最低
-                return 0;
             case TokenType.COLON:
-                return 1;
-            case TokenType.LT:
-            case TokenType.LE:
+                return 3;
+            case TokenType.OR:
+                return 4;
+            case TokenType.AND:
+                return 5;
+            case TokenType.BOR:
+                return 6;
+            case TokenType.BXOR:
+                return 7;
+            case TokenType.BAND:
+                return 8;
             case TokenType.EQ:
             case TokenType.NEQ:
+                return 9;
+            case TokenType.LT:
+            case TokenType.LE:
             case TokenType.GT:
             case TokenType.GE:
-            case TokenType.MOD:
-                return 2;
+                return 10;
+            case TokenType.SHL:
+            case TokenType.SHR:
+            case TokenType.SHRU:
+                return 11;
             case TokenType.ADD:
             case TokenType.SUB:
-                return 3;
+                return 12;
+            case TokenType.MOD:
             case TokenType.MUL:
             case TokenType.DIV:
-                return 4;
+                return 13;
             case TokenType.NEGATION:
             case TokenType.POSITIVE:
-                return 5;
+            case TokenType.NOT:
+                return 15;
             case TokenType.DOT:
-                return 6;
+                return 18;
             default:
                 return 0;
         }
@@ -205,6 +257,15 @@ export class ExpressionEvaluator {
             case TokenType.DIV:
             case TokenType.DOT:
             case TokenType.MOD:
+            case TokenType.SHL:
+            case TokenType.SHR:
+            case TokenType.SHRU:
+            case TokenType.BAND:
+            case TokenType.BOR:
+            case TokenType.BXOR:
+            case TokenType.NOT:
+            case TokenType.AND:
+            case TokenType.OR:
                 return { type: operator };
             default:
                 throw new Error(`unsupport operator: ${operator}`);
@@ -226,7 +287,16 @@ export class ExpressionEvaluator {
             token === TokenType.MUL ||
             token === TokenType.DIV ||
             token === TokenType.DOT ||
-            token === TokenType.MOD
+            token === TokenType.MOD ||
+            token === TokenType.SHL ||
+            token === TokenType.SHR ||
+            token === TokenType.SHRU ||
+            token === TokenType.BAND ||
+            token === TokenType.BOR ||
+            token === TokenType.BXOR ||
+            token === TokenType.NOT ||
+            token === TokenType.AND ||
+            token === TokenType.OR
         );
     }
 

@@ -25,7 +25,7 @@ export class Selector extends Node {
             } else if (status === "success") {
                 return "success";
             } else {
-                this.error(`unexpected status error`);
+                this.throw(`unexpected status error`);
             }
         }
 

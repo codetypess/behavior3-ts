@@ -11,7 +11,7 @@ export class Repeat extends Node {
 
         if (i !== undefined) {
             if (status === "running") {
-                this.error(`unexpected status error`);
+                this.throw(`unexpected status error`);
             } else if (status === "failure") {
                 return "failure";
             }

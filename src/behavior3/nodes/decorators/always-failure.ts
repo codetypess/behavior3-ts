@@ -7,7 +7,7 @@ export class AlwaysFailure extends Node {
         const isYield: boolean | undefined = tree.resume(this);
         if (typeof isYield === "boolean") {
             if (status === "running") {
-                this.error(`unexpected status error`);
+                this.throw(`unexpected status error`);
             }
             return "failure";
         }

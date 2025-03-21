@@ -25,7 +25,7 @@ export class Switch extends Node {
 
         this.children.forEach((v) => {
             if (v.name !== "Case") {
-                this.error(`only allow Case node`);
+                this.throw(`only allow Case node`);
             }
         });
     }
@@ -36,7 +36,7 @@ export class Switch extends Node {
 
         if (typeof step === "number") {
             if (status === "running") {
-                this.error(`unexpected status error`);
+                this.throw(`unexpected status error`);
             }
             if (step % 2 === 0) {
                 if (status === "success") {

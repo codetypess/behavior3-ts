@@ -31,7 +31,7 @@ export class IfElse extends Node {
         const i: number | undefined = tree.resume(this);
         if (i !== undefined) {
             if (status === "running") {
-                this.error(`unexpected status error`);
+                this.throw(`unexpected status error`);
             } else if (i === 0) {
                 return this._ifelse(tree, status);
             } else {

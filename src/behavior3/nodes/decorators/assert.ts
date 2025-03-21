@@ -10,13 +10,13 @@ export class Assert extends Node {
         const isYield: boolean | undefined = tree.resume(this);
         if (typeof isYield === "boolean") {
             if (status === "running") {
-                this.error(`unexpected status error`);
+                this.throw(`unexpected status error`);
             }
 
             if (status === "success") {
                 return "success";
             } else {
-                this.error(args.message);
+                this.throw(args.message);
             }
         }
 
@@ -26,7 +26,7 @@ export class Assert extends Node {
         } else if (status === "running") {
             return tree.yield(this);
         } else {
-            this.error(args.message);
+            this.throw(args.message);
         }
 
         return "success";

@@ -17,7 +17,7 @@ export class Filter extends Node {
         if (last instanceof Array) {
             [i, newArr] = last;
             if (status === "running") {
-                this.error(`unexpected status error`);
+                this.throw(`unexpected status error`);
             } else if (status === "success") {
                 newArr.push(arr[i]);
             }

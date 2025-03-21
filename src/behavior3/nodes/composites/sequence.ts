@@ -26,7 +26,7 @@ export class Sequence extends Node {
             } else if (status === "failure") {
                 return "failure";
             } else {
-                this.error(`unexpected status error: ${status}`);
+                this.throw(`unexpected status error: ${status}`);
             }
         }
 
