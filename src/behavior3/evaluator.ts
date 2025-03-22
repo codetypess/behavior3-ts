@@ -12,6 +12,7 @@ enum TokenType {
     POSITIVE = "+N",
     DOT = ".",
     NOT = "!",
+    BNOT = "~",
     GT = ">",
     GE = ">=",
     EQ = "==",
@@ -33,6 +34,8 @@ enum TokenType {
     SHL = "<<",
     SHR = ">>",
     SHRU = ">>>",
+    LPAREN = "(",
+    RPAREN = ")",
 }
 
 type Token = {
@@ -40,19 +43,39 @@ type Token = {
     value?: string | number | boolean | null;
 };
 
+const OP_REGEX = /^(!|<<|>>>|>>|>=|<=|==|!=|>|<|&&|&|\|\||\||\^|\?|:|\.|[-+*%/()])/;
+const NUMBER_REGEX = /^(\d+\.\d+|\d+)/;
+const WORD_REGEX = /^(\w+)/;
+
 export class ExpressionEvaluator {
     private _postfix: Token[];
     private _args: ObjectType | null = null;
+    private _expr: string;
 
     constructor(expression: string) {
-        expression = expression.replace(/\s/g, "");
-        const tokens = expression.match(
-            /\d+\.\d+|\w+|\d+|!|<<|>>>|>>|>=|<=|==|!=|>|<|&&|&|\|\||\||\^|\?|:|\.|[-+*%/()]/g
-        );
-        if (!tokens) {
-            throw new Error("Invalid expression");
+        this._expr = expression.replace(/\s/g, "");
+        this._postfix = this._convertToPostfix(this._parse(this._expr));
+    }
+
+    private _parse(expr: string) {
+        const tokens: string[] = [];
+        while (expr.length) {
+            const char = expr[0];
+            let token: RegExpMatchArray | null = null;
+            if (/^\d/.test(char)) {
+                token = expr.match(NUMBER_REGEX);
+            } else if (/^\w/.test(char)) {
+                token = expr.match(WORD_REGEX);
+            } else if (/^[-+*%/()<>=?&|:^.!]/.test(char)) {
+                token = expr.match(OP_REGEX);
+            }
+            if (!token) {
+                throw new Error(`Invalid expression: '${expr}' in '${this._expr}'`);
+            }
+            tokens.push(token[1]);
+            expr = expr.slice(token[1].length);
         }
-        this._postfix = this._convertToPostfix(tokens);
+        return tokens;
     }
 
     evaluate(args: ObjectType): unknown {
@@ -78,6 +101,8 @@ export class ExpressionEvaluator {
                 stack.push(-this._toValue(stack.pop()!, false));
             } else if (type === TokenType.NOT) {
                 stack.push(!this._toValue(stack.pop()!, false));
+            } else if (type === TokenType.BNOT) {
+                stack.push(~this._toValue(stack.pop()!, false));
             } else {
                 const b = stack.pop()!;
                 const a = stack.pop()!;
@@ -196,44 +221,46 @@ export class ExpressionEvaluator {
 
     private _precedence(operator: string): number {
         switch (operator) {
-            case TokenType.QUESTION: // 三元运算符优先级最低
-            case TokenType.COLON:
-                return 3;
-            case TokenType.OR:
-                return 4;
-            case TokenType.AND:
-                return 5;
-            case TokenType.BOR:
-                return 6;
-            case TokenType.BXOR:
-                return 7;
-            case TokenType.BAND:
-                return 8;
-            case TokenType.EQ:
-            case TokenType.NEQ:
-                return 9;
+            case TokenType.DOT:
+                return 18;
+            case TokenType.NEGATION:
+            case TokenType.POSITIVE:
+            case TokenType.NOT:
+            case TokenType.BNOT:
+                return 15;
+            case TokenType.MOD:
+            case TokenType.MUL:
+            case TokenType.DIV:
+                return 13;
+            case TokenType.ADD:
+            case TokenType.SUB:
+                return 12;
+            case TokenType.SHL:
+            case TokenType.SHR:
+            case TokenType.SHRU:
+                return 11;
             case TokenType.LT:
             case TokenType.LE:
             case TokenType.GT:
             case TokenType.GE:
                 return 10;
-            case TokenType.SHL:
-            case TokenType.SHR:
-            case TokenType.SHRU:
-                return 11;
-            case TokenType.ADD:
-            case TokenType.SUB:
-                return 12;
-            case TokenType.MOD:
-            case TokenType.MUL:
-            case TokenType.DIV:
-                return 13;
-            case TokenType.NEGATION:
-            case TokenType.POSITIVE:
-            case TokenType.NOT:
-                return 15;
-            case TokenType.DOT:
-                return 18;
+            case TokenType.EQ:
+            case TokenType.NEQ:
+                return 9;
+            case TokenType.BAND:
+                return 8;
+            case TokenType.BXOR:
+                return 7;
+            case TokenType.BOR:
+                return 6;
+            case TokenType.AND:
+                return 5;
+            case TokenType.OR:
+                return 4;
+            case TokenType.COLON:
+                return 3;
+            case TokenType.QUESTION:
+                return 2;
             default:
                 return 0;
         }
@@ -245,6 +272,7 @@ export class ExpressionEvaluator {
             case TokenType.POSITIVE:
             case TokenType.QUESTION:
             case TokenType.COLON:
+            case TokenType.BNOT:
             case TokenType.LT:
             case TokenType.LE:
             case TokenType.EQ:
@@ -274,8 +302,11 @@ export class ExpressionEvaluator {
 
     private _isOperator(token: string) {
         return (
+            token === TokenType.LPAREN ||
+            token === TokenType.RPAREN ||
             token === TokenType.QUESTION ||
             token === TokenType.COLON ||
+            token === TokenType.BNOT ||
             token === TokenType.LT ||
             token === TokenType.LE ||
             token === TokenType.EQ ||
@@ -349,5 +380,69 @@ export class ExpressionEvaluator {
         }
 
         return outputQueue;
+    }
+
+    /**
+     * Performs a dry run of the expression evaluation to check if it is syntactically valid.
+     * Does not actually evaluate values, just verifies operator/operand counts and structure.
+     * @returns true if expression is valid, false if invalid
+     */
+    dryRun(): boolean {
+        const stack: Token[] = [];
+
+        try {
+            for (const token of this._postfix) {
+                const type = token.type;
+                if (
+                    type === TokenType.NUMBER ||
+                    type === TokenType.BOOLEAN ||
+                    type === TokenType.STRING
+                ) {
+                    stack.push(token);
+                } else if (type === TokenType.QUESTION) {
+                    if (stack.length < 3) {
+                        return false; // Not enough operands for ternary operator
+                    }
+                    stack.pop();
+                    stack.pop();
+                } else if (
+                    type === TokenType.POSITIVE ||
+                    type === TokenType.NEGATION ||
+                    type === TokenType.NOT ||
+                    type === TokenType.BNOT
+                ) {
+                    if (stack.length < 1) {
+                        console.log(`Not enough operands for unary operator: ${type}`);
+                        return false;
+                    }
+                } else {
+                    if (stack.length < 2) {
+                        console.log(`Not enough operands for binary operator: ${type}`);
+                        return false;
+                    }
+                    const b = stack.pop()!; // b
+                    const a = stack.pop()!; // a
+                    stack.push(a);
+                    if (type === TokenType.DOT) {
+                        if (a.type !== TokenType.STRING || b.type !== TokenType.STRING) {
+                            console.log(
+                                `Invalid operands for dot operator: ${a.value} and ${b.value}`
+                            );
+                            return false;
+                        }
+                    } else if (type === TokenType.COLON) {
+                        stack.push(b);
+                    }
+                }
+            }
+            if (stack.length !== 1) {
+                console.log(
+                    `Invalid number of operands remaining: ${stack.map((t) => t.value).join(", ")}`
+                );
+            }
+            return stack.length === 1;
+        } catch {
+            return false;
+        }
     }
 }

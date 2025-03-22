@@ -1,7 +1,14 @@
 import assert from "node:assert";
 import * as fs from "node:fs";
 import { Tree } from "../src/behavior3";
+import { ExpressionEvaluator } from "../src/behavior3/evaluator";
 import { Role, RoleContext } from "./role";
+
+assert(new ExpressionEvaluator("aewe.x > 3 ? -1.0 : a.x").dryRun() === true);
+assert(new ExpressionEvaluator("aewe.x > 3 ? -1.0 : a.2").dryRun() === false);
+assert(new ExpressionEvaluator("x || 2.0").dryRun() === true);
+assert(new ExpressionEvaluator("x.helo && 2.0").dryRun() === true);
+assert(new ExpressionEvaluator("x.helo && 2.0 |").dryRun() !== true);
 
 const context = new RoleContext();
 

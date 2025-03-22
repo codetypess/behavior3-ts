@@ -67,7 +67,7 @@ export class MathNode extends Node {
         }
 
         if (values.length === 0 && op !== Op.random && op !== Op.randInt && op !== Op.randFloat) {
-            this.throw("至少需要一个输入值");
+            this.error("at least one parameter is required");
             return "failure";
         }
 
@@ -75,7 +75,7 @@ export class MathNode extends Node {
         switch (op) {
             case Op.abs: {
                 if (values.length !== 1) {
-                    this.throw("abs运算只需要一个参数");
+                    this.error("abs operation requires exactly one parameter");
                     return "failure";
                 }
                 result = Math.abs(values[0]);
@@ -83,7 +83,7 @@ export class MathNode extends Node {
             }
             case Op.ceil: {
                 if (values.length !== 1) {
-                    this.throw("ceil运算只需要一个参数");
+                    this.error("ceil operation requires exactly one parameter");
                     return "failure";
                 }
                 result = Math.ceil(values[0]);
@@ -91,7 +91,7 @@ export class MathNode extends Node {
             }
             case Op.floor: {
                 if (values.length !== 1) {
-                    this.throw("floor运算只需要一个参数");
+                    this.error("floor operation requires exactly one parameter");
                     return "failure";
                 }
                 result = Math.floor(values[0]);
@@ -99,7 +99,7 @@ export class MathNode extends Node {
             }
             case Op.round: {
                 if (values.length !== 1) {
-                    this.throw("round运算只需要一个参数");
+                    this.error("round operation requires exactly one parameter");
                     return "failure";
                 }
                 result = Math.round(values[0]);
@@ -107,7 +107,7 @@ export class MathNode extends Node {
             }
             case Op.sin: {
                 if (values.length !== 1) {
-                    this.throw("sin运算只需要一个参数");
+                    this.error("sin operation requires exactly one parameter");
                     return "failure";
                 }
                 result = Math.sin(values[0]);
@@ -115,7 +115,7 @@ export class MathNode extends Node {
             }
             case Op.cos: {
                 if (values.length !== 1) {
-                    this.throw("cos运算只需要一个参数");
+                    this.error("cos operation requires exactly one parameter");
                     return "failure";
                 }
                 result = Math.cos(values[0]);
@@ -123,7 +123,7 @@ export class MathNode extends Node {
             }
             case Op.tan: {
                 if (values.length !== 1) {
-                    this.throw("tan运算只需要一个参数");
+                    this.error("tan operation requires exactly one parameter");
                     return "failure";
                 }
                 result = Math.tan(values[0]);
@@ -131,7 +131,7 @@ export class MathNode extends Node {
             }
             case Op.pow: {
                 if (values.length !== 2) {
-                    this.throw("pow运算需要两个参数");
+                    this.error("pow operation requires exactly two parameters");
                     return "failure";
                 }
                 result = Math.pow(values[0], values[1]);
@@ -139,7 +139,7 @@ export class MathNode extends Node {
             }
             case Op.sqrt: {
                 if (values.length !== 1) {
-                    this.throw("sqrt运算只需要一个参数");
+                    this.error("sqrt operation requires exactly one parameter");
                     return "failure";
                 }
                 result = Math.sqrt(values[0]);
@@ -147,7 +147,7 @@ export class MathNode extends Node {
             }
             case Op.log: {
                 if (values.length !== 1) {
-                    this.throw("log运算只需要一个参数");
+                    this.error("log operation requires exactly one parameter");
                     return "failure";
                 }
                 result = Math.log(values[0]);
@@ -175,7 +175,7 @@ export class MathNode extends Node {
             }
             case Op.sign: {
                 if (values.length !== 1) {
-                    this.throw("sign运算只需要一个参数");
+                    this.error("sign operation requires exactly one parameter");
                     return "failure";
                 }
                 result = Math.sign(values[0]);
@@ -183,7 +183,7 @@ export class MathNode extends Node {
             }
             case Op.atan2: {
                 if (values.length !== 2) {
-                    this.throw("atan2运算需要两个参数");
+                    this.error("atan2 operation requires exactly two parameters");
                     return "failure";
                 }
                 result = Math.atan2(values[0], values[1]);
@@ -195,13 +195,13 @@ export class MathNode extends Node {
             }
             case Op.randInt: {
                 if (values.length !== 2) {
-                    this.throw("randInt运算需要两个参数（最小值和最大值）");
+                    this.error("randInt operation requires two parameters (min and max)");
                     return "failure";
                 }
                 const min = Math.ceil(values[0]);
                 const max = Math.floor(values[1]);
                 if (min > max) {
-                    this.throw("最小值不能大于最大值");
+                    this.error("minimum value cannot be greater than maximum value");
                     return "failure";
                 }
                 result = Math.floor(Math.random() * (max - min + 1)) + min;
@@ -209,11 +209,11 @@ export class MathNode extends Node {
             }
             case Op.randFloat: {
                 if (values.length !== 2) {
-                    this.throw("randFloat运算需要两个参数（最小值和最大值）");
+                    this.error("randFloat operation requires two parameters (min and max)");
                     return "failure";
                 }
                 if (values[0] > values[1]) {
-                    this.throw("最小值不能大于最大值");
+                    this.error("minimum value cannot be greater than maximum value");
                     return "failure";
                 }
                 result = Math.random() * (values[1] - values[0]) + values[0];
@@ -225,7 +225,7 @@ export class MathNode extends Node {
         }
 
         if (isNaN(result)) {
-            this.throw(`result is NaN: ${result}`);
+            this.error(`result is NaN: ${result}`);
             return "failure";
         }
 
