@@ -4,46 +4,48 @@ import type { ObjectType } from "./context";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Evaluator = (envars: any) => unknown;
 
+// prettier-ignore
 enum TokenType {
-    NUMBER = "n",
-    STRING = "s",
-    BOOLEAN = "b",
-    NEGATION = "-N",
-    POSITIVE = "+N",
-    DOT = ".",
-    NOT = "!",
-    BNOT = "~",
-    GT = ">",
-    GE = ">=",
-    EQ = "==",
-    NEQ = "!=",
-    LT = "<",
-    LE = "<=",
-    ADD = "+",
-    SUB = "-",
-    MUL = "*",
-    DIV = "/",
-    MOD = "%",
-    QUESTION = "?",
-    COLON = ":",
-    AND = "&&",
-    OR = "||",
-    BAND = "&",
-    BOR = "|",
-    BXOR = "^",
-    SHL = "<<",
-    SHR = ">>",
-    SHRU = ">>>",
-    LPAREN = "(",
-    RPAREN = ")",
+    NUMBER = 0,          // number
+    STRING = 1,          // string
+    BOOLEAN = 2,         // boolean
+    NEGATION = 3,        // -N
+    POSITIVE = 4,        // +N
+    DOT = 5,             // .
+    NOT = 6,             // !
+    BNOT = 7,            // ~
+    GT = 8,              // >
+    GE = 9,              // >=
+    EQ = 10,             // ==
+    NEQ = 11,            // !=
+    LT = 12,             // <
+    LE = 13,             // <=
+    ADD = 14,            // +
+    SUB = 15,            // -
+    MUL = 16,            // *
+    DIV = 17,            // /
+    MOD = 18,            // %
+    QUESTION = 19,       // ?
+    COLON = 20,          // :
+    AND = 21,            // &&
+    OR = 22,             // ||
+    BAND = 23,           // &
+    BOR = 24,            // |
+    BXOR = 25,           // ^
+    SHL = 26,            // <<
+    SHR = 27,            // >>
+    SHRU = 28,           // >>>
+    SQUARE_BRACKET = 29, // []
+    PARENTHESIS = 30,    // ()
 }
 
 type Token = {
     type: TokenType;
+    precedence: number;
     value?: string | number | boolean | null;
 };
 
-const OP_REGEX = /^(!|<<|>>>|>>|>=|<=|==|!=|>|<|&&|&|\|\||\||\^|\?|:|\.|[-+*%/()])/;
+const OP_REGEX = /^(!|<<|>>>|>>|>=|<=|==|!=|>|<|&&|&|\|\||\||\^|\?|:|\.|[-+*%/()[\]])/;
 const NUMBER_REGEX = /^(\d+\.\d+|\d+)/;
 const WORD_REGEX = /^(\w+)/;
 
@@ -53,7 +55,7 @@ export class ExpressionEvaluator {
     private _expr: string;
 
     constructor(expression: string) {
-        this._expr = expression.replace(/\s/g, "");
+        this._expr = expression;
         this._postfix = this._convertToPostfix(this._parse(this._expr));
     }
 
@@ -66,14 +68,14 @@ export class ExpressionEvaluator {
                 token = expr.match(NUMBER_REGEX);
             } else if (/^\w/.test(char)) {
                 token = expr.match(WORD_REGEX);
-            } else if (/^[-+*%/()<>=?&|:^.!]/.test(char)) {
+            } else if (/^[-+*%/()<>=?&|:^.![\]]/.test(char)) {
                 token = expr.match(OP_REGEX);
             }
             if (!token) {
-                throw new Error(`Invalid expression: '${expr}' in '${this._expr}'`);
+                throw new Error(`invalid expression: '${expr}' in '${this._expr}'`);
             }
             tokens.push(token[1]);
-            expr = expr.slice(token[1].length);
+            expr = expr.slice(token[1].length).replace(/^\s/, "");
         }
         return tokens;
     }
@@ -110,6 +112,12 @@ export class ExpressionEvaluator {
                     case TokenType.DOT: {
                         const obj = this._toObject(a);
                         stack.push(this._toValue(obj[b as string]));
+                        break;
+                    }
+                    case TokenType.SQUARE_BRACKET: {
+                        const obj = this._toObject(a);
+                        const index = this._toValue(b);
+                        stack.push(this._toObject(obj[index]));
                         break;
                     }
                     case TokenType.GT:
@@ -179,7 +187,7 @@ export class ExpressionEvaluator {
                         stack.push(this._toValue(a) || this._toValue(b));
                         break;
                     default:
-                        throw new Error(`unsupport operator: ${type}`);
+                        throw new Error(`unsupport operator: ${token.value}`);
                 }
             }
         }
@@ -198,7 +206,7 @@ export class ExpressionEvaluator {
                 throw new Error(`value indexed by '${token}' is not a object`);
             }
         } else {
-            throw new Error(`token '${token}' is not a string`);
+            return token as ObjectType;
         }
     }
 
@@ -219,167 +227,157 @@ export class ExpressionEvaluator {
         }
     }
 
-    private _precedence(operator: string): number {
-        switch (operator) {
-            case TokenType.DOT:
-                return 18;
-            case TokenType.NEGATION:
-            case TokenType.POSITIVE:
-            case TokenType.NOT:
-            case TokenType.BNOT:
-                return 15;
-            case TokenType.MOD:
-            case TokenType.MUL:
-            case TokenType.DIV:
-                return 13;
-            case TokenType.ADD:
-            case TokenType.SUB:
-                return 12;
-            case TokenType.SHL:
-            case TokenType.SHR:
-            case TokenType.SHRU:
-                return 11;
-            case TokenType.LT:
-            case TokenType.LE:
-            case TokenType.GT:
-            case TokenType.GE:
-                return 10;
-            case TokenType.EQ:
-            case TokenType.NEQ:
-                return 9;
-            case TokenType.BAND:
-                return 8;
-            case TokenType.BXOR:
-                return 7;
-            case TokenType.BOR:
-                return 6;
-            case TokenType.AND:
-                return 5;
-            case TokenType.OR:
-                return 4;
-            case TokenType.COLON:
-                return 3;
-            case TokenType.QUESTION:
-                return 2;
-            default:
-                return 0;
+    private _makeToken(symbol: string, last: string | undefined): Token {
+        if (symbol === "-" || symbol === "+") {
+            if (last === undefined || /^[-+*%<>=!&~^?:(|[]+$/.test(last)) {
+                return {
+                    type: symbol === "-" ? TokenType.NEGATION : TokenType.POSITIVE,
+                    precedence: 15,
+                    value: `${symbol}N`,
+                };
+            }
         }
-    }
-
-    private _toToken(operator: string): Token {
-        switch (operator) {
-            case TokenType.NEGATION:
-            case TokenType.POSITIVE:
-            case TokenType.QUESTION:
-            case TokenType.COLON:
-            case TokenType.BNOT:
-            case TokenType.LT:
-            case TokenType.LE:
-            case TokenType.EQ:
-            case TokenType.NEQ:
-            case TokenType.GT:
-            case TokenType.GE:
-            case TokenType.ADD:
-            case TokenType.SUB:
-            case TokenType.MUL:
-            case TokenType.DIV:
-            case TokenType.DOT:
-            case TokenType.MOD:
-            case TokenType.SHL:
-            case TokenType.SHR:
-            case TokenType.SHRU:
-            case TokenType.BAND:
-            case TokenType.BOR:
-            case TokenType.BXOR:
-            case TokenType.NOT:
-            case TokenType.AND:
-            case TokenType.OR:
-                return { type: operator };
-            default:
-                throw new Error(`unsupport operator: ${operator}`);
+        if (NUMBER_REGEX.test(symbol)) {
+            return { type: TokenType.NUMBER, precedence: 0, value: parseFloat(symbol) };
         }
-    }
-
-    private _isOperator(token: string) {
-        return (
-            token === TokenType.LPAREN ||
-            token === TokenType.RPAREN ||
-            token === TokenType.QUESTION ||
-            token === TokenType.COLON ||
-            token === TokenType.BNOT ||
-            token === TokenType.LT ||
-            token === TokenType.LE ||
-            token === TokenType.EQ ||
-            token === TokenType.NEQ ||
-            token === TokenType.GT ||
-            token === TokenType.GE ||
-            token === TokenType.ADD ||
-            token === TokenType.SUB ||
-            token === TokenType.MUL ||
-            token === TokenType.DIV ||
-            token === TokenType.DOT ||
-            token === TokenType.MOD ||
-            token === TokenType.SHL ||
-            token === TokenType.SHR ||
-            token === TokenType.SHRU ||
-            token === TokenType.BAND ||
-            token === TokenType.BOR ||
-            token === TokenType.BXOR ||
-            token === TokenType.NOT ||
-            token === TokenType.AND ||
-            token === TokenType.OR
-        );
+        if (symbol === "true" || symbol === "false") {
+            return { type: TokenType.BOOLEAN, precedence: 0, value: symbol === "true" };
+        }
+        if (WORD_REGEX.test(symbol)) {
+            return { type: TokenType.STRING, precedence: 0, value: symbol };
+        }
+        if (symbol === ".") {
+            return { type: TokenType.DOT, precedence: 18, value: symbol };
+        }
+        if (symbol === "(" || symbol === ")") {
+            // parenthesis is not a operator
+            return { type: TokenType.PARENTHESIS, precedence: 0, value: symbol };
+        }
+        if (symbol === "[" || symbol === "]") {
+            return { type: TokenType.SQUARE_BRACKET, precedence: 18, value: symbol };
+        }
+        if (symbol === "!") {
+            return { type: TokenType.NOT, precedence: 15, value: symbol };
+        }
+        if (symbol === "~") {
+            return { type: TokenType.BNOT, precedence: 15, value: symbol };
+        }
+        if (symbol === "%") {
+            return { type: TokenType.MOD, precedence: 13, value: symbol };
+        }
+        if (symbol === "*") {
+            return { type: TokenType.MUL, precedence: 13, value: symbol };
+        }
+        if (symbol === "/") {
+            return { type: TokenType.DIV, precedence: 13, value: symbol };
+        }
+        if (symbol === "+") {
+            return { type: TokenType.ADD, precedence: 12, value: symbol };
+        }
+        if (symbol === "-") {
+            return { type: TokenType.SUB, precedence: 12, value: symbol };
+        }
+        if (symbol === "<<") {
+            return { type: TokenType.SHL, precedence: 11, value: symbol };
+        }
+        if (symbol === ">>") {
+            return { type: TokenType.SHR, precedence: 11, value: symbol };
+        }
+        if (symbol === ">>>") {
+            return { type: TokenType.SHRU, precedence: 11, value: symbol };
+        }
+        if (symbol === ">") {
+            return { type: TokenType.GT, precedence: 10, value: symbol };
+        }
+        if (symbol === ">=") {
+            return { type: TokenType.GE, precedence: 10, value: symbol };
+        }
+        if (symbol === "<") {
+            return { type: TokenType.LT, precedence: 10, value: symbol };
+        }
+        if (symbol === "<=") {
+            return { type: TokenType.LE, precedence: 10, value: symbol };
+        }
+        if (symbol === "==") {
+            return { type: TokenType.EQ, precedence: 9, value: symbol };
+        }
+        if (symbol === "!=") {
+            return { type: TokenType.NEQ, precedence: 9, value: symbol };
+        }
+        if (symbol === "&") {
+            return { type: TokenType.BAND, precedence: 8, value: symbol };
+        }
+        if (symbol === "&") {
+            return { type: TokenType.BXOR, precedence: 7, value: symbol };
+        }
+        if (symbol === "|") {
+            return { type: TokenType.BOR, precedence: 6, value: symbol };
+        }
+        if (symbol === "&&") {
+            return { type: TokenType.AND, precedence: 5, value: symbol };
+        }
+        if (symbol === "||") {
+            return { type: TokenType.OR, precedence: 4, value: symbol };
+        }
+        if (symbol === ":") {
+            return { type: TokenType.COLON, precedence: 2, value: symbol };
+        }
+        if (symbol === "?") {
+            return { type: TokenType.QUESTION, precedence: 2 - 0.1, value: symbol };
+        }
+        throw new Error(`unsupport token: ${symbol}`);
     }
 
     private _convertToPostfix(infix: string[]) {
-        const outputQueue: Token[] = [];
-        const operatorStack: string[] = [];
+        const output: Token[] = [];
+        const operators: Token[] = [];
 
         for (let i = 0; i < infix.length; i++) {
-            let token = infix[i];
-            if (token === "-" || token === "+") {
-                const last = infix[i - 1];
-                if (last === undefined || this._isOperator(last)) {
-                    token = token === "-" ? TokenType.NEGATION : TokenType.POSITIVE;
+            const token = this._makeToken(infix[i], infix[i - 1]);
+            if (
+                token.type === TokenType.NUMBER ||
+                token.type === TokenType.BOOLEAN ||
+                token.type === TokenType.STRING
+            ) {
+                output.push(token);
+            } else if (token.value === "(" || token.value === "[") {
+                operators.push(token);
+            } else if (token.value === ")" || token.value === "]") {
+                while (
+                    operators.length &&
+                    operators[operators.length - 1].value !== "(" &&
+                    operators[operators.length - 1].value !== "["
+                ) {
+                    output.push(operators.pop()!);
                 }
-            }
-            if (/^\d+|\d+\.\d+$/.test(token)) {
-                outputQueue.push({
-                    type: TokenType.NUMBER,
-                    value: parseFloat(token),
-                });
-            } else if (/^\w+$/.test(token)) {
-                if (token === "true") {
-                    outputQueue.push({ type: TokenType.BOOLEAN, value: true });
-                } else if (token === "false") {
-                    outputQueue.push({ type: TokenType.BOOLEAN, value: false });
+
+                const last = operators[operators.length - 1];
+                if (token.value === ")" && last.value !== "(") {
+                    throw new Error("unmatched parentheses: '('");
+                } else if (token.value === "]" && last.value !== "[") {
+                    throw new Error("unmatched parentheses: '['");
+                }
+                if (token.value === "]") {
+                    output.push(operators.pop()!);
                 } else {
-                    outputQueue.push({ type: TokenType.STRING, value: token });
+                    operators.pop();
                 }
-            } else if (token === "(") {
-                operatorStack.push(token);
-            } else if (token === ")") {
-                while (operatorStack.length && operatorStack[operatorStack.length - 1] !== "(") {
-                    outputQueue.push(this._toToken(operatorStack.pop()!));
-                }
-                operatorStack.pop();
             } else {
                 while (
-                    operatorStack.length &&
-                    this._precedence(token) <=
-                        this._precedence(operatorStack[operatorStack.length - 1])
+                    operators.length &&
+                    token.precedence <= operators[operators.length - 1].precedence
                 ) {
-                    outputQueue.push(this._toToken(operatorStack.pop()!));
+                    output.push(operators.pop()!);
                 }
-                operatorStack.push(token);
+                operators.push(token);
             }
         }
 
-        while (operatorStack.length) {
-            outputQueue.push(this._toToken(operatorStack.pop()!));
+        while (operators.length) {
+            output.push(operators.pop()!);
         }
 
-        return outputQueue;
+        return output;
     }
 
     /**
@@ -401,7 +399,8 @@ export class ExpressionEvaluator {
                     stack.push(token);
                 } else if (type === TokenType.QUESTION) {
                     if (stack.length < 3) {
-                        return false; // Not enough operands for ternary operator
+                        console.error(`not enough operands for ternary operator: ${token.value}`);
+                        return false;
                     }
                     stack.pop();
                     stack.pop();
@@ -412,12 +411,12 @@ export class ExpressionEvaluator {
                     type === TokenType.BNOT
                 ) {
                     if (stack.length < 1) {
-                        console.log(`Not enough operands for unary operator: ${type}`);
+                        console.error(`not enough operands for unary operator: ${token.value}`);
                         return false;
                     }
                 } else {
                     if (stack.length < 2) {
-                        console.log(`Not enough operands for binary operator: ${type}`);
+                        console.error(`not enough operands for binary operator: ${token.value}`);
                         return false;
                     }
                     const b = stack.pop()!; // b
@@ -425,8 +424,8 @@ export class ExpressionEvaluator {
                     stack.push(a);
                     if (type === TokenType.DOT) {
                         if (a.type !== TokenType.STRING || b.type !== TokenType.STRING) {
-                            console.log(
-                                `Invalid operands for dot operator: ${a.value} and ${b.value}`
+                            console.error(
+                                `invalid operands for dot operator: ${a.value} and ${b.value}`
                             );
                             return false;
                         }
@@ -436,8 +435,8 @@ export class ExpressionEvaluator {
                 }
             }
             if (stack.length !== 1) {
-                console.log(
-                    `Invalid number of operands remaining: ${stack.map((t) => t.value).join(", ")}`
+                console.error(
+                    `invalid number of operands remaining: ${stack.map((t) => t.value).join(", ")}`
                 );
             }
             return stack.length === 1;
