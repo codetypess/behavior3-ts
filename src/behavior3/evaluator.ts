@@ -45,7 +45,7 @@ type Token = {
     value?: string | number | boolean | null;
 };
 
-const OP_REGEX = /^(!|<<|>>>|>>|>=|<=|==|!=|>|<|&&|&|\|\||\||\^|\?|:|\.|[-+*%/()[\]])/;
+const OP_REGEX = /^(<<|>>>|>>|>=|<=|==|!=|>|<|&&|&|\|\||[-+*%!?/:.|^()[\]])/;
 const NUMBER_REGEX = /^(\d+\.\d+|\d+)/;
 const WORD_REGEX = /^(\w+)/;
 
@@ -75,7 +75,7 @@ export class ExpressionEvaluator {
                 throw new Error(`invalid expression: '${expr}' in '${this._expr}'`);
             }
             tokens.push(token[1]);
-            expr = expr.slice(token[1].length).replace(/^\s/, "");
+            expr = expr.slice(token[1].length).replace(/^\s+/, "");
         }
         return tokens;
     }
