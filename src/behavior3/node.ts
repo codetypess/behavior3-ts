@@ -4,7 +4,7 @@ import type { Tree, TreeData } from "./tree";
 
 export type Status = "success" | "failure" | "running";
 
-export interface NodeDef {
+export interface NodeDef<GroupType extends string = string> {
     name: string;
     /**
      * Recommended type used for the node definition:
@@ -59,6 +59,10 @@ export interface NodeDef {
     doc?: string;
     icon?: string;
     color?: string;
+    /**
+     * Used in Behavior3 Editor, to help editor manage available nodes in file tree.
+     */
+    group?: GroupType[];
     /**
      * Used in Behavior3 Editor, to help editor deduce the status of the node.
      *
@@ -244,8 +248,14 @@ export abstract class Node {
     /**
      * throw an error
      */
-    throw(msg: string) {
+    throw(msg: string): never {
         throw new Error(`${this.cfg.tree.name}->${this.name}#${this.id}: ${msg}`);
+    }
+
+    assert(condition: unknown, msg: string): asserts condition {
+        if (!condition) {
+            this.throw(msg);
+        }
     }
 
     /**
