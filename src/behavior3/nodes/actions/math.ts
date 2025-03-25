@@ -244,7 +244,7 @@ export class MathNode extends Node {
             args: [
                 {
                     name: "op",
-                    type: "enum",
+                    type: "string",
                     desc: "数学运算类型",
                     options: [
                         // 基础运算

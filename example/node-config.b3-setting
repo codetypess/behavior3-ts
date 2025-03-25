@@ -343,7 +343,7 @@
     "args": [
       {
         "name": "status",
-        "type": "enum",
+        "type": "string",
         "desc": "执行状态",
         "options": [
           {
@@ -414,7 +414,7 @@
     "args": [
       {
         "name": "event",
-        "type": "enum",
+        "type": "string",
         "desc": "事件",
         "options": [
           {
@@ -473,7 +473,7 @@
       },
       {
         "name": "level",
-        "type": "enum",
+        "type": "string",
         "desc": "日志级别",
         "default": "info",
         "options": [
@@ -514,7 +514,7 @@
     "args": [
       {
         "name": "op",
-        "type": "enum",
+        "type": "string",
         "desc": "数学运算类型",
         "options": [
           {

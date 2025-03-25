@@ -92,7 +92,7 @@ export class Listen extends Node {
             args: [
                 {
                     name: "event",
-                    type: "enum",
+                    type: "string",
                     desc: "事件",
                     options: builtinEventOptions.slice(),
                 },

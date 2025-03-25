@@ -50,7 +50,7 @@ export class Log extends Node {
                 },
                 {
                     name: "level",
-                    type: "enum",
+                    type: "string",
                     desc: "日志级别",
                     default: LogLevel.INFO,
                     options: [

@@ -28,7 +28,7 @@ export class IsStatus extends Node {
             args: [
                 {
                     name: "status",
-                    type: "enum",
+                    type: "string",
                     desc: "执行状态",
                     options: [
                         { name: "成功", value: "success" },
