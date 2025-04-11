@@ -21,9 +21,9 @@ export class Blackboard {
         return this._tree.context.compileCode(code)(this._values);
     }
 
-    get(k: string) {
+    get<T>(k: string): T | undefined {
         if (k) {
-            return this._values[k];
+            return this._values[k] as T | undefined;
         } else {
             return undefined;
         }

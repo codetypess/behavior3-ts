@@ -30,16 +30,14 @@ export class Listen extends Node {
         eventTarget?: TargetType,
         ...eventArgs: unknown[]
     ) {
-        const [eventArgsKey, eventTargetKey] = this.cfg.output;
+        const [eventTargetKey] = this.cfg.output;
         if (eventTargetKey) {
             tree.blackboard.set(eventTargetKey, eventTarget);
         }
-        if (eventArgsKey) {
-            for (let i = 1; i < this.cfg.output.length; i++) {
-                const key = this.cfg.output[i];
-                if (key) {
-                    tree.blackboard.set(key, eventArgs[i - 1]);
-                }
+        for (let i = 1; i < this.cfg.output.length; i++) {
+            const key = this.cfg.output[i];
+            if (key) {
+                tree.blackboard.set(key, eventArgs[i - 1]);
             }
         }
     }

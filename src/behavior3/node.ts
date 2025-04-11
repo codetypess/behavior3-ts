@@ -241,17 +241,17 @@ export abstract class Node {
         return status;
     }
 
+    assert(condition: unknown, msg: string): asserts condition {
+        if (!condition) {
+            this.throw(msg);
+        }
+    }
+
     /**
      * throw an error
      */
     throw(msg: string): never {
         throw new Error(`${this.cfg.tree.name}->${this.name}#${this.id}: ${msg}`);
-    }
-
-    assert(condition: unknown, msg: string): asserts condition {
-        if (!condition) {
-            this.throw(msg);
-        }
     }
 
     /**
@@ -269,6 +269,13 @@ export abstract class Node {
     }
 
     /**
+     * use console.debug to print debug message
+     */
+    debug(msg: string) {
+        console.debug(`${this.cfg.tree.name}->${this.name}#${this.id}: ${msg}`);
+    }
+
+    /**
      * use console.info to print info message
      */
 
@@ -283,7 +290,7 @@ export abstract class Node {
         if (inputName) {
             if (inputValue === undefined) {
                 const func = defaultValue === undefined ? this.throw : this.warn;
-                func.call(this, `${this.cfg.tree.name}#${this.id}: missing input '${inputName}'`);
+                func.call(this, `missing input '${inputName}'`);
             }
             value = inputValue as V;
         } else {

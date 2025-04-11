@@ -14,6 +14,7 @@ import { Push } from "./nodes/actions/push";
 import { RandomIndex } from "./nodes/actions/random-index";
 import { SetField } from "./nodes/actions/set-field";
 import { Wait } from "./nodes/actions/wait";
+import { WaitForEvent } from "./nodes/actions/wait-for-event";
 import { IfElse } from "./nodes/composites/ifelse";
 import { Parallel } from "./nodes/composites/parallel";
 import { Race } from "./nodes/composites/race";
@@ -52,13 +53,8 @@ export type TargetType = object | string | number;
 export type TagType = unknown;
 
 export type DeepReadonly<T> = T extends object
-    ? {
-          readonly [P in keyof T]: DeepReadonly<T[P]>;
-      }
+    ? { readonly [P in keyof T]: DeepReadonly<T[P]> }
     : T;
-
-// 对象属性值非null 非undefined
-export type ExcludeNull<T> = { [P in keyof T]: NonNullable<T[P]> };
 
 type TimerEntry = {
     callback: Callback;
@@ -116,6 +112,7 @@ export abstract class Context {
         this.registerNode(Switch);
         this.registerNode(Timeout);
         this.registerNode(Wait);
+        this.registerNode(WaitForEvent);
     }
 
     abstract loadTree(path: string): Promise<Node>;
@@ -280,6 +277,9 @@ export abstract class Context {
         let evaluator = this._evaluators[code];
         if (!evaluator) {
             const expr = new ExpressionEvaluator(code);
+            if (!expr.dryRun()) {
+                throw new Error(`invalid expression: ${code}`);
+            }
             evaluator = (envars: ObjectType) => expr.evaluate(envars);
             this._evaluators[code] = evaluator;
         }

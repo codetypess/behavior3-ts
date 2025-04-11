@@ -910,5 +910,22 @@
         "desc": "随机范围"
       }
     ]
+  },
+  {
+    "name": "WaitForEvent",
+    "type": "Action",
+    "children": 0,
+    "status": [
+      "success",
+      "running"
+    ],
+    "desc": "等待事件触发",
+    "args": [
+      {
+        "name": "event",
+        "type": "string",
+        "desc": "事件名称"
+      }
+    ]
   }
 ]
