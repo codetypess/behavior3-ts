@@ -96,7 +96,7 @@ export interface NodeDef<GroupType extends string = string> {
 }
 
 export interface NodeData {
-    id: number;
+    id: string;
     name: string;
     desc: string;
     args: { [k: string]: unknown };
