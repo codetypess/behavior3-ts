@@ -122,7 +122,7 @@ export class FindEnemy extends Node {
 
 #### 状态返回
 
-我们使用栈来实现行为树的调度，当行为树节点运行的时候，把会节点压入栈，只有当节点返回 `success` 或 `failure` 时，才会出栈，继续执行下一个节点，否则会一直执行栈顶的节点，直到返回 `success` 或 `failure` 为止。
+我们使用栈来实现行为树的调度，当行为树节点运行的时候，会把节点压入栈，只有当节点返回 `success` 或 `failure` 时，才会出栈，继续执行下一个节点，否则会一直执行栈顶的节点，直到返回 `success` 或 `failure` 为止。
 
 -   success 节点执行成功
 -   failure 节点执行失败
@@ -141,7 +141,7 @@ export class FindEnemy extends Node {
 -   Let 定义变量
 -   Log 打印日志
 -   Push 向数组中添加元素
--   RandomIndex 随机返回数组中一个
+-   RandomIndex 随机返回数组索引
 -   Random 返回一个随机数值
 -   SetField 设置对象的字段值
 -   Wait 等待一段时间
