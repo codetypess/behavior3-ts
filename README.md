@@ -141,7 +141,7 @@ export class FindEnemy extends Node {
 -   Let 定义变量
 -   Log 打印日志
 -   Push 向数组中添加元素
--   RandomIndex 随机返回数组索引
+-   RandomIndex 随机返回数组的一个元素及其索引
 -   Random 返回一个随机数值
 -   SetField 设置对象的字段值
 -   Wait 等待一段时间
