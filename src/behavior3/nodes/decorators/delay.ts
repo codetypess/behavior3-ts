@@ -21,7 +21,7 @@ export class Delay extends Node {
                 const cacheOldArgs: unknown[] = keys.map((key) => blackboard.get(key));
                 keys.forEach((key, i) => blackboard.set(key, cacheArgs[i]));
                 const level = tree.stack.length;
-                const status = this.children[0].tick(tree);
+                status = this.children[0].tick(tree);
                 if (status === "running") {
                     tree.stack.popTo(level);
                 }

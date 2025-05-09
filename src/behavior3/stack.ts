@@ -14,8 +14,13 @@ export class Stack {
         return this._nodes.length;
     }
 
+    indexOf(node: Node) {
+        return this._nodes.indexOf(node);
+    }
+
     top(): Node | undefined {
-        return this._nodes[this._nodes.length - 1];
+        const nodes = this._nodes;
+        return nodes[nodes.length - 1];
     }
 
     push(node: Node) {

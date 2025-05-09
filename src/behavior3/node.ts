@@ -114,24 +114,22 @@ export abstract class Node {
     readonly input: unknown[] = [];
     readonly output: unknown[] = [];
 
-    active: boolean;
-
     protected readonly _context: Context;
 
     private _parent: Node | null = null;
     private _children: Node[] = [];
     private _cfg: DeepReadonly<NodeData>;
     private _yield?: string;
-    private _argObjectKeys: Record<string, string> = {};
+    private _stringifiedArgs: Record<string, string> | undefined;
 
     constructor(context: Context, cfg: NodeData) {
         this._context = context;
         this._cfg = cfg;
-        this.active = !cfg.disabled;
         Object.keys(cfg.args).forEach((k) => {
             const value = cfg.args[k];
             if (value && typeof value === "object") {
-                this._argObjectKeys[k] = JSON.stringify(value);
+                this._stringifiedArgs = this._stringifiedArgs ?? {};
+                this._stringifiedArgs[k] = JSON.stringify(value);
             } else {
                 (this.args as ObjectType)[k] = value;
             }
@@ -171,24 +169,7 @@ export abstract class Node {
         return this._children;
     }
 
-    private _tryTick(tree: Tree<Context, unknown>) {
-        try {
-            return this.onTick(tree, tree.__lastStatus);
-        } catch (e) {
-            if (e instanceof Error) {
-                this.error(`${e.message}\n ${e.stack}`);
-            } else {
-                console.error(e);
-            }
-            return "failure";
-        }
-    }
-
     tick(tree: Tree<Context, unknown>): Status {
-        if (!this.active) {
-            return "failure";
-        }
-
         const { stack, blackboard } = tree;
         const { cfg, input, output, args } = this;
 
@@ -199,22 +180,29 @@ export abstract class Node {
         input.length = 0;
         output.length = 0;
 
-        for (const k in this._argObjectKeys) {
-            (args as ObjectType)[k] = JSON.parse(this._argObjectKeys[k]);
+        cfg.input.forEach((k, i) => (input[i] = blackboard.get(k)));
+
+        if (this._stringifiedArgs) {
+            for (const k in this._stringifiedArgs) {
+                (args as ObjectType)[k] = JSON.parse(this._stringifiedArgs[k]);
+            }
         }
 
-        cfg.input.forEach((varName) => {
-            input.push(blackboard.get(varName));
-        });
-
-        const status = this._tryTick(tree);
+        let status: Status = "failure";
+        try {
+            status = this.onTick(tree, tree.__lastStatus);
+        } catch (e) {
+            if (e instanceof Error) {
+                this.error(`${e.message}\n ${e.stack}`);
+            } else {
+                console.error(e);
+            }
+        }
 
         if (tree.__interrupted) {
             return "running";
         } else if (status !== "running") {
-            cfg.output.forEach((varName, i) => {
-                blackboard.set(varName, output[i]);
-            });
+            cfg.output.forEach((k, i) => blackboard.set(k, output[i]));
             stack.pop();
         } else if (blackboard.get(this.__yield) === undefined) {
             blackboard.set(this.__yield, true);

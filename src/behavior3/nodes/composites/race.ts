@@ -28,7 +28,7 @@ export class Race extends Node {
 
         for (let i = 0; i < children.length; i++) {
             let childStack = last[i];
-            let status: Status = "failure";
+            status = "failure";
             if (childStack === undefined) {
                 status = children[i].tick(tree);
             } else if (childStack.length > 0) {

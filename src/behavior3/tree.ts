@@ -24,7 +24,6 @@ let treeId = 0;
 
 export class Tree<C extends Context, Owner> {
     readonly context: C;
-    readonly owner: Owner;
     readonly path: string;
     readonly blackboard: Blackboard;
     readonly stack: Stack;
@@ -33,6 +32,7 @@ export class Tree<C extends Context, Owner> {
     debug: boolean = false;
 
     protected _ticking: boolean = false;
+    protected _owner: Owner;
 
     /** @private */
     __lastStatus: Status = "success";
@@ -45,11 +45,15 @@ export class Tree<C extends Context, Owner> {
 
     constructor(context: C, owner: Owner, path: string) {
         this.context = context;
-        this.owner = owner;
         this.path = path;
         this.blackboard = new Blackboard(this);
         this.stack = new Stack(this);
         this.context.loadTree(this.path);
+        this._owner = owner;
+    }
+
+    get owner() {
+        return this._owner;
     }
 
     get root(): Node | undefined {
