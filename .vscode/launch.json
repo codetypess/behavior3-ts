@@ -5,22 +5,14 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "request": "launch",
-      "name": "Deno",
+      "name": "tsx",
       "type": "node",
-      "cwd": "${workspaceFolder}",
-      "env": {},
-      "runtimeExecutable": "deno",
-      "runtimeArgs": [
-        "run",
-        "--inspect-wait",
-        "-A",
-        "test/main.ts",
-        "--allow-all",
-        "--build",
-        "web"
-      ],
-      "attachSimplePort": 9229
+      "request": "launch",
+      "program": "${file}",
+      "runtimeExecutable": "tsx",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "skipFiles": ["<node_internals>/**", "${workspaceFolder}/node_modules/**"]
     }
   ]
 }

@@ -1,9 +1,9 @@
 import type { Context } from "../../context";
 import { Node, NodeDef, Status } from "../../node";
-import { Tree } from "../../tree";
+import { type Tree } from "../../tree";
 
 enum LogLevel {
-    INFO = "info",
+    LOG = "log",
     DEBUG = "debug",
     WARN = "warn",
     ERROR = "error",
@@ -19,10 +19,10 @@ export class Log extends Node {
     override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         const [inputMsg] = this.input;
         const args = this.args;
-        const level = args.level ?? LogLevel.INFO;
+        const level = args.level ?? LogLevel.LOG;
         let print = console.log;
-        if (level === LogLevel.INFO) {
-            print = console.info;
+        if (level === LogLevel.LOG) {
+            print = console.log;
         } else if (level === LogLevel.DEBUG) {
             print = console.debug;
         } else if (level === LogLevel.WARN) {
@@ -52,24 +52,12 @@ export class Log extends Node {
                     name: "level",
                     type: "string",
                     desc: "日志级别",
-                    default: LogLevel.INFO,
+                    default: LogLevel.LOG,
                     options: [
-                        {
-                            name: "INFO",
-                            value: LogLevel.INFO,
-                        },
-                        {
-                            name: "DEBUG",
-                            value: LogLevel.DEBUG,
-                        },
-                        {
-                            name: "WARN",
-                            value: LogLevel.WARN,
-                        },
-                        {
-                            name: "ERROR",
-                            value: LogLevel.ERROR,
-                        },
+                        { name: "LOG", value: LogLevel.LOG },
+                        { name: "DEBUG", value: LogLevel.DEBUG },
+                        { name: "WARN", value: LogLevel.WARN },
+                        { name: "ERROR", value: LogLevel.ERROR },
                     ],
                 },
             ],

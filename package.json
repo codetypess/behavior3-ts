@@ -1,0 +1,10 @@
+{
+  "scripts": {
+    "check": "tsc --noEmit",
+    "start": "tsx test/main.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.3",
+    "tsx": "^4.20.3"
+  }
+}

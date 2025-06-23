@@ -758,7 +758,7 @@
     "children": 1,
     "status": [
       "!success",
-      "!failure",
+      "failure",
       "|running"
     ],
     "desc": "一直尝试直到子节点返回失败",
@@ -780,7 +780,7 @@
     "children": 1,
     "status": [
       "|success",
-      "|failure",
+      "failure",
       "|running"
     ],
     "desc": "一直尝试直到子节点返回成功",
