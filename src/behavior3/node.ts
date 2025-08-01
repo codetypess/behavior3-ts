@@ -2,7 +2,7 @@ import { Blackboard } from "./blackboard";
 import type { Context, DeepReadonly, NodeContructor, ObjectType } from "./context";
 import type { Tree, TreeData } from "./tree";
 
-export type Status = "success" | "failure" | "running";
+export type Status = "success" | "failure" | "running" | "error";
 
 export interface NodeDef<GroupType extends string = string> {
     name: string;
@@ -197,6 +197,7 @@ export abstract class Node {
             } else {
                 console.error(e);
             }
+            tree.interrupt();
         }
 
         if (tree.__interrupted) {
@@ -218,7 +219,7 @@ export abstract class Node {
                 }
             }
             const indent = tree.debug ? " ".repeat(stack.length) : "";
-            console.debug(
+            console.info(
                 `[DEBUG] behavior3 -> ${indent}${this.name}: tree:${this.cfg.tree.name} tree_id:${tree.id}, ` +
                     `node:${this.id}, status:${status}, values:{${varStr}} args:${JSON.stringify(
                         cfg.args

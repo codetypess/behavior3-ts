@@ -226,7 +226,7 @@ export class MathNode extends Node {
 
         if (isNaN(result)) {
             this.error(`result is NaN: ${result}`);
-            return "failure";
+            return "error";
         }
 
         this.output.push(result);

@@ -7,7 +7,11 @@ export class RandomIndex extends Node {
 
     override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         const [arr] = this.input;
-        if (!(arr instanceof Array) || arr.length === 0) {
+        if (!(arr instanceof Array)) {
+            return "error";
+        }
+
+        if (arr.length === 0) {
             return "failure";
         }
 

@@ -18,6 +18,9 @@ import { Tree } from "../../tree";
  */
 export class IfElse extends Node {
     private _ifelse(tree: Tree<Context, unknown>, status: Exclude<Status, "running">) {
+        if (status === "error") {
+            return "error";
+        }
         const i = status === "success" ? 1 : 2;
         const childStatus = this.children[i].tick(tree);
         if (childStatus === "running") {
@@ -37,7 +40,6 @@ export class IfElse extends Node {
             } else {
                 return status;
             }
-            return "failure";
         }
 
         status = this.children[0].tick(tree);

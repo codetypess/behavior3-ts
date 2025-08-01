@@ -9,7 +9,7 @@ export class Push extends Node {
         const [arr, element] = this.input;
         if (!Array.isArray(arr)) {
             this.error(`arr is not an array: ${arr}`);
-            return "failure";
+            return "error";
         }
         arr.push(element);
         return "success";

@@ -475,11 +475,11 @@
         "name": "level",
         "type": "string",
         "desc": "日志级别",
-        "default": "info",
+        "default": "log",
         "options": [
           {
-            "name": "INFO",
-            "value": "info"
+            "name": "LOG",
+            "value": "log"
           },
           {
             "name": "DEBUG",
@@ -759,7 +759,7 @@
     "status": [
       "!success",
       "failure",
-      "|running"
+      "running"
     ],
     "desc": "一直尝试直到子节点返回失败",
     "input": [
@@ -781,7 +781,7 @@
     "status": [
       "|success",
       "failure",
-      "|running"
+      "running"
     ],
     "desc": "一直尝试直到子节点返回成功",
     "input": [

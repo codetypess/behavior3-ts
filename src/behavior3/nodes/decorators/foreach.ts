@@ -13,8 +13,8 @@ export class Foreach extends Node {
         if (i !== undefined) {
             if (status === "running") {
                 this.throw(`unexpected status error`);
-            } else if (status === "failure") {
-                return "failure";
+            } else if (status === "failure" || status === "error") {
+                return status;
             }
             i++;
         } else {
@@ -29,8 +29,8 @@ export class Foreach extends Node {
             status = this.children[0].tick(tree);
             if (status === "running") {
                 return tree.yield(this, i);
-            } else if (status === "failure") {
-                return "failure";
+            } else if (status === "failure" || status === "error") {
+                return status;
             }
         }
 

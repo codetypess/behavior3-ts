@@ -9,16 +9,16 @@ export class GetField extends Node {
     override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         const [obj] = this.input;
         if (typeof obj !== "object" || !obj) {
-            this.warn(`invalid object: ${obj}`);
-            return "failure";
+            this.error(`invalid object: ${obj}`);
+            return "error";
         }
 
         const args = this.args;
         const field = this._checkOneof(1, args.field);
         const value = obj[field];
         if (typeof field !== "string" && typeof field !== "number") {
-            this.warn(`invalid field: ${field}`);
-            return "failure";
+            this.error(`invalid field: ${field}`);
+            return "error";
         } else if (value !== undefined && value !== null) {
             this.output.push(value);
             return "success";

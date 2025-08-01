@@ -20,7 +20,7 @@ export class Selector extends Node {
         let i = 0;
 
         if (typeof last === "number") {
-            if (status === "failure") {
+            if (status === "failure" || status === "error") {
                 i = last + 1;
             } else if (status === "success") {
                 return "success";

@@ -8,17 +8,20 @@ export class Index extends Node {
 
     override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         const [arr] = this.input;
-        if (arr instanceof Array) {
-            const index = this._checkOneof(1, this.args.index);
-            const value = arr[index];
-            if (value !== undefined && value !== null) {
-                this.output.push(value);
-                return "success";
-            } else if (typeof index !== "number" || isNaN(index)) {
-                this.warn(`invalid index: ${index}`);
-            }
-        } else {
-            this.warn(`invalid array: ${arr}`);
+
+        if (!Array.isArray(arr)) {
+            this.error(`invalid array: ${arr}`);
+            return "error";
+        }
+
+        const index = this._checkOneof(1, this.args.index);
+        const value = arr[index];
+        if (value !== undefined && value !== null) {
+            this.output.push(value);
+            return "success";
+        } else if (typeof index !== "number" || isNaN(index)) {
+            this.error(`invalid index: ${index}`);
+            return "error";
         }
 
         return "failure";

@@ -7,7 +7,10 @@ export class Includes extends Node {
 
     override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         const [arr, element] = this.input;
-        if (!Array.isArray(arr) || element === undefined || element === null) {
+        if (!Array.isArray(arr)) {
+            this.error(`invalid array: ${arr}`);
+            return "error";
+        } else if (element === undefined || element === null) {
             return "failure";
         }
         const index = arr.indexOf(element);

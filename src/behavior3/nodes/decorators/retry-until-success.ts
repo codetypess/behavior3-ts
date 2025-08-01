@@ -10,7 +10,9 @@ export class RetryUntilSuccess extends Node {
         let count: number | undefined = tree.resume(this);
 
         if (typeof count === "number") {
-            if (status === "success") {
+            if (status === "error") {
+                return "error";
+            } else if (status === "success") {
                 return "success";
             } else if (count >= maxTryTimes) {
                 return "failure";
@@ -22,7 +24,9 @@ export class RetryUntilSuccess extends Node {
         }
 
         status = this.children[0].tick(tree);
-        if (status === "success") {
+        if (status === "error") {
+            return "error";
+        } else if (status === "success") {
             return "success";
         } else {
             return tree.yield(this, count);

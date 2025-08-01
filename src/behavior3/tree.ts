@@ -18,7 +18,7 @@ export const enum TreeEvent {
     TICKED_FAILURE = "treeTickedFailure",
 }
 
-export type TreeStatus = Status | "interrupted";
+export type TreeStatus = Exclude<Status, "error"> | "interrupted";
 
 let treeId = 0;
 
@@ -125,11 +125,13 @@ export class Tree<C extends Context, Owner> {
 
         this._ticking = true;
 
+        let status: Status = "failure";
+
         if (stack.length > 0) {
             let node = stack.top();
             while (node) {
-                this._status = node.tick(this);
-                if (this._status === "running") {
+                status = node.tick(this);
+                if (status === "running") {
                     break;
                 } else {
                     node = stack.top();
@@ -137,15 +139,19 @@ export class Tree<C extends Context, Owner> {
             }
         } else {
             context.dispatch(TreeEvent.BEFORE_TICKED, this);
-            this._status = root.tick(this);
+            status = root.tick(this);
         }
 
-        if (this._status === "success") {
+        if (status === "success") {
+            this._status = "success";
             context.dispatch(TreeEvent.AFTER_TICKED, this);
             context.dispatch(TreeEvent.TICKED_SUCCESS, this);
-        } else if (this._status === "failure") {
+        } else if (status === "failure" || status === "error") {
+            this._status = "failure";
             context.dispatch(TreeEvent.AFTER_TICKED, this);
             context.dispatch(TreeEvent.TICKED_FAILURE, this);
+        } else {
+            this._status = "running";
         }
 
         if (this.__interrupted) {

@@ -12,8 +12,8 @@ export class SetField extends Node {
     override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         const [obj] = this.input;
         if (typeof obj !== "object" || !obj) {
-            this.warn(`invalid object: ${obj}`);
-            return "failure";
+            this.error(`invalid object: ${obj}`);
+            return "error";
         }
 
         const args = this.args;
@@ -21,11 +21,8 @@ export class SetField extends Node {
         const value = this._checkOneof(2, args.value, null);
 
         if (typeof field !== "string" && typeof field !== "number") {
-            this.warn(`invalid field: ${field}`);
-            return "failure";
-        } else if (typeof obj[field] === "function") {
-            this.warn(`not allowed to overwrite function ${field}`);
-            return "failure";
+            this.error(`invalid field: ${field}`);
+            return "error";
         } else if (value === null || value === undefined) {
             delete obj[field];
             return "success";

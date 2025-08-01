@@ -8,7 +8,8 @@ export class Concat extends Node {
     override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         const [arr1, arr2] = this.input;
         if (!Array.isArray(arr1) || !Array.isArray(arr2)) {
-            return "failure";
+            this.error(`invalid array: ${arr1} or ${arr2}`);
+            return "error";
         }
         this.output.push(arr1.concat(arr2));
         return "success";

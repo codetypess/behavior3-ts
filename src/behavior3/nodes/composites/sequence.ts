@@ -23,8 +23,8 @@ export class Sequence extends Node {
         if (typeof last === "number") {
             if (status === "success") {
                 i = last + 1;
-            } else if (status === "failure") {
-                return "failure";
+            } else if (status === "failure" || status === "error") {
+                return status;
             } else {
                 this.throw(`unexpected status error: ${status}`);
             }
@@ -32,8 +32,8 @@ export class Sequence extends Node {
 
         for (; i < children.length; i++) {
             status = children[i].tick(tree);
-            if (status === "failure") {
-                return "failure";
+            if (status === "failure" || status === "error") {
+                return status;
             } else if (status === "running") {
                 return tree.yield(this, i);
             }

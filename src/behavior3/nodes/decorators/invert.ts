@@ -18,8 +18,14 @@ export class Invert extends Node {
         return this._invert(status);
     }
 
-    private _invert(status: Status): Status {
-        return status === "failure" ? "success" : "failure";
+    private _invert(status: Exclude<Status, "running">): Status {
+        if (status === "error") {
+            return "error";
+        } else if (status === "failure") {
+            return "success";
+        } else {
+            return "failure";
+        }
     }
 
     static override get descriptor(): NodeDef {
