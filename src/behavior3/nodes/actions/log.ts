@@ -21,16 +21,21 @@ export class Log extends Node {
         const args = this.args;
         const level = args.level ?? LogLevel.LOG;
         let print = console.log;
+        let prefix: string = "";
         if (level === LogLevel.LOG) {
             print = console.log;
+            prefix = "behavior3 -> log:";
         } else if (level === LogLevel.DEBUG) {
             print = console.debug;
+            prefix = "behavior3 -> debug:";
         } else if (level === LogLevel.WARN) {
             print = console.warn;
+            prefix = "behavior3 -> warn:";
         } else if (level === LogLevel.ERROR) {
             print = console.error;
+            prefix = "behavior3 -> error:";
         }
-        print.call(console, "behavior3 -> log:", args.message, inputMsg ?? "");
+        print.call(console, prefix, args.message, inputMsg ?? "");
         return "success";
     }
 

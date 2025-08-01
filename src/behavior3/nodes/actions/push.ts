@@ -8,6 +8,7 @@ export class Push extends Node {
     override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         const [arr, element] = this.input;
         if (!Array.isArray(arr)) {
+            this.error(`arr is not an array: ${arr}`);
             return "failure";
         }
         arr.push(element);
