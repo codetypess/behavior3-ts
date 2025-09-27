@@ -15,8 +15,5 @@
     "strictNullChecks": true,
     "target": "ESNext"
   },
-  "include": ["src/", "test/"],
-  "ts-node": {
-    "esm": true
-  }
+  "include": ["src/", "test/"]
 }
