@@ -2,6 +2,13 @@ import { Blackboard } from "./blackboard";
 import type { Context, DeepReadonly, NodeContructor, ObjectType } from "./context";
 import type { Tree, TreeData } from "./tree";
 
+/**
+ * The status of a node.
+ * + `success`: The node has completed its task successfully.
+ * + `failure`: The node has failed to complete its task.
+ * + `running`: The node is currently executing.
+ * + `error`: The node has encountered an error and cannot continue.
+ */
 export type Status = "success" | "failure" | "running" | "error";
 
 export interface NodeDef<GroupType extends string = string> {

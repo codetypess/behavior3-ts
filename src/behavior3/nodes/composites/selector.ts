@@ -50,7 +50,7 @@ export class Selector extends Node {
             status: ["|success", "&failure", "|running"],
             doc: `
                 + 一直往下执行，直到有子节点返回 \`success\` 则返回 \`success\`
-                + 若全部节点返回 \`failure\` 则返回 \`failure\``,
+                + 若全部节点返回 \`failure\`或 \`error\` 则返回 \`failure\``,
         };
     }
 }

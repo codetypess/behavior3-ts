@@ -74,7 +74,7 @@ export class Race extends Node {
             doc: `
                 + 并行执行所有子节点
                 + 当有子节点返回 \`success\` 时，立即返回 \`success\` 状态，并中断其他子节点
-                + 如果所有子节点返回 \`failure\` 则返回 \`failure\``,
+                + 如果所有子节点返回 \`failure\`或 \`error\` 则返回 \`failure\``,
         };
     }
 }

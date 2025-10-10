@@ -39,6 +39,7 @@ export class Invert extends Node {
                 + 只能有一个子节点，多个仅执行第一个
                 + 当子节点返回 \`success\` 时返回 \`failure\`
                 + 当子节点返回 \`failure\` 时返回 \`success\`
+                + 当子节点返回 \`error\` 时返回 \`error\`
             `,
         };
     }

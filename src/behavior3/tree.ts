@@ -7,6 +7,7 @@ export interface TreeData {
     readonly name: string;
     readonly desc: string;
     readonly root: NodeData;
+    readonly group: string[];
 }
 
 export const enum TreeEvent {
