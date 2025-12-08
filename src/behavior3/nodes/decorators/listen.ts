@@ -1,4 +1,4 @@
-import type { Context, TargetType } from "../../context";
+import type { Context, EventTarget } from "../../context";
 import { Node, NodeDef, Status } from "../../node";
 import { Tree, TreeEvent } from "../../tree";
 
@@ -13,11 +13,11 @@ const builtinEventOptions = [
 
 export class Listen extends Node {
     declare args: { readonly event: string };
-    declare input: [TargetType | TargetType[] | undefined];
+    declare input: [EventTarget | EventTarget[] | undefined];
     declare output: [
         target?: string,
         arg0?: string,
-        arg1?: string
+        arg1?: string,
         // argN?:string
     ];
 
@@ -27,7 +27,7 @@ export class Listen extends Node {
 
     protected _processOutput(
         tree: Tree<Context, unknown>,
-        eventTarget?: TargetType,
+        eventTarget?: EventTarget,
         ...eventArgs: unknown[]
     ) {
         const [eventTargetKey] = this.cfg.output;
@@ -50,10 +50,10 @@ export class Listen extends Node {
             if (target !== undefined) {
                 this.warn(`invalid target ${target} for builtin event ${args.event}`);
             }
-            target = tree as TargetType;
+            target = tree as EventTarget;
         }
 
-        const callback = (eventTarget?: TargetType) => {
+        const callback = (eventTarget?: EventTarget) => {
             return (...eventArgs: unknown[]) => {
                 this._processOutput(tree, eventTarget, ...eventArgs);
                 const level = tree.stack.length;

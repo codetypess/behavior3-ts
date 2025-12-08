@@ -49,7 +49,7 @@ export type NodeContructor<T extends Node> = Constructor<T, ConstructorParameter
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Callback<A extends any[] = any[]> = (...args: A) => unknown;
 export type ObjectType = { [k: string]: unknown };
-export type TargetType = object | string | number;
+export type EventTarget = object | string | number;
 export type TagType = unknown;
 
 export type DeepReadonly<T> = T extends object
@@ -71,7 +71,7 @@ export abstract class Context {
 
     private readonly _evaluators: Record<string, Evaluator> = {};
     private readonly _timers: TimerEntry[] = [];
-    private readonly _listeners: Map<string, Map<TargetType, Map<Callback, TagType>>> = new Map();
+    private readonly _listeners: Map<string, Map<EventTarget, Map<Callback, TagType>>> = new Map();
 
     constructor() {
         this.registerNode(AlwaysFailure);
@@ -176,22 +176,22 @@ export abstract class Context {
      * @param callback The function to call when the event occurs
      * @param tag The tag used to identify which listeners to remove
      */
-    on(event: string, target: TargetType, callback: Callback, tag: TagType): void;
+    on(event: string, target: EventTarget, callback: Callback, tag: TagType): void;
 
     on(
         event: string,
-        callbackOrTarget: TargetType | Callback,
+        callbackOrTarget: EventTarget | Callback,
         tagOrCallback: Callback,
         tag?: TagType
     ) {
-        let target: TargetType;
+        let target: EventTarget;
         let callback: Callback;
         if (typeof callbackOrTarget === "function") {
             callback = callbackOrTarget as Callback;
             tag = tagOrCallback;
-            target = this as TargetType;
+            target = this as EventTarget;
         } else {
-            target = callbackOrTarget as TargetType;
+            target = callbackOrTarget as EventTarget;
             callback = tagOrCallback as Callback;
         }
 
@@ -217,7 +217,7 @@ export abstract class Context {
      * @param target Optional target object that the event is associated with
      * @param args Additional arguments to pass to the event listeners
      */
-    dispatch(event: string, target?: TargetType | this, ...args: unknown[]) {
+    dispatch(event: string, target?: EventTarget | this, ...args: unknown[]) {
         this._listeners
             .get(event)
             ?.get(target ?? this)
