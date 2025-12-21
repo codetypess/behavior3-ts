@@ -27,7 +27,6 @@ export class Parallel extends Node {
 
         for (let i = 0; i < children.length; i++) {
             let childStack = last[i];
-            let status: Status | undefined;
             if (childStack === undefined) {
                 status = children[i].tick(tree);
             } else if (childStack.length > 0) {

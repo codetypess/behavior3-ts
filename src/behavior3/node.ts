@@ -151,6 +151,10 @@ export abstract class Node {
         }
     }
 
+    getDebugRunningNode(tree: Tree<Context, unknown>): Node {
+        return this;
+    }
+
     /** @private */
     get __yield() {
         return (this._yield ||= Blackboard.makeTempVar(this, "YIELD"));

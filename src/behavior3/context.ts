@@ -5,6 +5,7 @@ import { Index } from "./nodes/actions";
 import { Calculate } from "./nodes/actions/calculate";
 import { Concat } from "./nodes/actions/concat";
 import { GetField } from "./nodes/actions/get-field";
+import { JustFailure } from "./nodes/actions/just-failure";
 import { JustSuccess } from "./nodes/actions/just-success";
 import { Let } from "./nodes/actions/let";
 import { Log } from "./nodes/actions/log";
@@ -21,6 +22,7 @@ import { Race } from "./nodes/composites/race";
 import { Selector } from "./nodes/composites/selector";
 import { Sequence } from "./nodes/composites/sequence";
 import { Case, Switch } from "./nodes/composites/switch";
+import { Watchdog } from "./nodes/composites/watchdog";
 import { Check } from "./nodes/conditions/check";
 import { Includes } from "./nodes/conditions/includes";
 import { IsNull } from "./nodes/conditions/is-null";
@@ -92,6 +94,7 @@ export abstract class Context {
         this.registerNode(Invert);
         this.registerNode(IsNull);
         this.registerNode(JustSuccess);
+        this.registerNode(JustFailure);
         this.registerNode(Let);
         this.registerNode(Listen);
         this.registerNode(Log);
@@ -113,6 +116,7 @@ export abstract class Context {
         this.registerNode(Timeout);
         this.registerNode(Wait);
         this.registerNode(WaitForEvent);
+        this.registerNode(Watchdog);
     }
 
     abstract loadTree(path: string): Promise<Node>;
