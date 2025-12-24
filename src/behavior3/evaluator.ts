@@ -64,6 +64,21 @@ export class ExpressionEvaluator {
         while (expr.length) {
             const char = expr[0];
             let token: RegExpMatchArray | null = null;
+            // string literal: 'xxx' or "xxx"
+            if (char === "'" || char === '"') {
+                const quote = char;
+                let end = 1;
+                while (end < expr.length && expr[end] !== quote) {
+                    end++;
+                }
+                if (end >= expr.length) {
+                    throw new Error(`invalid expression: '${expr}' in '${this._expr}'`);
+                }
+                const literal = expr.slice(0, end + 1);
+                tokens.push(literal);
+                expr = expr.slice(end + 1).replace(/^\s+/, "");
+                continue;
+            }
             if (/^\d/.test(char)) {
                 token = expr.match(NUMBER_REGEX);
             } else if (/^\w/.test(char)) {
@@ -215,6 +230,16 @@ export class ExpressionEvaluator {
         if (type === "number" || type === "boolean" || token === null) {
             return token as T;
         } else if (typeof token === "string") {
+            // string literal like 'success' or "ok"
+            const literalMatch = token.match(/^(['"])(.*)\1$/);
+            if (literalMatch) {
+                const literal = literalMatch[2] as unknown as T;
+                if (isNumber) {
+                    throw new Error(`value indexed by '${token}' is not a number'`);
+                }
+                return literal;
+            }
+
             const value = this._args?.[token];
             if (value === undefined) {
                 throw new Error(`value indexed by '${token}' is not found`);
@@ -236,6 +261,13 @@ export class ExpressionEvaluator {
                     value: `${symbol}N`,
                 };
             }
+        }
+        // string literal: keep the quotes in value so we can distinguish literals
+        if (
+            (symbol.startsWith("'") && symbol.endsWith("'")) ||
+            (symbol.startsWith('"') && symbol.endsWith('"'))
+        ) {
+            return { type: TokenType.STRING, precedence: 0, value: symbol };
         }
         if (NUMBER_REGEX.test(symbol)) {
             return { type: TokenType.NUMBER, precedence: 0, value: parseFloat(symbol) };

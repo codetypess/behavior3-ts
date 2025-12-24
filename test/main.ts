@@ -15,6 +15,7 @@ assert(new ExpressionEvaluator("x[1].x + x.y").dryRun() === true);
 assert(new ExpressionEvaluator("a.x > -1.2 ? -1.2 : (b.x + 1.2)").dryRun() === true);
 assert(new ExpressionEvaluator("x - 1").dryRun() === true);
 assert(new ExpressionEvaluator("x >  1").dryRun() === true);
+assert(new ExpressionEvaluator("status == 'success'").dryRun() === true);
 assert(
     new ExpressionEvaluator("arr[0].x + a.y").evaluate({
         arr: [{ x: 1 }],
