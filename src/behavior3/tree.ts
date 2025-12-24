@@ -39,6 +39,9 @@ export class Tree<C extends Context, Owner> {
     __lastStatus: Status = "success";
 
     /** @private */
+    __runningNode: Node | undefined = undefined;
+
+    /** @private */
     __interrupted: boolean = false;
 
     private _root?: Node;
@@ -71,6 +74,10 @@ export class Tree<C extends Context, Owner> {
 
     get ticking() {
         return this._ticking;
+    }
+
+    get runningNode() {
+        return this.__runningNode;
     }
 
     clear() {
@@ -144,11 +151,13 @@ export class Tree<C extends Context, Owner> {
         }
 
         if (status === "success") {
+            this.__runningNode = undefined;
             this._status = "success";
             context.dispatch(TreeEvent.AFTER_TICKED, this);
             context.dispatch(TreeEvent.TICKED_SUCCESS, this);
         } else if (status === "failure" || status === "error") {
             this._status = "failure";
+            this.__runningNode = undefined;
             context.dispatch(TreeEvent.AFTER_TICKED, this);
             context.dispatch(TreeEvent.TICKED_FAILURE, this);
         } else {

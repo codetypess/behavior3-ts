@@ -316,7 +316,7 @@
       "|running"
     ],
     "desc": "反转子节点运行结果",
-    "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 当子节点返回 `success` 时返回 `failure`\n+ 当子节点返回 `failure` 时返回 `success`\n"
+    "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 当子节点返回 `success` 时返回 `failure`\n+ 当子节点返回 `failure` 时返回 `success`\n+ 当子节点返回 `error` 时返回 `error`\n"
   },
   {
     "name": "IsNull",
@@ -362,6 +362,15 @@
       }
     ],
     "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 只有当子节点的执行状态与指定状态相同时才返回 `success`，其余返回失败\n+ 若子节点返回 `running` 状态，将中断子节点并清理子节点的执行栈"
+  },
+  {
+    "name": "JustFailure",
+    "type": "Action",
+    "children": 0,
+    "status": [
+      "failure"
+    ],
+    "desc": "什么都不干，只返回失败"
   },
   {
     "name": "JustSuccess",
@@ -480,6 +489,10 @@
           {
             "name": "LOG",
             "value": "log"
+          },
+          {
+            "name": "INFO",
+            "value": "info"
           },
           {
             "name": "DEBUG",
@@ -709,7 +722,7 @@
     ],
     "children": -1,
     "desc": "竞争执行",
-    "doc": "+ 并行执行所有子节点\n+ 当有子节点返回 `success` 时，立即返回 `success` 状态，并中断其他子节点\n+ 如果所有子节点返回 `failure` 则返回 `failure`"
+    "doc": "+ 并行执行所有子节点\n+ 当有子节点返回 `success` 时，立即返回 `success` 状态，并中断其他子节点\n+ 如果所有子节点返回 `failure`或 `error` 则返回 `failure`"
   },
   {
     "name": "RandomIndex",
@@ -806,7 +819,7 @@
       "&failure",
       "|running"
     ],
-    "doc": "+ 一直往下执行，直到有子节点返回 `success` 则返回 `success`\n+ 若全部节点返回 `failure` 则返回 `failure`"
+    "doc": "+ 一直往下执行，直到有子节点返回 `success` 则返回 `success`\n+ 若全部节点返回 `failure`或 `error` 则返回 `failure`"
   },
   {
     "name": "Sequence",
@@ -927,5 +940,17 @@
         "desc": "事件名称"
       }
     ]
+  },
+  {
+    "name": "Watchdog",
+    "type": "Composite",
+    "children": 3,
+    "status": [
+      "|success",
+      "|failure",
+      "|running"
+    ],
+    "desc": "测试执行",
+    "doc": "+ 必须有3个子节点\n+ 第一个子节点为条件节点，返回 `success` 或 `failure` 状态\n+ 第二个子节点为条件为 `success` 时执行的节点\n+ 第三个子节点为条件为 `failure` 时执行的节点，不管子节点返回什么状态，都直接返回 `failure`\n+ 当第二个子节点返回 `running` 时，由本节点维护其运行状态\n+ 每一次 tick 都会先执行测试节点，只有当测试节点返回 `success`，才执行第二个子节点\n"
   }
 ]

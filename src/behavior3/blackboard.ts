@@ -29,7 +29,7 @@ export class Blackboard {
         }
     }
 
-    set(k: string, v: unknown) {
+    set<T>(k: string, v: T) {
         if (k) {
             if (v === undefined || v === null) {
                 delete this._values[k];

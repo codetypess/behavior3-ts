@@ -46,14 +46,6 @@ export class Watchdog extends Node {
         }
     }
 
-    override getDebugRunningNode(tree: Tree<Context, unknown>) {
-        const last: Stack | undefined = tree.resume(this);
-        if (last) {
-            return last.top()!.getDebugRunningNode(tree);
-        }
-        return this;
-    }
-
     static override get descriptor(): NodeDef {
         return {
             name: "Watchdog",
