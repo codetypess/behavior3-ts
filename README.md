@@ -15,7 +15,7 @@
 ## 节点定义
 
 ```javascript
-export interface NodeDef {
+export interface NodeDef<GroupType extends string = string> {
     name: string;
     /**
      * Recommended type used for the node definition:
@@ -58,9 +58,15 @@ export interface NodeDef {
         desc: string,
         oneof?: string, // Input `value`, only one is allowed between `value` and this arg.
         default?: unknown,
-        options?: { name: string, value: unknown, desc?: string }[],
+        options?: Array<{
+            match?: { [arg: string]: string | number | boolean },
+            source: Array<{ name: string, value: unknown }>,
+        }>,
     }[];
     doc?: string; // markdown
+    icon?: string;
+    color?: string;
+    group?: GroupType[];
 }
 ```
 

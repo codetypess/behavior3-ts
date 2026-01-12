@@ -10,7 +10,6 @@ import { MoveToPos } from "./nodes/move-to-pos";
 import { MoveToTarget } from "./nodes/move-to-target";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-// deno-lint-ignore no-explicit-any
 export type Callback = (...args: any[]) => void;
 
 export interface Role {
@@ -39,7 +38,6 @@ export class RoleContext extends Context {
 
         // 用于加速执行表达式，此代码可以通过脚本扫描所有行为树，预先生成代码，然后注册到 Context 中
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        // deno-lint-ignore no-explicit-any
         this.registerCode("hp > 50", (envars: any) => {
             return envars.hp > 50;
         });
@@ -69,7 +67,7 @@ export class RoleContext extends Context {
         Object.values(this.nodeDefs).forEach((descriptor) => {
             defs.push(descriptor);
             if (descriptor.name === "Listen") {
-                (descriptor as NodeDef).args?.[0].options?.push(
+                (descriptor as NodeDef).args?.[0].options?.[0].source?.push(
                     ...[
                         {
                             name: "testOff",

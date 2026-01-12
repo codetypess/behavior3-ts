@@ -17,7 +17,7 @@ export class Listen extends Node {
     declare output: [
         target?: string,
         arg0?: string,
-        arg1?: string,
+        arg1?: string
         // argN?:string
     ];
 
@@ -92,7 +92,11 @@ export class Listen extends Node {
                     name: "event",
                     type: "string",
                     desc: "事件",
-                    options: builtinEventOptions.slice(),
+                    options: [
+                        {
+                            source: builtinEventOptions.slice(),
+                        },
+                    ],
                 },
             ],
             doc: `

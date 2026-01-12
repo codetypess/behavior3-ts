@@ -247,32 +247,36 @@ export class MathNode extends Node {
                     type: "string",
                     desc: "数学运算类型",
                     options: [
-                        // 基础运算
-                        { name: "绝对值", value: Op[Op.abs] },
-                        { name: "向上取整", value: Op[Op.ceil] },
-                        { name: "向下取整", value: Op[Op.floor] },
-                        { name: "四舍五入", value: Op[Op.round] },
-                        { name: "符号", value: Op[Op.sign] },
-                        // 三角函数
-                        { name: "正弦", value: Op[Op.sin] },
-                        { name: "余弦", value: Op[Op.cos] },
-                        { name: "正切", value: Op[Op.tan] },
-                        { name: "反正切2", value: Op[Op.atan2] },
-                        // 幂和对数
-                        { name: "幂运算", value: Op[Op.pow] },
-                        { name: "平方根", value: Op[Op.sqrt] },
-                        { name: "自然对数", value: Op[Op.log] },
-                        // 最值运算
-                        { name: "最小值", value: Op[Op.min] },
-                        { name: "最大值", value: Op[Op.max] },
-                        // 随机数
-                        { name: "随机数", value: Op[Op.random] },
-                        { name: "随机整数", value: Op[Op.randInt] },
-                        { name: "随机浮点数", value: Op[Op.randFloat] },
-                        // 其他运算
-                        { name: "求和", value: Op[Op.sum] },
-                        { name: "平均值", value: Op[Op.average] },
-                        { name: "乘积", value: Op[Op.product] },
+                        {
+                            source: [
+                                // 基础运算
+                                { name: "绝对值", value: Op[Op.abs] },
+                                { name: "向上取整", value: Op[Op.ceil] },
+                                { name: "向下取整", value: Op[Op.floor] },
+                                { name: "四舍五入", value: Op[Op.round] },
+                                { name: "符号", value: Op[Op.sign] },
+                                // 三角函数
+                                { name: "正弦", value: Op[Op.sin] },
+                                { name: "余弦", value: Op[Op.cos] },
+                                { name: "正切", value: Op[Op.tan] },
+                                { name: "反正切2", value: Op[Op.atan2] },
+                                // 幂和对数
+                                { name: "幂运算", value: Op[Op.pow] },
+                                { name: "平方根", value: Op[Op.sqrt] },
+                                { name: "自然对数", value: Op[Op.log] },
+                                // 最值运算
+                                { name: "最小值", value: Op[Op.min] },
+                                { name: "最大值", value: Op[Op.max] },
+                                // 随机数
+                                { name: "随机数", value: Op[Op.random] },
+                                { name: "随机整数", value: Op[Op.randInt] },
+                                { name: "随机浮点数", value: Op[Op.randFloat] },
+                                // 其他运算
+                                { name: "求和", value: Op[Op.sum] },
+                                { name: "平均值", value: Op[Op.average] },
+                                { name: "乘积", value: Op[Op.product] },
+                            ],
+                        },
                     ],
                 },
                 {

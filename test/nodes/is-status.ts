@@ -31,9 +31,13 @@ export class IsStatus extends Node {
                     type: "string",
                     desc: "执行状态",
                     options: [
-                        { name: "成功", value: "success" },
-                        { name: "失败", value: "failure" },
-                        { name: "运行中", value: "running" },
+                        {
+                            source: [
+                                { name: "成功", value: "success" },
+                                { name: "失败", value: "failure" },
+                                { name: "运行中", value: "running" },
+                            ],
+                        },
                     ],
                 },
             ],

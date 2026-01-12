@@ -71,11 +71,15 @@ export class Log extends Node {
                     desc: "日志级别",
                     default: LogLevel.LOG,
                     options: [
-                        { name: "LOG", value: LogLevel.LOG },
-                        { name: "INFO", value: LogLevel.INFO },
-                        { name: "DEBUG", value: LogLevel.DEBUG },
-                        { name: "WARN", value: LogLevel.WARN },
-                        { name: "ERROR", value: LogLevel.ERROR },
+                        {
+                            source: [
+                                { name: "LOG", value: LogLevel.LOG },
+                                { name: "INFO", value: LogLevel.INFO },
+                                { name: "DEBUG", value: LogLevel.DEBUG },
+                                { name: "WARN", value: LogLevel.WARN },
+                                { name: "ERROR", value: LogLevel.ERROR },
+                            ],
+                        },
                     ],
                 },
             ],

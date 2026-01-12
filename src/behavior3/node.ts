@@ -57,7 +57,10 @@ export interface NodeDef<GroupType extends string = string> {
         /** Input `value`, only one is allowed between `value` and this arg.*/
         oneof?: string;
         default?: unknown;
-        options?: { name: string; value: unknown; desc?: string }[];
+        options?: Array<{
+            match?: { [arg: string]: string | number | boolean };
+            source: Array<{ name: string; value: unknown }>;
+        }>;
     }[];
     doc?: string;
     icon?: string;
