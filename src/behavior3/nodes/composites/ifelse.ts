@@ -1,5 +1,6 @@
-import type { Context } from "../../context";
+import { type Context } from "../../context";
 import { Node, NodeDef, Status } from "../../node";
+import { registerNode } from "../../register-node";
 import { Tree } from "../../tree";
 
 /**
@@ -16,6 +17,7 @@ import { Tree } from "../../tree";
  * 3. If condition returns `failure`, execute third child
  * 4. Return the status of whichever branch was executed
  */
+@registerNode
 export class IfElse extends Node {
     private _ifelse(tree: Tree<Context, unknown>, status: Exclude<Status, "running">) {
         if (status === "error") {

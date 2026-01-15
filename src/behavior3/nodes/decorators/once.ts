@@ -1,8 +1,10 @@
 import { Blackboard } from "../../blackboard";
-import type { Context } from "../../context";
+import { type Context } from "../../context";
 import { Node, NodeData, NodeDef, Status } from "../../node";
+import { registerNode } from "../../register-node";
 import { Tree } from "../../tree";
 
+@registerNode
 export class Once extends Node {
     private _onceKey!: string;
 

@@ -1,8 +1,10 @@
-import { Context } from "../../context";
+import { type Context } from "../../context";
 import { Node, NodeDef, Status } from "../../node";
+import { registerNode } from "../../register-node";
 import { Stack } from "../../stack";
 import { Tree } from "../../tree";
 
+@registerNode
 export class Watchdog extends Node {
     override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         let last: Stack | undefined = tree.resume(this);

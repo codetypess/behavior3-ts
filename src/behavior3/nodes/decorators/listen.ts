@@ -1,5 +1,6 @@
-import type { Context, EventTarget } from "../../context";
+import { type Context, type EventTarget } from "../../context";
 import { Node, NodeDef, Status } from "../../node";
+import { registerNode } from "../../register-node";
 import { Tree, TreeEvent } from "../../tree";
 
 const builtinEventOptions = [
@@ -11,13 +12,14 @@ const builtinEventOptions = [
     { name: "行为树被清理", value: TreeEvent.CLEANED },
 ];
 
+@registerNode
 export class Listen extends Node {
     declare args: { readonly event: string };
     declare input: [EventTarget | EventTarget[] | undefined];
     declare output: [
         target?: string,
         arg0?: string,
-        arg1?: string
+        arg1?: string,
         // argN?:string
     ];
 

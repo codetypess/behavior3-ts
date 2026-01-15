@@ -1,5 +1,6 @@
-import type { Context } from "../../context";
+import { type Context } from "../../context";
 import { Node, NodeDef, Status } from "../../node";
+import { registerNode } from "../../register-node";
 import { Stack } from "../../stack";
 import { Tree } from "../../tree";
 
@@ -18,6 +19,7 @@ const EMPTY_STACK: Stack = new Stack(null!);
  * The first child to succeed "wins the race" and causes the node to succeed.
  * The node only fails if all children fail.
  */
+@registerNode
 export class Race extends Node {
     override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         const last: Stack[] = tree.resume(this) ?? [];

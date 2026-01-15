@@ -1,5 +1,6 @@
-import type { Context } from "../../context";
+import { type Context } from "../../context";
 import { Node, NodeData, NodeDef, Status } from "../../node";
+import { registerNode } from "../../register-node";
 import type { Tree } from "../../tree";
 
 enum Op {
@@ -31,6 +32,7 @@ enum Op {
     product = 19,
 }
 
+@registerNode
 export class MathNode extends Node {
     private _op: Op;
 

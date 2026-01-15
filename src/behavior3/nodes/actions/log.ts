@@ -1,5 +1,6 @@
-import type { Context } from "../../context";
+import { type Context } from "../../context";
 import { Node, NodeDef, Status } from "../../node";
+import { registerNode } from "../../register-node";
 import { type Tree } from "../../tree";
 
 enum LogLevel {
@@ -10,6 +11,7 @@ enum LogLevel {
     ERROR = "error",
 }
 
+@registerNode
 export class Log extends Node {
     declare input: [unknown?];
     declare args: {

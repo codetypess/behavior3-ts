@@ -1,7 +1,9 @@
-import type { Context, ObjectType } from "../../context";
+import { type Context, type ObjectType } from "../../context";
 import { Node, NodeDef, Status } from "../../node";
+import { registerNode } from "../../register-node";
 import { Tree } from "../../tree";
 
+@registerNode
 export class SetField extends Node {
     declare input: [ObjectType, string?, unknown?];
     declare args: {

@@ -1,5 +1,6 @@
-import type { Context } from "../../context";
+import { type Context } from "../../context";
 import { Node, NodeData, NodeDef, Status } from "../../node";
+import { registerNode } from "../../register-node";
 import { Tree } from "../../tree";
 
 /**
@@ -19,6 +20,7 @@ import { Tree } from "../../tree";
  * until a matching condition is found. Only the action of the
  * first matching case is executed.
  */
+@registerNode
 export class Switch extends Node {
     constructor(context: Context, cfg: NodeData) {
         super(context, cfg);
@@ -91,6 +93,7 @@ export class Switch extends Node {
     }
 }
 
+@registerNode
 export class Case extends Node {
     override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         throw new Error("tick children by Switch");

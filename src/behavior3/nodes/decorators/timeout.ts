@@ -1,5 +1,6 @@
-import type { Context } from "../../context";
+import { type Context } from "../../context";
 import { Node, NodeDef, Status } from "../../node";
+import { registerNode } from "../../register-node";
 import { Stack } from "../../stack";
 import { Tree } from "../../tree";
 
@@ -8,6 +9,7 @@ interface NodeYield {
     expired: number;
 }
 
+@registerNode
 export class Timeout extends Node {
     declare args: { readonly time?: number };
 

@@ -1,46 +1,8 @@
 // deno-lint-ignore-file no-explicit-any ban-types
 import { Evaluator, ExpressionEvaluator } from "./evaluator";
 import { Node, NodeData, NodeDef } from "./node";
-import { Index } from "./nodes/actions";
-import { Calculate } from "./nodes/actions/calculate";
-import { Concat } from "./nodes/actions/concat";
-import { GetField } from "./nodes/actions/get-field";
-import { JustFailure } from "./nodes/actions/just-failure";
-import { JustSuccess } from "./nodes/actions/just-success";
-import { Let } from "./nodes/actions/let";
-import { Log } from "./nodes/actions/log";
-import { MathNode } from "./nodes/actions/math";
-import { Now } from "./nodes/actions/now";
-import { Push } from "./nodes/actions/push";
-import { RandomIndex } from "./nodes/actions/random-index";
-import { SetField } from "./nodes/actions/set-field";
-import { Wait } from "./nodes/actions/wait";
-import { WaitForEvent } from "./nodes/actions/wait-for-event";
-import { IfElse } from "./nodes/composites/ifelse";
-import { Parallel } from "./nodes/composites/parallel";
-import { Race } from "./nodes/composites/race";
-import { Selector } from "./nodes/composites/selector";
-import { Sequence } from "./nodes/composites/sequence";
-import { Case, Switch } from "./nodes/composites/switch";
-import { Watchdog } from "./nodes/composites/watchdog";
-import { Check } from "./nodes/conditions/check";
-import { Includes } from "./nodes/conditions/includes";
-import { IsNull } from "./nodes/conditions/is-null";
-import { NotNull } from "./nodes/conditions/not-null";
-import { AlwaysFailure } from "./nodes/decorators/always-failure";
-import { AlwaysRunning } from "./nodes/decorators/always-running";
-import { AlwaysSuccess } from "./nodes/decorators/always-success";
-import { Assert } from "./nodes/decorators/assert";
-import { Delay } from "./nodes/decorators/delay";
-import { Filter } from "./nodes/decorators/filter";
-import { Foreach } from "./nodes/decorators/foreach";
-import { Invert } from "./nodes/decorators/invert";
-import { Listen } from "./nodes/decorators/listen";
-import { Once } from "./nodes/decorators/once";
-import { Repeat } from "./nodes/decorators/repeat";
-import { RetryUntilFailure } from "./nodes/decorators/retry-until-failure";
-import { RetryUntilSuccess } from "./nodes/decorators/retry-until-success";
-import { Timeout } from "./nodes/decorators/timeout";
+import "./nodes";
+import { filterNodeDescriptors } from "./register-node";
 import { TreeData } from "./tree";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -76,53 +38,19 @@ export abstract class Context {
     private readonly _listeners: Map<string, Map<EventTarget, Map<Callback, TagType>>> = new Map();
 
     constructor() {
-        this.registerNode(AlwaysFailure);
-        this.registerNode(AlwaysRunning);
-        this.registerNode(AlwaysSuccess);
-        this.registerNode(Assert);
-        this.registerNode(Calculate);
-        this.registerNode(Case);
-        this.registerNode(Check);
-        this.registerNode(Concat);
-        this.registerNode(Delay);
-        this.registerNode(Filter);
-        this.registerNode(Foreach);
-        this.registerNode(GetField);
-        this.registerNode(IfElse);
-        this.registerNode(Includes);
-        this.registerNode(Index);
-        this.registerNode(Invert);
-        this.registerNode(IsNull);
-        this.registerNode(JustSuccess);
-        this.registerNode(JustFailure);
-        this.registerNode(Let);
-        this.registerNode(Listen);
-        this.registerNode(Log);
-        this.registerNode(MathNode);
-        this.registerNode(NotNull);
-        this.registerNode(Now);
-        this.registerNode(Once);
-        this.registerNode(Parallel);
-        this.registerNode(Push);
-        this.registerNode(Race);
-        this.registerNode(RandomIndex);
-        this.registerNode(Repeat);
-        this.registerNode(RetryUntilFailure);
-        this.registerNode(RetryUntilSuccess);
-        this.registerNode(Selector);
-        this.registerNode(Sequence);
-        this.registerNode(SetField);
-        this.registerNode(Switch);
-        this.registerNode(Timeout);
-        this.registerNode(Wait);
-        this.registerNode(WaitForEvent);
-        this.registerNode(Watchdog);
+        filterNodeDescriptors(this.supportGroupTypes).forEach((v) => {
+            this.registerNode(v.ctor);
+        });
     }
 
     abstract loadTree(path: string): Promise<Node>;
 
     get time() {
         return this._time;
+    }
+
+    get supportGroupTypes(): string[] {
+        return [];
     }
 
     /**

@@ -1,6 +1,6 @@
-import type { Context } from "../../context";
+import { type Context } from "../../context";
 import { Node, NodeDef, Status } from "../../node";
-
+import { registerNode } from "../../register-node";
 import { Tree } from "../../tree";
 
 /**
@@ -14,6 +14,7 @@ import { Tree } from "../../tree";
  * If a child returns `running`, the sequence will yield and resume
  * from that child on next tick.
  */
+@registerNode
 export class Sequence extends Node {
     override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         const last: number | undefined = tree.resume(this);

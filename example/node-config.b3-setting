@@ -347,16 +347,20 @@
         "desc": "执行状态",
         "options": [
           {
-            "name": "成功",
-            "value": "success"
-          },
-          {
-            "name": "失败",
-            "value": "failure"
-          },
-          {
-            "name": "运行中",
-            "value": "running"
+            "source": [
+              {
+                "name": "成功",
+                "value": "success"
+              },
+              {
+                "name": "失败",
+                "value": "failure"
+              },
+              {
+                "name": "运行中",
+                "value": "running"
+              }
+            ]
           }
         ]
       }
@@ -427,36 +431,40 @@
         "desc": "事件",
         "options": [
           {
-            "name": "行为树被中断",
-            "value": "treeInterrupted"
-          },
-          {
-            "name": "行为树开始执行前",
-            "value": "treeBeforeTicked"
-          },
-          {
-            "name": "行为树执行完成后",
-            "value": "treeAfterTicked"
-          },
-          {
-            "name": "行为树执行成功后",
-            "value": "treeTickedSuccess"
-          },
-          {
-            "name": "行为树执行失败后",
-            "value": "treeTickedFailure"
-          },
-          {
-            "name": "行为树被清理",
-            "value": "treeCleaned"
-          },
-          {
-            "name": "testOff",
-            "value": "testOff"
-          },
-          {
-            "name": "hello",
-            "value": "hello"
+            "source": [
+              {
+                "name": "行为树被中断",
+                "value": "treeInterrupted"
+              },
+              {
+                "name": "行为树开始执行前",
+                "value": "treeBeforeTicked"
+              },
+              {
+                "name": "行为树执行完成后",
+                "value": "treeAfterTicked"
+              },
+              {
+                "name": "行为树执行成功后",
+                "value": "treeTickedSuccess"
+              },
+              {
+                "name": "行为树执行失败后",
+                "value": "treeTickedFailure"
+              },
+              {
+                "name": "行为树被清理",
+                "value": "treeCleaned"
+              },
+              {
+                "name": "testOff",
+                "value": "testOff"
+              },
+              {
+                "name": "hello",
+                "value": "hello"
+              }
+            ]
           }
         ]
       }
@@ -487,24 +495,28 @@
         "default": "log",
         "options": [
           {
-            "name": "LOG",
-            "value": "log"
-          },
-          {
-            "name": "INFO",
-            "value": "info"
-          },
-          {
-            "name": "DEBUG",
-            "value": "debug"
-          },
-          {
-            "name": "WARN",
-            "value": "warn"
-          },
-          {
-            "name": "ERROR",
-            "value": "error"
+            "source": [
+              {
+                "name": "LOG",
+                "value": "log"
+              },
+              {
+                "name": "INFO",
+                "value": "info"
+              },
+              {
+                "name": "DEBUG",
+                "value": "debug"
+              },
+              {
+                "name": "WARN",
+                "value": "warn"
+              },
+              {
+                "name": "ERROR",
+                "value": "error"
+              }
+            ]
           }
         ]
       }
@@ -531,84 +543,88 @@
         "desc": "数学运算类型",
         "options": [
           {
-            "name": "绝对值",
-            "value": "abs"
-          },
-          {
-            "name": "向上取整",
-            "value": "ceil"
-          },
-          {
-            "name": "向下取整",
-            "value": "floor"
-          },
-          {
-            "name": "四舍五入",
-            "value": "round"
-          },
-          {
-            "name": "符号",
-            "value": "sign"
-          },
-          {
-            "name": "正弦",
-            "value": "sin"
-          },
-          {
-            "name": "余弦",
-            "value": "cos"
-          },
-          {
-            "name": "正切",
-            "value": "tan"
-          },
-          {
-            "name": "反正切2",
-            "value": "atan2"
-          },
-          {
-            "name": "幂运算",
-            "value": "pow"
-          },
-          {
-            "name": "平方根",
-            "value": "sqrt"
-          },
-          {
-            "name": "自然对数",
-            "value": "log"
-          },
-          {
-            "name": "最小值",
-            "value": "min"
-          },
-          {
-            "name": "最大值",
-            "value": "max"
-          },
-          {
-            "name": "随机数",
-            "value": "random"
-          },
-          {
-            "name": "随机整数",
-            "value": "randInt"
-          },
-          {
-            "name": "随机浮点数",
-            "value": "randFloat"
-          },
-          {
-            "name": "求和",
-            "value": "sum"
-          },
-          {
-            "name": "平均值",
-            "value": "average"
-          },
-          {
-            "name": "乘积",
-            "value": "product"
+            "source": [
+              {
+                "name": "绝对值",
+                "value": "abs"
+              },
+              {
+                "name": "向上取整",
+                "value": "ceil"
+              },
+              {
+                "name": "向下取整",
+                "value": "floor"
+              },
+              {
+                "name": "四舍五入",
+                "value": "round"
+              },
+              {
+                "name": "符号",
+                "value": "sign"
+              },
+              {
+                "name": "正弦",
+                "value": "sin"
+              },
+              {
+                "name": "余弦",
+                "value": "cos"
+              },
+              {
+                "name": "正切",
+                "value": "tan"
+              },
+              {
+                "name": "反正切2",
+                "value": "atan2"
+              },
+              {
+                "name": "幂运算",
+                "value": "pow"
+              },
+              {
+                "name": "平方根",
+                "value": "sqrt"
+              },
+              {
+                "name": "自然对数",
+                "value": "log"
+              },
+              {
+                "name": "最小值",
+                "value": "min"
+              },
+              {
+                "name": "最大值",
+                "value": "max"
+              },
+              {
+                "name": "随机数",
+                "value": "random"
+              },
+              {
+                "name": "随机整数",
+                "value": "randInt"
+              },
+              {
+                "name": "随机浮点数",
+                "value": "randFloat"
+              },
+              {
+                "name": "求和",
+                "value": "sum"
+              },
+              {
+                "name": "平均值",
+                "value": "average"
+              },
+              {
+                "name": "乘积",
+                "value": "product"
+              }
+            ]
           }
         ]
       },

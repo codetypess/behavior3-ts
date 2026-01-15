@@ -1,5 +1,6 @@
-import type { Context } from "../../context";
+import { type Context } from "../../context";
 import { Node, NodeDef, Status } from "../../node";
+import { registerNode } from "../../register-node";
 import { Stack } from "../../stack";
 import { Tree } from "../../tree";
 
@@ -17,6 +18,7 @@ const EMPTY_STACK: Stack = new Stack(null!);
  * Each child's execution state is tracked independently, allowing true parallel behavior.
  * The node only succeeds when all children have completed successfully.
  */
+@registerNode
 export class Parallel extends Node {
     override onTick(tree: Tree<Context, unknown>, status: Status): Status {
         const last: Stack[] = tree.resume(this) ?? [];
