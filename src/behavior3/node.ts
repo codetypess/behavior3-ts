@@ -1,5 +1,5 @@
 import { Blackboard } from "./blackboard";
-import type { Context, DeepReadonly, NodeContructor, ObjectType } from "./context";
+import type { Context, NodeContructor, ObjectType } from "./context";
 import type { Tree, TreeData } from "./tree";
 
 /**
@@ -58,7 +58,9 @@ export interface NodeDef<GroupType extends string = string> {
         oneof?: string;
         default?: unknown;
         options?: Array<{
+            /** Match the args of the node */
             match?: { [arg: string]: Array<unknown> };
+            /** The source of the options */
             source: Array<{ name: string; value: unknown }>;
         }>;
     }[];
@@ -128,7 +130,7 @@ export abstract class Node {
 
     private _parent: Node | null = null;
     private _children: Node[] = [];
-    private _cfg: DeepReadonly<NodeData>;
+    private _cfg: NodeData;
     private _yield?: string;
     private _stringifiedArgs: Record<string, string> | undefined;
 

@@ -1,7 +1,5 @@
-// deno-lint-ignore-file no-explicit-any ban-types
 import { Evaluator, ExpressionEvaluator } from "./evaluator";
 import { Node, NodeData, NodeDef } from "./node";
-import "./nodes";
 import { filterNodeDescriptors } from "./register-node";
 import { TreeData } from "./tree";
 
@@ -16,10 +14,6 @@ export type ObjectType = { [k: string]: unknown };
 export type EventTarget = object | string | number;
 export type TagType = unknown;
 
-export type DeepReadonly<T> = T extends object
-    ? { readonly [P in keyof T]: DeepReadonly<T[P]> }
-    : T;
-
 type TimerEntry = {
     callback: Callback;
     tag: TagType;
@@ -27,7 +21,7 @@ type TimerEntry = {
 };
 
 export abstract class Context {
-    readonly nodeDefs: Record<string, DeepReadonly<NodeDef>> = {};
+    readonly nodeDefs: Record<string, NodeDef> = {};
     readonly nodeCtors: Record<string, NodeContructor<Node>> = {};
     readonly trees: Record<string, Node> = {};
 
