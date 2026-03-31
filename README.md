@@ -6,11 +6,11 @@
 
 以下是最主要的使用用途：
 
--   游戏中的人物的 AI
--   游戏中的技能和 BUFF
--   游戏中 NPC 的工作流程
--   游戏中的新手引导
--   游戏中的业务工作流或决策行为
+- 游戏中的人物的 AI
+- 游戏中的技能和 BUFF
+- 游戏中 NPC 的工作流程
+- 游戏中的新手引导
+- 游戏中的业务工作流或决策行为
 
 ## 节点定义
 
@@ -130,75 +130,73 @@ export class FindEnemy extends Node {
 
 我们使用栈来实现行为树的调度，当行为树节点运行的时候，会把节点压入栈，只有当节点返回 `success` 或 `failure` 时，才会出栈，继续执行下一个节点，否则会一直执行栈顶的节点，直到返回 `success` 或 `failure` 为止。
 
--   success 节点执行成功
--   failure 节点执行失败
--   running 节点运行中
-
-![](images/behavior3-editor-running.png)
+- success 节点执行成功
+- failure 节点执行失败
+- running 节点运行中
 
 ## 内置节点
 
 ### 行为节点
 
--   Calculate 简单的数值公式计算
--   Concate 拼接两个数组
--   GetField 获取对象的字段值
--   Index 获取数组的元素
--   Let 定义变量
--   Log 打印日志
--   Push 向数组中添加元素
--   RandomIndex 随机返回数组的一个元素及其索引
--   Random 返回一个随机数值
--   SetField 设置对象的字段值
--   Wait 等待一段时间
+- Calculate 简单的数值公式计算
+- Concate 拼接两个数组
+- GetField 获取对象的字段值
+- Index 获取数组的元素
+- Let 定义变量
+- Log 打印日志
+- Push 向数组中添加元素
+- RandomIndex 随机返回数组的一个元素及其索引
+- Random 返回一个随机数值
+- SetField 设置对象的字段值
+- Wait 等待一段时间
 
 ### 复合节点
 
--   Race 竞争执行，并行执行所有子节点，优先返回第一个成功的子节点
--   Parallel 并行执行, 执行所有子节点
--   Sequence 顺序执行，执行所有子节点直到返回 false
--   Selector 选择执行，执行所有子节点直到返回 true
--   IfElse 条件执行，根据条件执行不同的子节点，并返回子节点执行状态
--   Switch 分支执行，根据 `case` 条件执行不同的分支子节点，并返回分支子节点执行状态
+- Race 竞争执行，并行执行所有子节点，优先返回第一个成功的子节点
+- Parallel 并行执行, 执行所有子节点
+- Sequence 顺序执行，执行所有子节点直到返回 false
+- Selector 选择执行，执行所有子节点直到返回 true
+- IfElse 条件执行，根据条件执行不同的子节点，并返回子节点执行状态
+- Switch 分支执行，根据 `case` 条件执行不同的分支子节点，并返回分支子节点执行状态
 
 ### 条件节点
 
--   Check 检查表达式
--   IsNull 检查值是否为空
--   NotNull 检查值是否不为空
--   Includes 判断元素是否在数组中
+- Check 检查表达式
+- IsNull 检查值是否为空
+- NotNull 检查值是否不为空
+- Includes 判断元素是否在数组中
 
 ### 装饰节点
 
--   AlwaysSuccess 永远返回成功
--   AlwaysFailure 永远返回失败
--   Assert 断言，如果断言失败，抛出异常，一般用于调试测试
--   Delay 延时执行子节点
--   Filter 返回满足条件的元素
--   Foreach 遍历数组
--   Invert 反转子节点执行状态
--   Listen 监听事件并执行子节点
--   Once 只执行一次
--   Repeat 重复执行子节点
--   RetryUntilFailure 一直尝试执行子节点直到返回失败
--   RetryUntilSuccess 一直尝试执行子节点直到返回成功
--   Timeout 限定时间内执行子节点
+- AlwaysSuccess 永远返回成功
+- AlwaysFailure 永远返回失败
+- Assert 断言，如果断言失败，抛出异常，一般用于调试测试
+- Delay 延时执行子节点
+- Filter 返回满足条件的元素
+- Foreach 遍历数组
+- Invert 反转子节点执行状态
+- Listen 监听事件并执行子节点
+- Once 只执行一次
+- Repeat 重复执行子节点
+- RetryUntilFailure 一直尝试执行子节点直到返回失败
+- RetryUntilSuccess 一直尝试执行子节点直到返回成功
+- Timeout 限定时间内执行子节点
 
 ## 编辑器
 
-基于 antv G6 图形库开发了一个通用的行为树编辑器，感兴趣的同学可以关注一下 [behavior3editor](https://github.com/zhandouxiaojiji/behavior3editor)
-![](images/behavior3-editor.png)
+基于 antv G6 图形库开发了一个通用的 vscode 行为树编辑插件 [Behavior Tree Editor](https://marketplace.visualstudio.com/items?itemName=codetypes.vscode-behavior3)
+![img](images/behavior3-editor.png)
 
 ## 运行测试用例
 
--   导出节点定义
+- 导出节点定义
 
     ```bash
     // fs.writeFileSync("example/node-config.b3-setting", context.exportNodeDefs());
     npm run start
     ```
 
--   运行测试
+- 运行测试
 
     ```bash
     npm run start

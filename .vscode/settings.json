@@ -1,5 +1,6 @@
 {
   "editor.formatOnSave": true,
+  "behavior3.language": "zh",
   "editor.codeActionsOnSave": {
     "source.organizeImports": "explicit"
   }
