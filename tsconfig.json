@@ -3,8 +3,8 @@
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "module": "ESNext",
-    "moduleResolution": "Node",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
     "noImplicitAny": true,
     "noImplicitOverride": true,
     "noImplicitReturns": true,
@@ -13,7 +13,8 @@
     "sourceMap": true,
     "strict": true,
     "strictNullChecks": true,
-    "target": "ESNext"
+    "target": "ESNext",
+    "types": ["node"]
   },
   "include": ["src/", "test/"]
 }

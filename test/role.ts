@@ -1,6 +1,5 @@
 import * as fs from "node:fs";
 import { Context, Node, NodeDef, TreeData } from "../src/behavior3";
-import { DeepReadonly } from "../src/behavior3/context";
 import { Attack } from "./nodes/attack";
 import { FindEnemy } from "./nodes/find-enemy";
 import { GetHp } from "./nodes/get-hp";
@@ -63,7 +62,7 @@ export class RoleContext extends Context {
     }
 
     exportNodeDefs() {
-        const defs: DeepReadonly<NodeDef>[] = [];
+        const defs: NodeDef[] = [];
         Object.values(this.nodeDefs).forEach((descriptor) => {
             defs.push(descriptor);
             if (descriptor.name === "Listen") {
@@ -77,7 +76,7 @@ export class RoleContext extends Context {
                             name: "hello",
                             value: "hello",
                         },
-                    ]
+                    ],
                 );
             }
         });
