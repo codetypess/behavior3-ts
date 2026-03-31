@@ -1,76 +1,61 @@
 {
+  "$override": {
+    "RzFmZu47LT": {
+      "args": {
+        "time": 6
+      }
+    }
+  },
+  "custom": {},
+  "desc": "怪物测试AI",
+  "export": true,
+  "group": [],
+  "import": [],
   "name": "monster",
+  "prefix": "",
   "root": {
-    "id": 1,
-    "name": "Sequence",
-    "desc": "怪物测试AI",
+    "$id": "OVmQZNOKKk",
     "args": {},
     "children": [
       {
-        "id": 2,
-        "name": "Selector",
+        "$id": "JjBtj4K5io",
         "args": {},
         "children": [
           {
-            "id": 3,
+            "$id": "rBrMqggazr",
+            "id": "3",
             "name": "Sequence",
-            "args": {},
-            "children": [
-              {
-                "id": 4,
-                "name": "GetHp",
-                "args": {},
-                "output": [
-                  "hp"
-                ]
-              },
-              {
-                "id": 5,
-                "name": "Check",
-                "args": {
-                  "value": "hp > 50"
-                }
-              },
-              {
-                "id": 6,
-                "name": "Log",
-                "desc": "攻击",
-                "args": {
-                  "message": "Attack!",
-                  "level": "info"
-                }
-              },
-              {
-                "id": 7,
-                "name": "Wait",
-                "args": {
-                  "time": 5
-                }
-              }
-            ]
+            "path": "subtree.json"
           },
           {
-            "id": 8,
-            "name": "Log",
-            "desc": "逃跑",
+            "$id": "UdPNAeypJ3",
             "args": {
-              "message": "Run!",
-              "level": "info"
-            }
+              "level": "info",
+              "message": "Run!"
+            },
+            "desc": "逃跑",
+            "id": "8",
+            "name": "Log"
           }
-        ]
+        ],
+        "id": "2",
+        "name": "Selector"
       },
       {
-        "id": 9,
-        "name": "Log",
-        "desc": "test",
+        "$id": "U1U0u5QGbo",
         "args": {
-          "message": "if true",
-          "level": "info"
-        }
+          "level": "info",
+          "message": "if true"
+        },
+        "desc": "test",
+        "id": "9",
+        "name": "Log"
       }
-    ]
+    ],
+    "desc": "怪物测试AI",
+    "id": "1",
+    "name": "Sequence"
   },
-  "export": true,
-  "desc": "怪物测试AI"
+  "vars": [],
+  "version": "2.0.0"
 }

@@ -1,0 +1,44 @@
+{
+  "name": "subtree",
+  "root": {
+    "$id": "rBrMqggazr",
+    "children": [
+      {
+        "$id": "zEF0EkoPow",
+        "id": "4",
+        "name": "GetHp",
+        "output": [
+          "hp"
+        ]
+      },
+      {
+        "$id": "ej6CYY3N3R",
+        "args": {
+          "value": "hp > 50"
+        },
+        "id": "5",
+        "name": "Check"
+      },
+      {
+        "$id": "wppz6guC3S",
+        "args": {
+          "level": "info",
+          "message": "Attack!"
+        },
+        "desc": "攻击",
+        "id": "6",
+        "name": "Log"
+      },
+      {
+        "$id": "RzFmZu47LT",
+        "args": {
+          "time": 5
+        },
+        "id": "7",
+        "name": "Wait"
+      }
+    ],
+    "id": "3",
+    "name": "Sequence"
+  }
+}
