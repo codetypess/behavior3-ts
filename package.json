@@ -1,8 +1,44 @@
 {
+  "name": "behavior3",
+  "version": "1.0.1",
+  "description": "Behavior Tree framework for TypeScript/JavaScript — simplifies game AI, skills, and buff logic.",
+  "author": "codetypess",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/codetypess/behavior3-ts.git"
+  },
+  "bugs": {
+    "url": "https://github.com/codetypess/behavior3-ts/issues"
+  },
+  "homepage": "https://github.com/codetypess/behavior3-ts#readme",
+  "keywords": [
+    "behavior-tree",
+    "ai",
+    "game",
+    "typescript"
+  ],
+  "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "types": "./dist/types/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "check": "tsc --noEmit",
     "start": "tsx test/main.ts",
-    "build": "rollup -c"
+    "build": "rollup -c && tsc -p tsconfig.build.json",
+    "prepublishOnly": "npm run check && npm run build"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.1",

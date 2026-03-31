@@ -1,12 +1,31 @@
 import commonjs from "@rollup/plugin-commonjs";
 import typescript from "@rollup/plugin-typescript";
 
-export default {
-    input: "src/behavior3/index.ts",
-    output: {
-        file: "dist/bundle.js",
-        format: "esm", // esm, cjs
-        sourcemap: true,
+const tsPlugin = () =>
+    typescript({
+        declaration: false,
+        declarationMap: false,
+        moduleResolution: "bundler",
+        module: "ESNext",
+    });
+
+export default [
+    {
+        input: "src/behavior3/index.ts",
+        output: {
+            file: "dist/index.mjs",
+            format: "esm",
+            sourcemap: true,
+        },
+        plugins: [tsPlugin(), commonjs()],
     },
-    plugins: [typescript(), commonjs()],
-};
+    {
+        input: "src/behavior3/index.ts",
+        output: {
+            file: "dist/index.cjs",
+            format: "cjs",
+            sourcemap: true,
+        },
+        plugins: [tsPlugin(), commonjs()],
+    },
+];

@@ -1,5 +1,9 @@
 # 行为树框架 for typescript/javascript
 
+## 安装
+
+npm i behavior3
+
 ## 用途
 
 在游戏中使用行为树，可以大大的降低 AI、技能、BUFF 实现的复杂度，同时提高配置的灵活度，而且更加容易找到游戏行为中的问题。
@@ -184,7 +188,7 @@ export class FindEnemy extends Node {
 
 ## 编辑器
 
-基于 antv G6 图形库开发了一个通用的 vscode 行为树编辑插件 [Behavior Tree Editor](https://marketplace.visualstudio.com/items?itemName=codetypes.vscode-behavior3)
+基于 antv G6 图形库开发了一个通用的 vscode 行为树编辑插件 [Behavior3 Editor](https://marketplace.visualstudio.com/items?itemName=codetypess.vscode-behavior3)
 ![img](images/behavior3-editor.png)
 
 ## 运行测试用例
