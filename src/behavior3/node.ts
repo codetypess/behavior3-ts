@@ -56,6 +56,8 @@ export interface NodeDef<GroupType extends string = string> {
         desc: string;
         /** Input `value`, only one is allowed between `value` and this arg.*/
         oneof?: string;
+        /** The name of the checker function in context, which is used to check the validity of the arg. */
+        checker?: string;
         default?: unknown;
         options?: Array<{
             /** Match the args of the node */
@@ -236,8 +238,8 @@ export abstract class Node {
             console.info(
                 `[DEBUG] behavior3 -> ${indent}${this.name}: tree:${this.cfg.tree.name} tree_id:${tree.id}, ` +
                     `node:${this.id}, status:${status}, values:{${varStr}} args:${JSON.stringify(
-                        cfg.args
-                    )}`
+                        cfg.args,
+                    )}`,
             );
         }
 
