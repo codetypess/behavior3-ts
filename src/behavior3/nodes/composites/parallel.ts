@@ -1,10 +1,7 @@
 import { type Context } from "../../context";
 import { Node, NodeDef, Status } from "../../node";
 import { registerNode } from "../../register-node";
-import { Stack, StackSlice } from "../../stack";
 import { Tree } from "../../tree";
-
-const EMPTY_STACK: Stack = new Stack(null!);
 
 /**
  * Parallel node executes all child nodes simultaneously.
@@ -20,46 +17,25 @@ const EMPTY_STACK: Stack = new Stack(null!);
  */
 @registerNode
 export class Parallel extends Node {
-    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
-        const last: StackSlice[] = tree.resume(this) ?? [];
-        const stack = tree.stack;
-        const level = stack.length;
+    override onTick(tree: Tree<Context, unknown>): Status {
         const children = this.children;
+        const done = tree.getState<boolean[]>(this) ?? [];
         let count = 0;
 
         for (let i = 0; i < children.length; i++) {
-            let childStack = last[i];
-            if (childStack === undefined) {
-                status = children[i].tick(tree);
-            } else if (childStack.length > 0) {
-                childStack.move(stack, 0);
-                while (stack.length > level) {
-                    status = stack.top()!.tick(tree);
-                    if (status === "running") {
-                        break;
-                    }
-                }
-            } else {
-                status = "success";
+            if (!done[i] && children[i].tick(tree) !== "running") {
+                done[i] = true;
             }
-
-            if (status === "running") {
-                if (childStack === undefined) {
-                    childStack = new StackSlice();
-                }
-                stack.move(childStack, level);
-            } else {
+            if (done[i]) {
                 count++;
-                childStack = EMPTY_STACK;
             }
-
-            last[i] = childStack;
         }
 
         if (count === children.length) {
             return "success";
         } else {
-            return tree.yield(this, last);
+            tree.setState(this, done);
+            return "running";
         }
     }
 

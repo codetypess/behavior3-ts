@@ -7,11 +7,10 @@ import { Tree } from "../../tree";
 export class Includes extends Node {
     declare input: [unknown, unknown[]];
 
-    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
+    override onTick(tree: Tree<Context, unknown>): Status {
         const [arr, element] = this.input;
         if (!Array.isArray(arr)) {
-            this.error(`invalid array: ${arr}`);
-            return "error";
+            this.throw(`invalid array: ${arr}`);
         } else if (element === undefined || element === null) {
             return "failure";
         }

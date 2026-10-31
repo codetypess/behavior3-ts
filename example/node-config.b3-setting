@@ -87,7 +87,7 @@
       "|running"
     ],
     "desc": "分支选择",
-    "doc": "+ 必须有两个子节点\n+ 第一个子节点为判断条件\n+ 第二个子节点为判断为 `success` 时执行的节点\n+ 此节点不会真正意义的执行，而是交由 `Switch` 节点来执行\n"
+    "doc": "+ 必须有两个子节点\n+ 第一个子节点为判断条件\n+ 第二个子节点为判断为 `success` 时执行的节点\n+ 此节点只用来把判断条件和执行节点组织在一起，不会真正执行，而是交由 `Switch` 节点来执行\n+ 此节点上配置的条件（conditions）不会生效\n"
   },
   {
     "name": "Check",
@@ -149,7 +149,7 @@
         "desc": "暂存环境变量"
       }
     ],
-    "doc": "+ 当延时触发时，执行第一个子节点，多个仅执行第一个\n+ 如果子节点返回 `running`，会中断执行并清理执行栈"
+    "doc": "+ 当延时触发时，执行第一个子节点，多个仅执行第一个\n+ 如果子节点返回 `running`，会被中止\n+ 定时器属于整棵树，所在分支被中止或打断后仍会触发，只有清理行为树时才会移除"
   },
   {
     "name": "Filter",
@@ -316,7 +316,7 @@
       "|running"
     ],
     "desc": "反转子节点运行结果",
-    "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 当子节点返回 `success` 时返回 `failure`\n+ 当子节点返回 `failure` 时返回 `success`\n+ 当子节点返回 `error` 时返回 `error`\n"
+    "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 当子节点返回 `success` 时返回 `failure`\n+ 当子节点返回 `failure` 时返回 `success`\n"
   },
   {
     "name": "IsNull",
@@ -469,7 +469,7 @@
         ]
       }
     ],
-    "doc": "+ 当事件触发时，执行第一个子节点，多个仅执行第一个\n+ 如果子节点返回 `running`，会中断执行并清理执行栈"
+    "doc": "+ 当事件触发时，执行第一个子节点，多个仅执行第一个\n+ 如果子节点返回 `running`，会被中止\n+ 每次执行都会注册一次侦听，通常放在 `Once` 下使用\n+ 侦听属于整棵树，所在分支被中止或打断后仍然有效，只有清理行为树时才会移除"
   },
   {
     "name": "Log",
@@ -738,7 +738,7 @@
     ],
     "children": -1,
     "desc": "竞争执行",
-    "doc": "+ 并行执行所有子节点\n+ 当有子节点返回 `success` 时，立即返回 `success` 状态，并中断其他子节点\n+ 如果所有子节点返回 `failure`或 `error` 则返回 `failure`"
+    "doc": "+ 并行执行所有子节点\n+ 当有子节点返回 `success` 时，立即返回 `success` 状态，并中断其他子节点\n+ 如果所有子节点返回 `failure` 则返回 `failure`"
   },
   {
     "name": "RandomIndex",
@@ -829,13 +829,14 @@
     "name": "Selector",
     "type": "Composite",
     "children": -1,
+    "preemptive": true,
     "desc": "选择执行",
     "status": [
       "|success",
       "&failure",
       "|running"
     ],
-    "doc": "+ 一直往下执行，直到有子节点返回 `success` 则返回 `success`\n+ 若全部节点返回 `failure`或 `error` 则返回 `failure`"
+    "doc": "+ 一直往下执行，直到有子节点返回 `success` 则返回 `success`\n+ 若全部节点返回 `failure` 则返回 `failure`\n+ 子节点的条件配置了 `lower` 或 `both` 时，右侧的子节点运行中，每次执行都会检查它的条件，满足则打断右侧的子节点，转而执行它"
   },
   {
     "name": "Sequence",
@@ -956,17 +957,5 @@
         "desc": "事件名称"
       }
     ]
-  },
-  {
-    "name": "Watchdog",
-    "type": "Composite",
-    "children": 3,
-    "status": [
-      "|success",
-      "|failure",
-      "|running"
-    ],
-    "desc": "测试执行",
-    "doc": "+ 必须有3个子节点\n+ 第一个子节点为条件节点，返回 `success` 或 `failure` 状态\n+ 第二个子节点为条件为 `success` 时执行的节点\n+ 第三个子节点为条件为 `failure` 时执行的节点，不管子节点返回什么状态，都直接返回 `failure`\n+ 当第二个子节点返回 `running` 时，由本节点维护其运行状态\n+ 每一次 tick 都会先执行测试节点，只有当测试节点返回 `success`，才执行第二个子节点\n"
   }
 ]

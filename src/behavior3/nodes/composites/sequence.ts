@@ -16,27 +16,17 @@ import { Tree } from "../../tree";
  */
 @registerNode
 export class Sequence extends Node {
-    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
-        const last: number | undefined = tree.resume(this);
+    override onTick(tree: Tree<Context, unknown>): Status {
         const children = this.children;
-        let i = 0;
-
-        if (typeof last === "number") {
-            if (status === "success") {
-                i = last + 1;
-            } else if (status === "failure" || status === "error") {
-                return status;
-            } else {
-                this.throw(`unexpected status error: ${status}`);
-            }
-        }
+        let i = tree.getState<number>(this) ?? 0;
 
         for (; i < children.length; i++) {
-            status = children[i].tick(tree);
-            if (status === "failure" || status === "error") {
-                return status;
+            const status = children[i].tick(tree);
+            if (status === "failure") {
+                return "failure";
             } else if (status === "running") {
-                return tree.yield(this, i);
+                tree.setState(this, i);
+                return "running";
             }
         }
 

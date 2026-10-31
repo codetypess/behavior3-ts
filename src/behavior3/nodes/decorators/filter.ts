@@ -7,45 +7,28 @@ import { Tree } from "../../tree";
 export class Filter extends Node {
     declare input: [unknown[]];
 
-    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
+    override onTick(tree: Tree<Context, unknown>): Status {
         const [arr] = this.input;
         if (!(arr instanceof Array)) {
-            return "error";
+            this.throw(`invalid array: ${arr}`);
         }
 
         if (arr.length === 0) {
             return "failure";
         }
 
-        let last: [number, unknown[]] | undefined = tree.resume(this);
-        let i;
-        let newArr: unknown[];
-        if (last instanceof Array) {
-            [i, newArr] = last;
-            if (status === "running") {
-                this.throw(`unexpected status error`);
-            } else if (status === "success") {
-                newArr.push(arr[i]);
-            }
-            i++;
-        } else {
-            i = 0;
-            newArr = [];
-        }
+        const last = tree.getState<[number, unknown[]]>(this);
+        let i = last ? last[0] : 0;
+        const newArr = last ? last[1] : [];
 
         const filter = this.children[0];
 
-        for (i = 0; i < arr.length; i++) {
+        for (; i < arr.length; i++) {
             tree.blackboard.set(this.cfg.output[0], arr[i]);
-            status = filter.tick(tree);
+            const status = filter.tick(tree);
             if (status === "running") {
-                if (last instanceof Array) {
-                    last[0] = i;
-                    last[1] = newArr;
-                } else {
-                    last = [i, newArr];
-                }
-                return tree.yield(this, last);
+                tree.setState(this, [i, newArr]);
+                return "running";
             } else if (status === "success") {
                 newArr.push(arr[i]);
             }

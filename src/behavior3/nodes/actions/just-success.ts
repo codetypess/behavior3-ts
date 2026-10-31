@@ -6,7 +6,7 @@ import { Tree } from "../../tree";
 // 只返回成功，用来满足一些特殊节点的结构要求
 @registerNode
 export class JustSuccess extends Node {
-    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
+    override onTick(tree: Tree<Context, unknown>): Status {
         return "success";
     }
 

@@ -14,24 +14,15 @@ export class Once extends Node {
         this._onceKey = Blackboard.makePrivateVar(this, "ONCE");
     }
 
-    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
+    override onTick(tree: Tree<Context, unknown>): Status {
         const onceKey = this._onceKey;
         if (tree.blackboard.get(onceKey) === true) {
             return "failure";
         }
 
-        const isYield: boolean | undefined = tree.resume(this);
-        if (typeof isYield === "boolean") {
-            if (status === "running") {
-                this.throw(`unexpected status error`);
-            }
-            tree.blackboard.set(onceKey, true);
-            return "success";
-        }
-
-        status = this.children[0].tick(tree);
+        const status = this.children[0].tick(tree);
         if (status === "running") {
-            return tree.yield(this);
+            return "running";
         }
         tree.blackboard.set(onceKey, true);
         return "success";

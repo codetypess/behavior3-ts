@@ -1,6 +1,6 @@
 {
   "name": "behavior3",
-  "version": "1.3.0",
+  "version": "2.0.0",
   "description": "Behavior Tree framework for TypeScript/JavaScript — simplifies game AI, skills, and buff logic.",
   "author": "codetypess",
   "license": "MIT",
@@ -37,6 +37,8 @@
   "scripts": {
     "check": "tsc --noEmit",
     "start": "tsx test/main.ts",
+    "test": "node --import tsx --test \"test/unit/**/*.test.ts\"",
+    "bench": "tsx test/bench.ts",
     "build": "rollup -c && tsc -p tsconfig.build.json",
     "prepublishOnly": "npm run check && npm run build"
   },

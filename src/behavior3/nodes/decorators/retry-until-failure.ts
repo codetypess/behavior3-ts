@@ -7,31 +7,37 @@ import { Tree } from "../../tree";
 export class RetryUntilFailure extends Node {
     declare args: { readonly count?: number };
 
-    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
+    override onTick(tree: Tree<Context, unknown>): Status {
+        const child = this.children[0];
         const maxTryTimes = this._checkOneof(0, this.args.count, Number.MAX_SAFE_INTEGER);
-        let count: number | undefined = tree.resume(this);
+        let count = tree.getState<number>(this);
+        const resumed = count !== undefined && tree.isRunning(child);
 
-        if (typeof count === "number") {
-            if (status === "error") {
-                return "error";
-            } else if (status === "failure") {
-                return "success";
-            } else if (count >= maxTryTimes) {
-                return "failure";
-            } else {
-                count++;
-            }
-        } else {
+        if (count === undefined) {
             count = 1;
+        } else if (!resumed) {
+            // the last try succeeded in the previous tick, try again
+            if (count >= maxTryTimes) {
+                return "failure";
+            }
+            count++;
         }
 
-        status = this.children[0].tick(tree);
-        if (status === "error") {
-            return "error";
-        } else if (status === "failure") {
+        let status = child.tick(tree);
+        if (resumed && status === "success") {
+            // the running try has just finished, try again immediately
+            if (count >= maxTryTimes) {
+                return "failure";
+            }
+            count++;
+            status = child.tick(tree);
+        }
+
+        if (status === "failure") {
             return "success";
         } else {
-            return tree.yield(this, count);
+            tree.setState(this, count);
+            return "running";
         }
     }
 

@@ -29,7 +29,7 @@ export class MoveToTarget extends Node {
             owner.y = owner.y + MoveToTarget.SPEED * (ty > x ? 1 : -1);
         }
 
-        return tree.yield(this);
+        return "running";
     }
 
     static override get descriptor(): Readonly<NodeDef> {

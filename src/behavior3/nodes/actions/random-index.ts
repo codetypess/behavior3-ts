@@ -7,10 +7,10 @@ import { Tree } from "../../tree";
 export class RandomIndex extends Node {
     declare input: [unknown[]];
 
-    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
+    override onTick(tree: Tree<Context, unknown>): Status {
         const [arr] = this.input;
         if (!(arr instanceof Array)) {
-            return "error";
+            this.throw(`invalid array: ${arr}`);
         }
 
         if (arr.length === 0) {

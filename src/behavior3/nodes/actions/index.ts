@@ -8,12 +8,11 @@ export class Index extends Node {
     declare input: [unknown[], number | undefined];
     declare args: { readonly index: number };
 
-    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
+    override onTick(tree: Tree<Context, unknown>): Status {
         const [arr] = this.input;
 
         if (!Array.isArray(arr)) {
-            this.error(`invalid array: ${arr}`);
-            return "error";
+            this.throw(`invalid array: ${arr}`);
         }
 
         const index = this._checkOneof(1, this.args.index);
@@ -22,8 +21,7 @@ export class Index extends Node {
             this.output.push(value);
             return "success";
         } else if (typeof index !== "number" || isNaN(index)) {
-            this.error(`invalid index: ${index}`);
-            return "error";
+            this.throw(`invalid index: ${index}`);
         }
 
         return "failure";

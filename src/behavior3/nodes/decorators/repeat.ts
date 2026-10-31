@@ -7,27 +7,17 @@ import { Tree } from "../../tree";
 export class Repeat extends Node {
     declare args: { readonly count: number };
 
-    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
+    override onTick(tree: Tree<Context, unknown>): Status {
         const count = this._checkOneof(0, this.args.count, Number.MAX_SAFE_INTEGER);
-        let i: number | undefined = tree.resume(this);
-
-        if (i !== undefined) {
-            if (status === "running") {
-                this.throw(`unexpected status error`);
-            } else if (status === "failure" || status === "error") {
-                return status;
-            }
-            i++;
-        } else {
-            i = 0;
-        }
+        let i = tree.getState<number>(this) ?? 0;
 
         for (; i < count; i++) {
-            status = this.children[0].tick(tree);
+            const status = this.children[0].tick(tree);
             if (status === "running") {
-                return tree.yield(this, i);
-            } else if (status === "failure" || status === "error") {
-                return status;
+                tree.setState(this, i);
+                return "running";
+            } else if (status === "failure") {
+                return "failure";
             }
         }
         return "success";

@@ -11,11 +11,10 @@ export class SetField extends Node {
         readonly value?: unknown;
     };
 
-    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
+    override onTick(tree: Tree<Context, unknown>): Status {
         const [obj] = this.input;
         if (typeof obj !== "object" || !obj) {
-            this.error(`invalid object: ${obj}`);
-            return "error";
+            this.throw(`invalid object: ${obj}`);
         }
 
         const args = this.args;
@@ -23,8 +22,7 @@ export class SetField extends Node {
         const value = this._checkOneof(2, args.value, null);
 
         if (typeof field !== "string" && typeof field !== "number") {
-            this.error(`invalid field: ${field}`);
-            return "error";
+            this.throw(`invalid field: ${field}`);
         } else if (value === null || value === undefined) {
             delete obj[field];
             return "success";

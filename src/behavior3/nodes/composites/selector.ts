@@ -16,27 +16,30 @@ import { Tree } from "../../tree";
  */
 @registerNode
 export class Selector extends Node {
-    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
-        const last: number | undefined = tree.resume(this);
+    override onTick(tree: Tree<Context, unknown>): Status {
         const children = this.children;
-        let i = 0;
+        let i = tree.getState<number>(this);
+        let conditionsChecked = false;
 
-        if (typeof last === "number") {
-            if (status === "failure" || status === "error") {
-                i = last + 1;
-            } else if (status === "success") {
-                return "success";
-            } else {
-                this.throw(`unexpected status error`);
+        if (i === undefined) {
+            i = 0;
+        } else {
+            const k = this._checkPreempt(tree, i);
+            if (k !== i) {
+                children[i].abort(tree);
+                i = k;
+                conditionsChecked = true;
             }
         }
 
         for (; i < children.length; i++) {
-            status = children[i].tick(tree);
+            const status = children[i].tick(tree, conditionsChecked);
+            conditionsChecked = false;
             if (status === "success") {
                 return "success";
             } else if (status === "running") {
-                return tree.yield(this, i);
+                tree.setState(this, i);
+                return "running";
             }
         }
 
@@ -48,11 +51,13 @@ export class Selector extends Node {
             name: "Selector",
             type: "Composite",
             children: -1,
+            preemptive: true,
             desc: "选择执行",
             status: ["|success", "&failure", "|running"],
             doc: `
                 + 一直往下执行，直到有子节点返回 \`success\` 则返回 \`success\`
-                + 若全部节点返回 \`failure\`或 \`error\` 则返回 \`failure\``,
+                + 若全部节点返回 \`failure\` 则返回 \`failure\`
+                + 子节点的条件配置了 \`lower\` 或 \`both\` 时，右侧的子节点运行中，每次执行都会检查它的条件，满足则打断右侧的子节点，转而执行它`,
         };
     }
 }

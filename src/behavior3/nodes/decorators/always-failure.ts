@@ -5,19 +5,9 @@ import { Tree } from "../../tree";
 
 @registerNode
 export class AlwaysFailure extends Node {
-    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
-        const isYield: boolean | undefined = tree.resume(this);
-        if (typeof isYield === "boolean") {
-            if (status === "running") {
-                this.throw(`unexpected status error`);
-            }
-            return "failure";
-        }
-        status = this.children[0].tick(tree);
-        if (status === "running") {
-            return tree.yield(this);
-        }
-        return "failure";
+    override onTick(tree: Tree<Context, unknown>): Status {
+        const status = this.children[0].tick(tree);
+        return status === "running" ? "running" : "failure";
     }
 
     static override get descriptor(): NodeDef {

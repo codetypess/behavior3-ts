@@ -1,8 +1,9 @@
-import { Blackboard } from "../../blackboard";
 import { type Context } from "../../context";
-import { Node, NodeData, NodeDef, Status } from "../../node";
+import { Node, NodeDef, Status } from "../../node";
 import { registerNode } from "../../register-node";
-import { Tree, TreeEvent } from "../../tree";
+import { Tree } from "../../tree";
+
+type WaitState = { triggered: boolean; expired: number };
 
 @registerNode
 export class WaitForEvent extends Node {
@@ -10,53 +11,37 @@ export class WaitForEvent extends Node {
         readonly event: string;
     };
 
-    private _triggerKey!: string;
-    private _expiredKey!: string;
-
-    constructor(context: Context, cfg: NodeData) {
-        super(context, cfg);
-
-        this._triggerKey = Blackboard.makeTempVar(this, "trigger");
-        this._expiredKey = Blackboard.makeTempVar(this, "expired");
-    }
-
     override onTick(tree: Tree<Context, unknown>): Status {
-        const triggerKey = this._triggerKey;
-        const triggered = tree.blackboard.get(triggerKey);
-        const expiredKey = this._expiredKey;
-        const expired = tree.blackboard.get<number>(expiredKey) ?? tree.context.time;
-        if (triggered === true) {
-            tree.blackboard.set(triggerKey, undefined);
-            tree.blackboard.set(expiredKey, undefined);
+        const time = tree.context.time;
+        const state = tree.getState<WaitState>(this);
+
+        if (state === undefined) {
+            const newState: WaitState = { triggered: false, expired: time + 5 };
+            const event = this.args.event;
+            tree.context.on(
+                event,
+                () => {
+                    newState.triggered = true;
+                    tree.context.off(event, tree);
+                },
+                tree
+            );
+            tree.setState(this, newState);
+        } else if (state.triggered) {
             return "success";
-        } else if (triggered === undefined) {
-            tree.blackboard.set(triggerKey, false);
-            tree.blackboard.set(expiredKey, tree.context.time + 5);
-            tree.context.on(
-                this.args.event,
-                () => {
-                    tree.blackboard.set(triggerKey, true);
-                    tree.context.off(this.args.event, tree);
-                    tree.context.off(TreeEvent.INTERRUPTED, tree);
-                },
-                tree
-            );
-            tree.context.on(
-                TreeEvent.INTERRUPTED,
-                () => {
-                    tree.blackboard.set(triggerKey, undefined);
-                    tree.blackboard.set(expiredKey, undefined);
-                    tree.context.off(this.args.event, tree);
-                    tree.context.off(TreeEvent.INTERRUPTED, tree);
-                },
-                tree
-            );
-        } else if (tree.context.time >= expired) {
-            tree.blackboard.set(expiredKey, tree.context.time + 5);
+        } else if (time >= state.expired) {
+            state.expired = time + 5;
             this.debug(`wait for event: ${this.args.event}`);
         }
 
         return "running";
+    }
+
+    override onAbort(tree: Tree<Context, unknown>): void {
+        const state = tree.getState<WaitState>(this);
+        if (state && !state.triggered) {
+            tree.context.off(this.args.event, tree);
+        }
     }
 
     static override get descriptor(): NodeDef {

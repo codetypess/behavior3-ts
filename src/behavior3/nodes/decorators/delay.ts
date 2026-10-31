@@ -10,7 +10,7 @@ export class Delay extends Node {
         readonly cacheVars?: Readonly<string[]>;
     };
 
-    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
+    override onTick(tree: Tree<Context, unknown>): Status {
         const args = this.args;
         const delay = this._checkOneof(0, args.delay, 0);
         const blackboard = tree.blackboard;
@@ -22,11 +22,7 @@ export class Delay extends Node {
             () => {
                 const cacheOldArgs: unknown[] = keys.map((key) => blackboard.get(key));
                 keys.forEach((key, i) => blackboard.set(key, cacheArgs[i]));
-                const level = tree.stack.length;
-                status = this.children[0].tick(tree);
-                if (status === "running") {
-                    tree.stack.popTo(level);
-                }
+                tree.__tickInCallback(this.children[0]);
                 keys.forEach((key, i) => blackboard.set(key, cacheOldArgs[i]));
             },
             tree
@@ -57,7 +53,8 @@ export class Delay extends Node {
             ],
             doc: `
                 + 当延时触发时，执行第一个子节点，多个仅执行第一个
-                + 如果子节点返回 \`running\`，会中断执行并清理执行栈`,
+                + 如果子节点返回 \`running\`，会被中止
+                + 定时器属于整棵树，所在分支被中止或打断后仍会触发，只有清理行为树时才会移除`,
         };
     }
 }

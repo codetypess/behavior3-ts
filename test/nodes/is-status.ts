@@ -10,10 +10,10 @@ export class IsStatus extends Node {
     override onTick(tree: Tree<RoleContext, Role>): Status {
         const owner = tree.owner;
         const args = this.args;
-        const level = tree.stack.length;
-        const status = this.children[0].tick(tree);
+        const child = this.children[0];
+        const status = child.tick(tree);
         if (status === "running") {
-            tree.stack.popTo(level);
+            child.abort(tree);
         }
         return status === args.status ? "success" : "failure";
     }

@@ -39,13 +39,18 @@ enum TokenType {
     PARENTHESIS = 30,    // ()
 }
 
+/** A value read from an object or an array, not a variable name or a literal. */
+class Value {
+    constructor(readonly value: unknown) {}
+}
+
 type Token = {
     type: TokenType;
     precedence: number;
     value?: string | number | boolean | null;
 };
 
-const OP_REGEX = /^(<<|>>>|>>|>=|<=|==|!=|>|<|&&|&|\|\||[-+*%!?/:.|^()[\]])/;
+const OP_REGEX = /^(<<|>>>|>>|>=|<=|==|!=|>|<|&&|&|\|\||[-+*%!~?/:.|^()[\]])/;
 const NUMBER_REGEX = /^(\d+\.\d+|\d+)/;
 const WORD_REGEX = /^(\w+)/;
 
@@ -83,7 +88,7 @@ export class ExpressionEvaluator {
                 token = expr.match(NUMBER_REGEX);
             } else if (/^\w/.test(char)) {
                 token = expr.match(WORD_REGEX);
-            } else if (/^[-+*%/()<>=?&|:^.![\]]/.test(char)) {
+            } else if (/^[-+*%/()<>=?&|:^.!~[\]]/.test(char)) {
                 token = expr.match(OP_REGEX);
             }
             if (!token) {
@@ -108,9 +113,9 @@ export class ExpressionEvaluator {
             ) {
                 stack.push(token.value);
             } else if (type === TokenType.QUESTION) {
-                const condition = stack.pop()!;
-                const trueValue = stack.pop()!;
                 const falseValue = stack.pop()!;
+                const trueValue = stack.pop()!;
+                const condition = stack.pop()!;
                 stack.push(this._toValue<unknown>(condition, false) ? trueValue : falseValue);
             } else if (type === TokenType.POSITIVE) {
                 stack.push(this._toValue(stack.pop()!, false));
@@ -126,13 +131,13 @@ export class ExpressionEvaluator {
                 switch (type) {
                     case TokenType.DOT: {
                         const obj = this._toObject(a);
-                        stack.push(this._toValue(obj[b as string]));
+                        stack.push(new Value(obj[b as string]));
                         break;
                     }
                     case TokenType.SQUARE_BRACKET: {
                         const obj = this._toObject(a);
-                        const index = this._toValue(b);
-                        stack.push(this._toObject(obj[index]));
+                        const index = this._toValue<string | number>(b, false);
+                        stack.push(new Value(obj[index]));
                         break;
                     }
                     case TokenType.GT:
@@ -172,11 +177,6 @@ export class ExpressionEvaluator {
                     case TokenType.MOD:
                         stack.push(this._toValue(a) % this._toValue(b));
                         break;
-                    case TokenType.COLON: {
-                        stack.push(this._toValue(a));
-                        stack.push(this._toValue(b));
-                        break;
-                    }
                     case TokenType.SHL:
                         stack.push(this._toValue(a) << this._toValue(b));
                         break;
@@ -196,10 +196,14 @@ export class ExpressionEvaluator {
                         stack.push(this._toValue(a) ^ this._toValue(b));
                         break;
                     case TokenType.AND:
-                        stack.push(this._toValue(a) && this._toValue(b));
+                        stack.push(
+                            this._toValue<unknown>(a, false) && this._toValue<unknown>(b, false)
+                        );
                         break;
                     case TokenType.OR:
-                        stack.push(this._toValue(a) || this._toValue(b));
+                        stack.push(
+                            this._toValue<unknown>(a, false) || this._toValue<unknown>(b, false)
+                        );
                         break;
                     default:
                         throw new Error(`unsupport operator: ${token.value}`);
@@ -207,13 +211,19 @@ export class ExpressionEvaluator {
             }
         }
 
+        const result = this._toValue<unknown>(stack.pop(), false);
         this._args = null;
-
-        return stack.pop();
+        return result;
     }
 
     private _toObject(token: unknown) {
-        if (typeof token === "string") {
+        if (token instanceof Value) {
+            if (typeof token.value === "object" && token.value) {
+                return token.value as ObjectType;
+            } else {
+                throw new Error(`value '${token.value}' is not a object`);
+            }
+        } else if (typeof token === "string") {
             const obj = this._args?.[token];
             if (typeof obj === "object") {
                 return obj as ObjectType;
@@ -227,7 +237,12 @@ export class ExpressionEvaluator {
 
     private _toValue<T = number>(token: unknown, isNumber: boolean = true): T {
         const type = typeof token;
-        if (type === "number" || type === "boolean" || token === null) {
+        if (token instanceof Value) {
+            if (isNumber && typeof token.value !== "number") {
+                throw new Error(`value '${token.value}' is not a number`);
+            }
+            return token.value as T;
+        } else if (type === "number" || type === "boolean" || token === null) {
             return token as T;
         } else if (typeof token === "string") {
             // string literal like 'success' or "ok"
@@ -235,7 +250,7 @@ export class ExpressionEvaluator {
             if (literalMatch) {
                 const literal = literalMatch[2] as unknown as T;
                 if (isNumber) {
-                    throw new Error(`value indexed by '${token}' is not a number'`);
+                    throw new Error(`value indexed by '${token}' is not a number`);
                 }
                 return literal;
             }
@@ -244,7 +259,7 @@ export class ExpressionEvaluator {
             if (value === undefined) {
                 throw new Error(`value indexed by '${token}' is not found`);
             } else if (isNumber && typeof value !== "number") {
-                throw new Error(`value indexed by '${token}' is not a number'`);
+                throw new Error(`value indexed by '${token}' is not a number`);
             }
             return value as T;
         } else {
@@ -339,7 +354,7 @@ export class ExpressionEvaluator {
         if (symbol === "&") {
             return { type: TokenType.BAND, precedence: 8, value: symbol };
         }
-        if (symbol === "&") {
+        if (symbol === "^") {
             return { type: TokenType.BXOR, precedence: 7, value: symbol };
         }
         if (symbol === "|") {
@@ -363,6 +378,22 @@ export class ExpressionEvaluator {
     private _convertToPostfix(infix: string[]) {
         const output: Token[] = [];
         const operators: Token[] = [];
+        const top = () => operators[operators.length - 1] as Token | undefined;
+        const isOpen = (token: Token) => token.value === "(" || token.value === "[";
+        const isUnary = (token: Token) =>
+            token.type === TokenType.NEGATION ||
+            token.type === TokenType.POSITIVE ||
+            token.type === TokenType.NOT ||
+            token.type === TokenType.BNOT;
+        const popUntilOpen = () => {
+            while (operators.length && !isOpen(top()!)) {
+                const op = operators.pop()!;
+                if (op.value === "?") {
+                    throw new Error("missing ':' for '?'");
+                }
+                output.push(op);
+            }
+        };
 
         for (let i = 0; i < infix.length; i++) {
             const token = this._makeToken(infix[i], infix[i - 1]);
@@ -372,32 +403,42 @@ export class ExpressionEvaluator {
                 token.type === TokenType.STRING
             ) {
                 output.push(token);
-            } else if (token.value === "(" || token.value === "[") {
+            } else if (token.value === "(" || isUnary(token)) {
+                // a unary operator comes before its operand, it can't pop any operator
+                operators.push(token);
+            } else if (token.value === "[") {
+                // `a.b[i]`: the dot is applied before the brackets
+                while (top()?.type === TokenType.DOT) {
+                    output.push(operators.pop()!);
+                }
                 operators.push(token);
             } else if (token.value === ")" || token.value === "]") {
-                while (
-                    operators.length &&
-                    operators[operators.length - 1].value !== "(" &&
-                    operators[operators.length - 1].value !== "["
-                ) {
-                    output.push(operators.pop()!);
-                }
-
-                const last = operators[operators.length - 1];
-                if (token.value === ")" && last.value !== "(") {
-                    throw new Error("unmatched parentheses: '('");
-                } else if (token.value === "]" && last.value !== "[") {
-                    throw new Error("unmatched parentheses: '['");
+                popUntilOpen();
+                const open = operators.pop();
+                if (open?.value !== (token.value === ")" ? "(" : "[")) {
+                    throw new Error(`unmatched parentheses: '${token.value}'`);
                 }
                 if (token.value === "]") {
-                    output.push(operators.pop()!);
-                } else {
-                    operators.pop();
+                    output.push(open);
                 }
+            } else if (token.type === TokenType.COLON) {
+                // outputs the true branch, then waits for the false branch
+                while (operators.length && top()!.value !== "?" && !isOpen(top()!)) {
+                    output.push(operators.pop()!);
+                }
+                if (top()?.value !== "?") {
+                    throw new Error("unexpected ':'");
+                }
+                operators.pop();
+                operators.push({ type: TokenType.QUESTION, precedence: 1.9, value: "?:" });
             } else {
+                // the ternary operator is right associative: `a ? b : c ? d : e`
                 while (
                     operators.length &&
-                    token.precedence <= operators[operators.length - 1].precedence
+                    !isOpen(top()!) &&
+                    (token.precedence < top()!.precedence ||
+                        (token.precedence === top()!.precedence &&
+                            token.type !== TokenType.QUESTION))
                 ) {
                     output.push(operators.pop()!);
                 }
@@ -405,8 +446,9 @@ export class ExpressionEvaluator {
             }
         }
 
-        while (operators.length) {
-            output.push(operators.pop()!);
+        popUntilOpen();
+        if (operators.length) {
+            throw new Error(`unmatched parentheses: '${top()!.value}'`);
         }
 
         return output;
@@ -461,8 +503,6 @@ export class ExpressionEvaluator {
                             );
                             return false;
                         }
-                    } else if (type === TokenType.COLON) {
-                        stack.push(b);
                     }
                 }
             }

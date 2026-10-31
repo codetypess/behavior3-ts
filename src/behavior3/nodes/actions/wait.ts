@@ -10,22 +10,19 @@ export class Wait extends Node {
         readonly random?: number;
     };
 
-    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
-        const t: number | undefined = tree.resume(this);
-        if (typeof t === "number") {
-            if (tree.context.time >= t) {
-                return "success";
-            } else {
-                return "running";
-            }
-        } else {
-            const args = this.args;
-            let time = this._checkOneof(0, args.time, 0);
-            if (args.random) {
-                time += (Math.random() - 0.5) * args.random;
-            }
-            return tree.yield(this, tree.context.time + time);
+    override onTick(tree: Tree<Context, unknown>): Status {
+        const expired = tree.getState<number>(this);
+        if (expired !== undefined) {
+            return tree.context.time >= expired ? "success" : "running";
         }
+
+        const args = this.args;
+        let time = this._checkOneof(0, args.time, 0);
+        if (args.random) {
+            time += (Math.random() - 0.5) * args.random;
+        }
+        tree.setState(this, tree.context.time + time);
+        return "running";
     }
 
     static override get descriptor(): NodeDef {

@@ -32,49 +32,40 @@ export class Switch extends Node {
         });
     }
 
-    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
-        let step: number | undefined = tree.resume(this);
+    override onTick(tree: Tree<Context, unknown>): Status {
         const children = this.children;
-
-        if (typeof step === "number") {
-            if (status === "running") {
-                this.throw(`unexpected status error`);
-            }
-            if (step % 2 === 0) {
-                if (status === "success") {
-                    step += 1; // do second node in case
-                } else {
-                    step += 2; // next case
-                }
-            } else {
-                return status;
-            }
-        } else {
-            step = 0;
-        }
+        // step: 2 * i for the condition of the i-th case, 2 * i + 1 for its action
+        let step = tree.getState<number>(this) ?? 0;
 
         for (let i = step >>> 1; i < children.length; i++) {
             const [first, second] = children[i].children;
             if (step % 2 === 0) {
-                status = first.tick(tree);
+                const status = first.tick(tree);
                 if (status === "running") {
-                    return tree.yield(this, step);
-                } else if (status === "success") {
-                    step = i * 2 + 1;
-                } else {
+                    tree.setState(this, step);
+                    return "running";
+                } else if (status !== "success") {
                     step = i * 2 + 2;
+                    continue;
                 }
+                step = i * 2 + 1;
             }
-            if (step % 2 === 1) {
-                status = second.tick(tree);
-                if (status === "running") {
-                    return tree.yield(this, step);
-                }
-                return status;
+            const status = second.tick(tree);
+            if (status === "running") {
+                tree.setState(this, step);
             }
+            return status;
         }
 
         return "failure";
+    }
+
+    override onAbort(tree: Tree<Context, unknown>): void {
+        // the children of Case are ticked by Switch directly
+        const step = tree.getState<number>(this);
+        if (step !== undefined) {
+            this.children[step >>> 1].children[step % 2].abort(tree);
+        }
     }
 
     static override get descriptor(): NodeDef {
@@ -95,7 +86,16 @@ export class Switch extends Node {
 
 @registerNode
 export class Case extends Node {
-    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
+    constructor(context: Context, cfg: NodeData) {
+        super(context, cfg);
+
+        // Case is a virtual node grouping the condition and the action, it is never ticked
+        if (this.conditions.length > 0) {
+            this.warn(`conditions are ignored: Case is never ticked`);
+        }
+    }
+
+    override onTick(tree: Tree<Context, unknown>): Status {
         throw new Error("tick children by Switch");
     }
 
@@ -110,7 +110,8 @@ export class Case extends Node {
                 + 必须有两个子节点
                 + 第一个子节点为判断条件
                 + 第二个子节点为判断为 \`success\` 时执行的节点
-                + 此节点不会真正意义的执行，而是交由 \`Switch\` 节点来执行
+                + 此节点只用来把判断条件和执行节点组织在一起，不会真正执行，而是交由 \`Switch\` 节点来执行
+                + 此节点上配置的条件（conditions）不会生效
             `,
         };
     }

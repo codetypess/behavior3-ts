@@ -1,52 +1,29 @@
 import { type Context } from "../../context";
 import { Node, NodeDef, Status } from "../../node";
 import { registerNode } from "../../register-node";
-import { StackSlice } from "../../stack";
 import { Tree } from "../../tree";
-
-interface NodeYield {
-    stack: StackSlice;
-    expired: number;
-}
 
 @registerNode
 export class Timeout extends Node {
     declare args: { readonly time?: number };
 
-    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
-        const { stack, context } = tree;
-        const level = stack.length;
-        let last: NodeYield | undefined = tree.resume(this);
-        status = "failure";
-        if (last === undefined) {
-            status = this.children[0].tick(tree);
-        } else if (context.time >= last.expired) {
-            last.stack.clear();
+    override onTick(tree: Tree<Context, unknown>): Status {
+        const child = this.children[0];
+        const time = tree.context.time;
+        let expired = tree.getState<number>(this);
+
+        if (expired === undefined) {
+            expired = time + this._checkOneof(0, this.args.time, 0);
+        } else if (time >= expired) {
+            child.abort(tree);
             return "failure";
-        } else {
-            last.stack.move(stack, 0);
-            while (stack.length > level) {
-                const child = stack.top()!;
-                status = child.tick(tree);
-                if (status === "running") {
-                    break;
-                }
-            }
         }
 
+        const status = child.tick(tree);
         if (status === "running") {
-            if (last === undefined) {
-                const time = this._checkOneof(0, this.args.time, 0);
-                last = {
-                    stack: new StackSlice(),
-                    expired: context.time + time,
-                };
-            }
-            stack.move(last.stack, level);
-            return tree.yield(this, last);
-        } else {
-            return status;
+            tree.setState(this, expired);
         }
+        return status;
     }
 
     static override get descriptor(): NodeDef {

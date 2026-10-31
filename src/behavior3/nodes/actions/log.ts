@@ -19,7 +19,7 @@ export class Log extends Node {
         readonly level: LogLevel;
     };
 
-    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
+    override onTick(tree: Tree<Context, unknown>): Status {
         const [inputMsg] = this.input;
         const args = this.args;
         const level = args.level ?? LogLevel.LOG;

@@ -5,7 +5,7 @@ import { Tree } from "../../tree";
 
 @registerNode
 export class AlwaysRunning extends Node {
-    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
+    override onTick(tree: Tree<Context, unknown>): Status {
         this.children[0].tick(tree);
         return "running";
     }

@@ -5,7 +5,7 @@ import { Tree } from "../../tree";
 
 @registerNode
 export class Now extends Node {
-    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
+    override onTick(tree: Tree<Context, unknown>): Status {
         this.output.push(tree.context.time);
         return "success";
     }

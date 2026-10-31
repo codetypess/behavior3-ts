@@ -16,7 +16,7 @@ export class Calculate extends Node {
         context.compileCode(this.args.value);
     }
 
-    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
+    override onTick(tree: Tree<Context, unknown>): Status {
         const value = tree.blackboard.eval(this.args.value);
         this.output.push(value);
         return "success";

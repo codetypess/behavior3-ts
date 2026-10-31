@@ -1,0 +1,53 @@
+{
+  "name": "test-conditions",
+  "desc": "flee > attack > patrol",
+  "root": {
+    "id": "1",
+    "name": "Selector",
+    "children": [
+      {
+        "id": "2",
+        "name": "Sequence",
+        "desc": "flee",
+        "conditions": [
+          {
+            "abort": "lower",
+            "root": { "id": "3", "name": "Check", "args": { "value": "hp < 20" } }
+          }
+        ],
+        "children": [
+          { "id": "4", "name": "Let", "args": { "value": "flee" }, "output": ["state"] },
+          { "id": "5", "name": "Wait", "args": { "time": 2 } }
+        ]
+      },
+      {
+        "id": "6",
+        "name": "Sequence",
+        "desc": "attack",
+        "conditions": [
+          {
+            "abort": "both",
+            "root": {
+              "id": "7",
+              "name": "Invert",
+              "children": [{ "id": "8", "name": "IsNull", "input": ["enemy"] }]
+            }
+          }
+        ],
+        "children": [
+          { "id": "9", "name": "Let", "args": { "value": "attack" }, "output": ["state"] },
+          { "id": "10", "name": "Wait", "args": { "time": 100 } }
+        ]
+      },
+      {
+        "id": "11",
+        "name": "Sequence",
+        "desc": "patrol",
+        "children": [
+          { "id": "12", "name": "Let", "args": { "value": "patrol" }, "output": ["state"] },
+          { "id": "13", "name": "WaitForEvent", "args": { "event": "patrolDone" } }
+        ]
+      }
+    ]
+  }
+}

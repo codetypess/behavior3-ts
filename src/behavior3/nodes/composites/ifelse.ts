@@ -19,37 +19,24 @@ import { Tree } from "../../tree";
  */
 @registerNode
 export class IfElse extends Node {
-    private _ifelse(tree: Tree<Context, unknown>, status: Exclude<Status, "running">) {
-        if (status === "error") {
-            return "error";
-        }
-        const i = status === "success" ? 1 : 2;
-        const childStatus = this.children[i].tick(tree);
-        if (childStatus === "running") {
-            return tree.yield(this, i);
-        } else {
-            return childStatus;
-        }
-    }
+    override onTick(tree: Tree<Context, unknown>): Status {
+        const children = this.children;
+        let i = tree.getState<number>(this) ?? 0;
 
-    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
-        const i: number | undefined = tree.resume(this);
-        if (i !== undefined) {
+        if (i === 0) {
+            const status = children[0].tick(tree);
             if (status === "running") {
-                this.throw(`unexpected status error`);
-            } else if (i === 0) {
-                return this._ifelse(tree, status);
-            } else {
-                return status;
+                tree.setState(this, 0);
+                return "running";
             }
+            i = status === "success" ? 1 : 2;
         }
 
-        status = this.children[0].tick(tree);
+        const status = children[i].tick(tree);
         if (status === "running") {
-            return tree.yield(this, 0);
-        } else {
-            return this._ifelse(tree, status);
+            tree.setState(this, i);
         }
+        return status;
     }
 
     static override get descriptor(): NodeDef {

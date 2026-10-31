@@ -113,3 +113,67 @@ testTree("test-listen", (i, tree) => {
 testTree("test-switch-case");
 testTree("test-race");
 console.log("====================test api end======================");
+
+console.log("====================test conditions=============================");
+{
+    const tree = createTree({ hp: 100, x: 0, y: 0 }, "./example/test-conditions.json");
+    const { blackboard } = tree;
+    const listenerCount = (event: string) =>
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (context as any)._listeners.get(event)?.size ?? 0;
+    const tick = (expected: string) => {
+        context.update(1);
+        tree.tick();
+        assert(tree.status === "running", `tree status: ${tree.status}`);
+        assert(blackboard.get("state") === expected, `state: ${blackboard.get("state")} != ${expected}`);
+    };
+
+    blackboard.set("hp", 100);
+    tick("patrol");
+    assert(listenerCount("patrolDone") === 1);
+
+    // patrol keeps running, its Let is not executed again
+    blackboard.set("state", "patrol-running");
+    tick("patrol-running");
+
+    // lower: attack preempts patrol, the aborted WaitForEvent removes its listener
+    blackboard.set("enemy", { hp: 100 });
+    tick("attack");
+    assert(listenerCount("patrolDone") === 0);
+
+    // self: attack aborts itself, patrol restarts from the beginning
+    blackboard.set("enemy", undefined);
+    tick("patrol");
+
+    // both conditions are satisfied, the leftmost one wins
+    blackboard.set("enemy", { hp: 100 });
+    blackboard.set("hp", 10);
+    tick("flee");
+
+    // flee only has lower: it keeps running when hp recovers, attack can't preempt it
+    blackboard.set("hp", 100);
+    tick("flee");
+
+    // flee finishes after 2s, then attack runs in the next tick
+    context.update(1);
+    tree.tick();
+    assert(tree.status === "success", `tree status: ${tree.status}`);
+    tick("attack");
+
+    // interrupt aborts all running nodes
+    blackboard.set("enemy", undefined);
+    tick("patrol");
+    assert(listenerCount("patrolDone") === 1);
+    tree.interrupt();
+    assert((tree.status as string) === "interrupted", `tree status: ${tree.status}`);
+    assert(listenerCount("patrolDone") === 0);
+    tick("patrol");
+    tree.clear();
+}
+{
+    const tree = createTree({ hp: 100, x: 0, y: 0 }, "./example/test-conditions-running.json");
+    tree.tick();
+    assert(tree.status === "success", `tree status: ${tree.status}`);
+    assert(tree.blackboard.get("state") === "fallback");
+}
+console.log("====================test conditions end======================");

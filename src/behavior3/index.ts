@@ -3,7 +3,6 @@ export * from "./context";
 export * from "./evaluator";
 export * from "./node";
 export * from "./register-node";
-export * from "./stack";
 export * from "./tree";
 
 import "./nodes/actions/calculate";
@@ -27,7 +26,6 @@ import "./nodes/composites/race";
 import "./nodes/composites/selector";
 import "./nodes/composites/sequence";
 import "./nodes/composites/switch";
-import "./nodes/composites/watchdog";
 import "./nodes/conditions/check";
 import "./nodes/conditions/includes";
 import "./nodes/conditions/is-null";

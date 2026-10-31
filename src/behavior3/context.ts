@@ -234,16 +234,23 @@ export abstract class Context {
     }
 
     protected _createTree(treeCfg: TreeData) {
+        let index = 0;
         const traverse = (cfg: NodeData) => {
             cfg.tree = treeCfg;
+            cfg.index = index++;
             cfg.input ||= [];
             cfg.output ||= [];
             cfg.children ||= [];
             cfg.args ||= {};
+            cfg.conditions?.forEach((v) => v.root && traverse(v.root));
             cfg.children.forEach(traverse);
         };
         traverse(treeCfg.root);
 
-        return Node.create(this, treeCfg.root);
+        const root = Node.create(this, treeCfg.root);
+        if (root.abortsLower) {
+            root.warn(`'lower' has no effect: root node has no parent`);
+        }
+        return root;
     }
 }

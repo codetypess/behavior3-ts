@@ -8,19 +8,17 @@ export class GetField extends Node {
     declare input: [{ [key: string]: unknown }, string | undefined];
     declare args: { readonly field?: string };
 
-    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
+    override onTick(tree: Tree<Context, unknown>): Status {
         const [obj] = this.input;
         if (typeof obj !== "object" || !obj) {
-            this.error(`invalid object: ${obj}`);
-            return "error";
+            this.throw(`invalid object: ${obj}`);
         }
 
         const args = this.args;
         const field = this._checkOneof(1, args.field);
         const value = obj[field];
         if (typeof field !== "string" && typeof field !== "number") {
-            this.error(`invalid field: ${field}`);
-            return "error";
+            this.throw(`invalid field: ${field}`);
         } else if (value !== undefined && value !== null) {
             this.output.push(value);
             return "success";

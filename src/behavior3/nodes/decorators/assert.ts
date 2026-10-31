@@ -7,31 +7,12 @@ import { Tree } from "../../tree";
 export class Assert extends Node {
     declare args: { readonly message: string };
 
-    override onTick(tree: Tree<Context, unknown>, status: Status): Status {
-        const args = this.args;
-        const isYield: boolean | undefined = tree.resume(this);
-        if (typeof isYield === "boolean") {
-            if (status === "running") {
-                this.throw(`unexpected status error`);
-            }
-
-            if (status === "success") {
-                return "success";
-            } else {
-                this.throw(args.message);
-            }
+    override onTick(tree: Tree<Context, unknown>): Status {
+        const status = this.children[0].tick(tree);
+        if (status === "success" || status === "running") {
+            return status;
         }
-
-        status = this.children[0].tick(tree);
-        if (status === "success") {
-            return "success";
-        } else if (status === "running") {
-            return tree.yield(this);
-        } else {
-            this.throw(args.message);
-        }
-
-        return "success";
+        this.throw(this.args.message);
     }
 
     static override get descriptor(): NodeDef {

@@ -1,0 +1,26 @@
+{
+  "name": "test-conditions-running",
+  "desc": "a condition tree returning running is treated as false",
+  "root": {
+    "id": "1",
+    "name": "Selector",
+    "children": [
+      {
+        "id": "2",
+        "name": "Let",
+        "args": { "value": "unexpected" },
+        "output": ["state"],
+        "conditions": [
+          {
+            "root": {
+              "id": "3",
+              "name": "Sequence",
+              "children": [{ "id": "4", "name": "Wait", "args": { "time": 1 } }]
+            }
+          }
+        ]
+      },
+      { "id": "5", "name": "Let", "args": { "value": "fallback" }, "output": ["state"] }
+    ]
+  }
+}
