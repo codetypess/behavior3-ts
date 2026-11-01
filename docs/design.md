@@ -213,14 +213,14 @@ interface NodeData {
 ```ts
 function canRun(cfg: NodeData, defs: Record<string, NodeDef>): boolean {
     const status = defs[cfg.name]?.status;
-    if (!status) return true;                       // 没声明 status：按"可能 running"处理
+    if (!status) return false;                      // 没声明 status：不检查，交给运行时
     if (status.includes("running")) return true;
     if (status.includes("|running")) return cfg.children.some((c) => !c.disabled && canRun(c, defs));
     return false;
 }
 ```
 
-自定义节点没声明 `status` 时，编辑器给出 warning，由运行时的返回值检查保证。所以**自定义的条件节点应该声明 `status`**。
+自定义节点没声明 `status` 时，编辑器不检查，由运行时的返回值检查保证。所以**自定义的条件节点应该声明 `status`**，编辑器才能提前拦住。
 
 **运行时：检查返回值**
 
@@ -239,7 +239,7 @@ function canRun(cfg: NodeData, defs: Record<string, NodeDef>): boolean {
 - 注册回调或定时器：Delay、Listen；
 - 有持久状态：Once（执行一次就会被"用掉"）。
 
-这一类不做强制限制，约定**条件树里只放判断逻辑**。编辑器可以给出 warning：`type` 为 Action 的节点，或者声明了 `output` 的节点。
+这一类不做强制限制，约定**条件树里只放判断逻辑**。编辑器不对 `type` 为 Action 或声明了 `output` 的节点报错或警告：先取数据再判断（比如 `GetHp` 再 `Cmp`）是正常写法，按类型拦会误伤。
 
 ### 3.5 抢占的实现
 
@@ -366,8 +366,7 @@ class RandomPick extends Node {
 - **展示**：条件以徽标的形式显示在节点顶部，标出条件项的 abort 模式和条件树根节点的名称；可以展开或折叠，或者像子树那样在独立视图里编辑。一个节点可以挂多项条件：每项一块，按数组顺序从上到下叠在节点上方，选中某一块编辑这一项；用右键菜单或快捷键上移、下移调整顺序（顺序就是求值顺序）。
 - **校验**：
   - 每个条件项必须有 `root`；`abort` 只出现在条件项上；
-  - 条件树不能返回 running：按 `status` 递归推导（3.4 节），不通过就报错；
-  - 条件树里有 Action 类节点、或者声明了 `output` 的节点、或者节点没有声明 `status`：给出 warning；
+  - 条件树不能返回 running：按 `status` 递归推导（3.4 节），不通过就报错；没有声明 `status` 的节点不检查。条件树里可以有 Action 类节点和声明了 `output` 的节点（比如先取数据再判断），不报错也不警告；
   - 父节点不是 preemptive 时，禁用 `lower` 和 `both`，已有的值标红，构建报错；
   - 树的根节点不能挂条件。子树的根节点同样不挂，条件挂在引用它的节点上，因为只有在引用处才知道父节点；子树展开时，根节点使用引用处的条件；
   - id 树内唯一（包括条件树里的节点）。
