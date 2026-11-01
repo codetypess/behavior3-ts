@@ -368,7 +368,8 @@ class RandomPick extends Node {
   - 每个条件项必须有 `root`；`abort` 只出现在条件项上；
   - 条件树不能返回 running：按 `status` 递归推导（3.4 节），不通过就报错；
   - 条件树里有 Action 类节点、或者声明了 `output` 的节点、或者节点没有声明 `status`：给出 warning；
-  - 父节点不是 preemptive 时，禁用 `lower` 和 `both`；根节点的条件不能选 `lower` 和 `both`；
+  - 父节点不是 preemptive 时，禁用 `lower` 和 `both`，已有的值标红，构建报错；
+  - 树的根节点不能挂条件。子树的根节点同样不挂，条件挂在引用它的节点上，因为只有在引用处才知道父节点；子树展开时，根节点使用引用处的条件；
   - id 树内唯一（包括条件树里的节点）。
 - **提示**：选中一个条件时，高亮它能影响的范围。`self` 高亮自己的子树，`lower` 高亮右侧兄弟节点的子树。
 - **`.b3-setting`**：导出 `preemptive`。`status` 本来就会导出，条件树的检查直接使用它。
