@@ -40,6 +40,7 @@ export class SetField extends Node {
         return {
             name: "SetField",
             type: "Action",
+            group: ["Core"],
             children: 0,
             status: ["success", "failure"],
             desc: "设置对象字段值",

@@ -20,6 +20,7 @@ export class Assert extends Node {
         return {
             name: "Assert",
             type: "Decorator",
+            group: ["Core"],
             children: 1,
             status: ["success"],
             desc: "断言",

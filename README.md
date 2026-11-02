@@ -108,7 +108,7 @@ export class FindEnemy extends Node {
 | `children` | 允许的子节点个数：`-1` 不限，`0`、`1`、`2`、`3` |
 | `status` | 节点可能返回的状态，编辑器用来推导和校验 |
 | `preemptive` | 组合节点是否支持抢占（见[条件与打断](#条件与打断)） |
-| `group` | 节点分组，Context 只注册它支持的分组（`supportGroupTypes`） |
+| `group` | 节点分组，Context 只注册它支持的分组（`supportGroupTypes`）；内置节点都属于 `Core` 分组，总会注册 |
 
 ### 黑板、输入和输出
 

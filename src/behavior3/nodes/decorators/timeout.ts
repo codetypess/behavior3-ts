@@ -30,6 +30,7 @@ export class Timeout extends Node {
         return {
             name: "Timeout",
             type: "Decorator",
+            group: ["Core"],
             children: 1,
             status: ["|success", "|running", "failure"],
             desc: "超时",

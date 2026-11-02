@@ -14,6 +14,7 @@ export class AlwaysRunning extends Node {
         return {
             name: "AlwaysRunning",
             type: "Decorator",
+            group: ["Core"],
             children: 1,
             status: ["running"],
             desc: "始终返回运行中状态",

@@ -37,6 +37,7 @@ export class Index extends Node {
         return {
             name: "Index",
             type: "Action",
+            group: ["Core"],
             children: 0,
             status: ["success", "failure"],
             desc: "索引输入的数组",

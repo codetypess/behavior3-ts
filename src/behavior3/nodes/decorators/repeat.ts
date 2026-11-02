@@ -27,6 +27,7 @@ export class Repeat extends Node {
         return {
             name: "Repeat",
             type: "Decorator",
+            group: ["Core"],
             children: 1,
             status: ["success", "|running", "|failure"],
             desc: "循环执行",

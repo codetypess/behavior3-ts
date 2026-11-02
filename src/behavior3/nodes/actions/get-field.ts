@@ -37,6 +37,7 @@ export class GetField extends Node {
         return {
             name: "GetField",
             type: "Action",
+            group: ["Core"],
             children: 0,
             status: ["success", "failure"],
             desc: "获取对象的字段值",

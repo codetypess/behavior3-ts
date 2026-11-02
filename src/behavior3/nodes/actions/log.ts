@@ -57,6 +57,7 @@ export class Log extends Node {
         return {
             name: "Log",
             type: "Action",
+            group: ["Core"],
             children: 0,
             status: ["success"],
             desc: "打印日志",

@@ -161,6 +161,16 @@ describe("node registration", () => {
         assert.equal(ctx.nodeDefs.Selector.preemptive, true);
     });
 
+    it("puts every builtin node in the Core group and always registers it", () => {
+        const ctx = new GroupContext();
+        for (const { name, group } of getNodeDescriptors()) {
+            if (name !== "GroupOnly") {
+                assert.deepEqual(group, ["Core"], name);
+                assert.ok(ctx.nodeDefs[name], name);
+            }
+        }
+    });
+
     it("only registers the nodes of the supported groups", () => {
         assert.equal(new TestContext().nodeDefs.GroupOnly, undefined);
         const ctx = new GroupContext();

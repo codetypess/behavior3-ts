@@ -38,6 +38,8 @@ export function filterNodeDescriptors<GroupType extends string>(groupTypes: Grou
     return Array.from(nodeClasses.values()).filter(
         ({ descriptor }) =>
             !descriptor.group?.length ||
-            descriptor.group?.some((g) => groupTypes.indexOf(g as GroupType) >= 0)
+            // Core nodes are always registered, the group only helps the editor organize them
+            descriptor.group.includes("Core") ||
+            descriptor.group.some((g) => groupTypes.indexOf(g as GroupType) >= 0)
     );
 }

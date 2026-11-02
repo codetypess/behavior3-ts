@@ -39,6 +39,7 @@ export class Foreach extends Node {
         return {
             name: "ForEach",
             type: "Decorator",
+            group: ["Core"],
             children: 1,
             status: ["success", "|running", "|failure"],
             desc: "遍历数组",

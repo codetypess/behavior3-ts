@@ -21,6 +21,7 @@ export class Push extends Node {
         return {
             name: "Push",
             type: "Action",
+            group: ["Core"],
             children: 0,
             status: ["success", "failure"],
             desc: "向数组中添加元素",

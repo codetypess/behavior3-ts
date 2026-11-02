@@ -47,6 +47,7 @@ export class RetryUntilSuccess extends Node {
         return {
             name: "RetryUntilSuccess",
             type: "Decorator",
+            group: ["Core"],
             children: 1,
             status: ["|success", "failure", "running"],
             desc: "一直尝试直到子节点返回成功",

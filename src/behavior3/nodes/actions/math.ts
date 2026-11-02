@@ -239,6 +239,7 @@ export class MathNode extends Node {
         return {
             name: "Math",
             type: "Action",
+            group: ["Core"],
             desc: "执行数学运算",
             doc: `
                 + 优先使用参数1、参数2，没有配置时依次使用输入

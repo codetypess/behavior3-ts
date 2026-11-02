@@ -50,6 +50,7 @@ export class Race extends Node {
         return {
             name: "Race",
             type: "Composite",
+            group: ["Core"],
             status: ["|success", "&failure", "|running"],
             children: -1,
             desc: "竞争执行",

@@ -18,6 +18,7 @@ export class ErrorToFailure extends Node {
         return {
             name: "ErrorToFailure",
             type: "Decorator",
+            group: ["Core"],
             children: 1,
             status: ["|success", "|failure", "|running"],
             desc: "错误转失败",

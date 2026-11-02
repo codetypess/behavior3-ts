@@ -52,6 +52,7 @@ export class Selector extends Node {
         return {
             name: "Selector",
             type: "Composite",
+            group: ["Core"],
             children: -1,
             preemptive: true,
             desc: "选择执行",

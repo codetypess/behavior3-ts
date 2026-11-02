@@ -33,6 +33,7 @@ export class RandomIndex extends Node {
         return {
             name: "RandomIndex",
             type: "Action",
+            group: ["Core"],
             children: 0,
             status: ["success", "failure"],
             desc: "随机返回输入的其中一个!",

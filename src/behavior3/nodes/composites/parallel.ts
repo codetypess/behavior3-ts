@@ -67,6 +67,7 @@ export class Parallel extends Node {
         return {
             name: "Parallel",
             type: "Composite",
+            group: ["Core"],
             status: ["|success", "|failure", "|running"],
             children: -1,
             desc: "并行执行",

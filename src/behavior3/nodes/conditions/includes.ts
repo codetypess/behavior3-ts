@@ -23,6 +23,7 @@ export class Includes extends Node {
         return {
             name: "Includes",
             type: "Condition",
+            group: ["Core"],
             children: 0,
             status: ["success", "failure"],
             desc: "判断元素是否在数组中",

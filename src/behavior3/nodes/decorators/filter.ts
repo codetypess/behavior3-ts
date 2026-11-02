@@ -46,6 +46,7 @@ export class Filter extends Node {
         return {
             name: "Filter",
             type: "Decorator",
+            group: ["Core"],
             children: 1,
             status: ["success", "failure", "|running"],
             desc: "返回满足条件的元素",

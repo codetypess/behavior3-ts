@@ -506,7 +506,7 @@ export class MyNode extends Node {
 
 - **黑板**：`get`、`set`（设成 `undefined` 或 `null` 时删除）、`eval(code)`。私有变量和临时变量的说明见 2.2 节。
 - **Context**：所有树共享，提供节点注册、树的加载和缓存（`loadTree` 由使用方实现）、时间（`time`、`update(dt)`）、定时器（`delay`）、事件（`on`、`off`、`offAll`、`dispatch`）、表达式编译（`compileCode`、`registerCode`）。
-- `supportGroupTypes` 决定注册哪些带 `group` 的节点：节点声明了 `group` 时，只有 Context 支持其中一个 group 才会注册。
+- `supportGroupTypes` 决定注册哪些带 `group` 的节点：节点声明了 `group` 时，只有 Context 支持其中一个 group 才会注册。内置节点都属于 `Core` 分组，不受 `supportGroupTypes` 限制，总会注册。
 
 ## 9. 编辑器
 

@@ -33,6 +33,7 @@ export class Once extends Node {
         return {
             name: "Once",
             type: "Decorator",
+            group: ["Core"],
             children: 1,
             status: ["success", "failure", "|running"],
             desc: "只执行一次",

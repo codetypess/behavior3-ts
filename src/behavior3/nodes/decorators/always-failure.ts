@@ -14,6 +14,7 @@ export class AlwaysFailure extends Node {
         return {
             name: "AlwaysFailure",
             type: "Decorator",
+            group: ["Core"],
             children: 1,
             status: ["failure", "|running"],
             desc: "始终返回失败",

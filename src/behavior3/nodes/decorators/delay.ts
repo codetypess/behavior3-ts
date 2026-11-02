@@ -34,6 +34,7 @@ export class Delay extends Node {
         return {
             name: "Delay",
             type: "Decorator",
+            group: ["Core"],
             children: 1,
             status: ["success"],
             desc: "延时执行子节点",

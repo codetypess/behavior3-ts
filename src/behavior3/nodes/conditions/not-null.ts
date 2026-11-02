@@ -20,6 +20,7 @@ export class NotNull extends Node {
         return {
             name: "NotNull",
             type: "Condition",
+            group: ["Core"],
             children: 0,
             status: ["success", "failure"],
             desc: "判断变量是否存在",

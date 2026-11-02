@@ -33,6 +33,7 @@ export class Calculate extends Node {
         return {
             name: "Calculate",
             type: "Action",
+            group: ["Core"],
             children: 0,
             status: ["success"],
             desc: "简单的数值公式计算",

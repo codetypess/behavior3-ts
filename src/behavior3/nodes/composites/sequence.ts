@@ -37,6 +37,7 @@ export class Sequence extends Node {
         return {
             name: "Sequence",
             type: "Composite",
+            group: ["Core"],
             children: -1,
             status: ["&success", "|failure", "|running"],
             desc: "顺序执行",

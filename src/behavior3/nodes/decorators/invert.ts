@@ -17,6 +17,7 @@ export class Invert extends Node {
         return {
             name: "Invert",
             type: "Decorator",
+            group: ["Core"],
             children: 1,
             status: ["!success", "!failure", "|running"],
             desc: "反转子节点运行结果",

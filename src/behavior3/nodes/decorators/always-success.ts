@@ -14,6 +14,7 @@ export class AlwaysSuccess extends Node {
         return {
             name: "AlwaysSuccess",
             type: "Decorator",
+            group: ["Core"],
             children: 1,
             status: ["success", "|running"],
             desc: "始终返回成功",

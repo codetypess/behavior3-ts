@@ -29,6 +29,7 @@ export class Wait extends Node {
         return {
             name: "Wait",
             type: "Action",
+            group: ["Core"],
             children: 0,
             status: ["success", "running"],
             desc: "等待",

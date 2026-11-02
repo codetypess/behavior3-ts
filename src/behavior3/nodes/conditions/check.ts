@@ -32,6 +32,7 @@ export class Check extends Node {
         return {
             name: "Check",
             type: "Condition",
+            group: ["Core"],
             children: 0,
             status: ["success", "failure"],
             desc: "检查True或False",

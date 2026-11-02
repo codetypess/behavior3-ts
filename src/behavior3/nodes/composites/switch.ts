@@ -74,6 +74,7 @@ export class Switch extends Node {
         return {
             name: "Switch",
             type: "Composite",
+            group: ["Core"],
             children: -1,
             status: ["|success", "|failure", "|running"],
             desc: "分支执行",
@@ -105,6 +106,7 @@ export class Case extends Node {
         return {
             name: "Case",
             type: "Composite",
+            group: ["Core"],
             children: 2,
             status: ["&success", "|failure", "|running"],
             desc: "分支选择",

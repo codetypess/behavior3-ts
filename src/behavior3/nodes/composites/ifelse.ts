@@ -45,6 +45,7 @@ export class IfElse extends Node {
         return {
             name: "IfElse",
             type: "Composite",
+            group: ["Core"],
             children: 3,
             status: ["|success", "|failure", "|running"],
             desc: "条件执行",

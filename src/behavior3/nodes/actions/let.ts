@@ -17,6 +17,7 @@ export class Let extends Node {
         return {
             name: "Let",
             type: "Action",
+            group: ["Core"],
             children: 0,
             status: ["success"],
             desc: "定义新的变量名",

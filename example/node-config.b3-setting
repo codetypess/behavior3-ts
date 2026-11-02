@@ -2,6 +2,9 @@
   {
     "name": "AlwaysFailure",
     "type": "Decorator",
+    "group": [
+      "Core"
+    ],
     "children": 1,
     "status": [
       "failure",
@@ -13,6 +16,9 @@
   {
     "name": "AlwaysRunning",
     "type": "Decorator",
+    "group": [
+      "Core"
+    ],
     "children": 1,
     "status": [
       "running"
@@ -23,6 +29,9 @@
   {
     "name": "AlwaysSuccess",
     "type": "Decorator",
+    "group": [
+      "Core"
+    ],
     "children": 1,
     "status": [
       "success",
@@ -34,6 +43,9 @@
   {
     "name": "Assert",
     "type": "Decorator",
+    "group": [
+      "Core"
+    ],
     "children": 1,
     "status": [
       "success"
@@ -60,6 +72,9 @@
   {
     "name": "Calculate",
     "type": "Action",
+    "group": [
+      "Core"
+    ],
     "children": 0,
     "status": [
       "success"
@@ -80,6 +95,9 @@
   {
     "name": "Case",
     "type": "Composite",
+    "group": [
+      "Core"
+    ],
     "children": 2,
     "status": [
       "&success",
@@ -92,6 +110,9 @@
   {
     "name": "Check",
     "type": "Condition",
+    "group": [
+      "Core"
+    ],
     "children": 0,
     "status": [
       "success",
@@ -110,6 +131,9 @@
   {
     "name": "Concat",
     "type": "Action",
+    "group": [
+      "Core"
+    ],
     "children": 0,
     "status": [
       "success",
@@ -128,6 +152,9 @@
   {
     "name": "Delay",
     "type": "Decorator",
+    "group": [
+      "Core"
+    ],
     "children": 1,
     "status": [
       "success"
@@ -154,6 +181,9 @@
   {
     "name": "ErrorToFailure",
     "type": "Decorator",
+    "group": [
+      "Core"
+    ],
     "children": 1,
     "status": [
       "|success",
@@ -166,6 +196,9 @@
   {
     "name": "Filter",
     "type": "Decorator",
+    "group": [
+      "Core"
+    ],
     "children": 1,
     "status": [
       "success",
@@ -210,6 +243,9 @@
   {
     "name": "ForEach",
     "type": "Decorator",
+    "group": [
+      "Core"
+    ],
     "children": 1,
     "status": [
       "success",
@@ -229,6 +265,9 @@
   {
     "name": "GetField",
     "type": "Action",
+    "group": [
+      "Core"
+    ],
     "children": 0,
     "status": [
       "success",
@@ -268,6 +307,9 @@
   {
     "name": "IfElse",
     "type": "Composite",
+    "group": [
+      "Core"
+    ],
     "children": 3,
     "status": [
       "|success",
@@ -280,6 +322,9 @@
   {
     "name": "Includes",
     "type": "Condition",
+    "group": [
+      "Core"
+    ],
     "children": 0,
     "status": [
       "success",
@@ -295,6 +340,9 @@
   {
     "name": "Index",
     "type": "Action",
+    "group": [
+      "Core"
+    ],
     "children": 0,
     "status": [
       "success",
@@ -321,6 +369,9 @@
   {
     "name": "Invert",
     "type": "Decorator",
+    "group": [
+      "Core"
+    ],
     "children": 1,
     "status": [
       "!success",
@@ -333,6 +384,9 @@
   {
     "name": "IsNull",
     "type": "Condition",
+    "group": [
+      "Core"
+    ],
     "children": 0,
     "status": [
       "success",
@@ -382,6 +436,9 @@
   {
     "name": "JustFailure",
     "type": "Action",
+    "group": [
+      "Core"
+    ],
     "children": 0,
     "status": [
       "failure"
@@ -391,6 +448,9 @@
   {
     "name": "JustSuccess",
     "type": "Action",
+    "group": [
+      "Core"
+    ],
     "children": 0,
     "status": [
       "success"
@@ -400,6 +460,9 @@
   {
     "name": "Let",
     "type": "Action",
+    "group": [
+      "Core"
+    ],
     "children": 0,
     "status": [
       "success"
@@ -424,6 +487,9 @@
   {
     "name": "Listen",
     "type": "Decorator",
+    "group": [
+      "Core"
+    ],
     "children": 1,
     "status": [
       "success"
@@ -486,6 +552,9 @@
   {
     "name": "Log",
     "type": "Action",
+    "group": [
+      "Core"
+    ],
     "children": 0,
     "status": [
       "success"
@@ -537,6 +606,9 @@
   {
     "name": "Math",
     "type": "Action",
+    "group": [
+      "Core"
+    ],
     "desc": "执行数学运算",
     "doc": "+ 优先使用参数1、参数2，没有配置时依次使用输入\n+ 参数个数不对、最小值大于最大值、结果为 NaN 时，返回 `error`\n",
     "input": [
@@ -681,6 +753,9 @@
   {
     "name": "NotNull",
     "type": "Condition",
+    "group": [
+      "Core"
+    ],
     "children": 0,
     "status": [
       "success",
@@ -694,6 +769,9 @@
   {
     "name": "Now",
     "type": "Action",
+    "group": [
+      "Core"
+    ],
     "children": 0,
     "status": [
       "success"
@@ -706,6 +784,9 @@
   {
     "name": "Once",
     "type": "Decorator",
+    "group": [
+      "Core"
+    ],
     "children": 1,
     "status": [
       "success",
@@ -718,6 +799,9 @@
   {
     "name": "Parallel",
     "type": "Composite",
+    "group": [
+      "Core"
+    ],
     "status": [
       "|success",
       "|failure",
@@ -737,6 +821,9 @@
   {
     "name": "Push",
     "type": "Action",
+    "group": [
+      "Core"
+    ],
     "children": 0,
     "status": [
       "success",
@@ -752,6 +839,9 @@
   {
     "name": "Race",
     "type": "Composite",
+    "group": [
+      "Core"
+    ],
     "status": [
       "|success",
       "&failure",
@@ -764,6 +854,9 @@
   {
     "name": "RandomIndex",
     "type": "Action",
+    "group": [
+      "Core"
+    ],
     "children": 0,
     "status": [
       "success",
@@ -782,6 +875,9 @@
   {
     "name": "Repeat",
     "type": "Decorator",
+    "group": [
+      "Core"
+    ],
     "children": 1,
     "status": [
       "success",
@@ -805,6 +901,9 @@
   {
     "name": "RetryUntilFailure",
     "type": "Decorator",
+    "group": [
+      "Core"
+    ],
     "children": 1,
     "status": [
       "!success",
@@ -827,6 +926,9 @@
   {
     "name": "RetryUntilSuccess",
     "type": "Decorator",
+    "group": [
+      "Core"
+    ],
     "children": 1,
     "status": [
       "|success",
@@ -849,6 +951,9 @@
   {
     "name": "Selector",
     "type": "Composite",
+    "group": [
+      "Core"
+    ],
     "children": -1,
     "preemptive": true,
     "desc": "选择执行",
@@ -862,6 +967,9 @@
   {
     "name": "Sequence",
     "type": "Composite",
+    "group": [
+      "Core"
+    ],
     "children": -1,
     "status": [
       "&success",
@@ -874,6 +982,9 @@
   {
     "name": "SetField",
     "type": "Action",
+    "group": [
+      "Core"
+    ],
     "children": 0,
     "status": [
       "success",
@@ -904,6 +1015,9 @@
   {
     "name": "Switch",
     "type": "Composite",
+    "group": [
+      "Core"
+    ],
     "children": -1,
     "status": [
       "|success",
@@ -916,6 +1030,9 @@
   {
     "name": "Timeout",
     "type": "Decorator",
+    "group": [
+      "Core"
+    ],
     "children": 1,
     "status": [
       "|success",
@@ -939,6 +1056,9 @@
   {
     "name": "Wait",
     "type": "Action",
+    "group": [
+      "Core"
+    ],
     "children": 0,
     "status": [
       "success",
@@ -965,6 +1085,9 @@
   {
     "name": "WaitForEvent",
     "type": "Action",
+    "group": [
+      "Core"
+    ],
     "children": 0,
     "status": [
       "success",

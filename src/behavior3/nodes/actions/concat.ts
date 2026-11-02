@@ -21,6 +21,7 @@ export class Concat extends Node {
         return {
             name: "Concat",
             type: "Action",
+            group: ["Core"],
             children: 0,
             status: ["success", "failure"],
             desc: "将两个输入合并为一个数组，并返回新数组",

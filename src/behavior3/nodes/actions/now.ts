@@ -14,6 +14,7 @@ export class Now extends Node {
         return {
             name: "Now",
             type: "Action",
+            group: ["Core"],
             children: 0,
             status: ["success"],
             desc: "获取当前时间",

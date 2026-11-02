@@ -80,6 +80,7 @@ export class Listen extends Node {
         return {
             name: "Listen",
             type: "Decorator",
+            group: ["Core"],
             children: 1,
             status: ["success"],
             desc: "侦听事件",

@@ -13,6 +13,7 @@ export class JustFailure extends Node {
         return {
             name: "JustFailure",
             type: "Action",
+            group: ["Core"],
             children: 0,
             status: ["failure"],
             desc: "什么都不干，只返回失败",

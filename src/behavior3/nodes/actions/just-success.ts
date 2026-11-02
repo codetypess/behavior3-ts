@@ -14,6 +14,7 @@ export class JustSuccess extends Node {
         return {
             name: "JustSuccess",
             type: "Action",
+            group: ["Core"],
             children: 0,
             status: ["success"],
             desc: "什么都不干，只返回成功",
