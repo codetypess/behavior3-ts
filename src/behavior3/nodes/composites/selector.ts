@@ -1,5 +1,5 @@
 import { type Context } from "../../context";
-import { ERROR, Node, NodeDef, Status } from "../../node";
+import { Node, NodeDef, Status } from "../../node";
 import { registerNode } from "../../register-node";
 import { Tree } from "../../tree";
 
@@ -25,10 +25,7 @@ export class Selector extends Node {
             i = 0;
         } else {
             const k = this._checkPreempt(tree, i);
-            if (k === ERROR) {
-                // the running child is aborted when this node finishes
-                return "error";
-            } else if (k !== i) {
+            if (k !== i) {
                 children[i].abort(tree);
                 i = k;
                 conditionsChecked = true;

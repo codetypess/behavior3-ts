@@ -133,7 +133,7 @@ Selector
 
 - **error 只是一个返回值**：Tree 上没有"出错"的标记，`Node.tick` 也不改写节点的返回值，传递 error 完全靠每个节点自己。自定义的组合节点和装饰节点漏处理时（比如把它当成 failure 去执行下一个分支），框架不会拦。
 - **error 是结束状态**，走正常的结束流程：不写 output（结果不可信）；中止仍在 running 的子节点，清除自己的状态。每一层返回时清理自己这一层，所以 Parallel 其他在运行的分支、Selector 记下的下标都会被清掉，下一次从头执行。不中断整棵树，不清临时变量。
-- **条件树返回 error** 时不当成 false：挂条件的节点返回 `"error"`（4.3 节）。
+- **条件只有 true 和 false**：挂在节点上的条件树返回 error 时，条件为 false，不运行被装饰的节点（4.3 节）。主树里的条件节点（比如 Selector 下的 IsHero）是普通节点，照常传递 error。
 - **没有被处理**：一直传到根节点时，`tree.tick()` 返回 `"error"`，树和返回 success/failure 一样正常结束，下一帧从根节点开始。
 
 ### 3.2 在节点里返回 error
@@ -156,7 +156,6 @@ const field = this._checkOneof(1, args.field);   // 缺少必需的输入：打�
 if (field === ERROR) return "error";
 ```
 
-`evalConditions`、`evalSelfConditions`、`_checkPreempt` 也用 `ERROR` 表示条件树返回了 error。`ERROR` 是 symbol，在布尔上下文里为真，所以要先判断 `=== ERROR`，不能直接写 `if (node.evalConditions(tree))`。
 
 表达式求值器用 `throw` 报运行时错误（不是对象、不是数字、找不到等），`blackboard.eval` 也会抛出；Check、Calculate 在调用处捕获，打印 warning 后返回 `"error"`。
 
@@ -203,7 +202,7 @@ if (field === ERROR) return "error";
 | UE | behavior3-ts |
 |---|---|
 | 挂在节点上的条件装饰器（Decorator） | 节点的 `conditions` 数组中的一项 |
-| 装饰器的判断逻辑 | 条件树 `root`：一棵普通的行为树，返回 success、failure 或 error |
+| 装饰器的判断逻辑 | 条件树 `root`：一棵普通的行为树，结果只有 true 和 false |
 | Observer Aborts：None / Self / Lower Priority / Both | `abort`：`none` / `self` / `lower` / `both` |
 | `UBTCompositeNode::CanAbortLowerPriority()`（Selector 支持，Sequence 不支持） | NodeDef 的 `preemptive` 标记（内置只有 Selector） |
 | Lower Priority 的作用范围：同一个组合节点下、优先级更低的分支 | 同一个父节点下、右侧的兄弟分支 |
@@ -269,7 +268,7 @@ interface NodeData {
 | `P` 准备重入正在 running 的子节点 j（j > i）之前，并且 `P` 是 preemptive | 至少有一项是 `lower` 或 `both` 时才判断；判断时检查**全部**项 | 全部为 true：abort 子节点 j，从子节点 i 开始执行 |
 
 - 各项按数组顺序求值，遇到第一个 false 就停止（短路）。
-- 某一项返回 error 时同样停止，但不当成 false：进入、重入时 `N` 返回 `"error"`（重入时先 abort 自己）；抢占检查时 `_checkPreempt` 返回 `ERROR`，`P` 返回 `"error"`，正在运行的子节点在 `P` 结束时被中止。
+- 条件树返回 error 时，这一项为 false：数据不可信，就不运行被装饰的节点。进入时不进入；重入时 abort `N`，返回 failure；抢占检查时不抢占。
 - 抢占时检查**全部**项，标准和"进入"一致。`lower` 只决定"要不要去判断"，真正能不能抢占要看全部条件。这样可以避免"抢占成功、一进去就失败"：比如 `[HasEnemy(lower), HpAbove50(none)]`，只有发现敌人并且血量足够时才会打断巡逻。
 - abort 为 `none` 的项只在进入时判断（以及作为抢占时的附加条件），效果等同于放一个前置 Condition 子节点，好处是树更扁。
 
@@ -326,7 +325,7 @@ function canRun(cfg: NodeData, defs: Record<string, NodeDef>): boolean {
 | `success` | 条件为 true |
 | `failure` | 条件为 false |
 | `running` | 报错（带上树名和节点 id），中止条件树，条件为 false |
-| `error` | 不当成 false，挂条件的节点返回 `"error"`（4.3 节）；条件树里用 `ErrorToFailure` 处理后按 failure 算 |
+| `error` | 条件为 false（4.3 节） |
 | 抛异常 | 和普通节点一样，派发 `TreeEvent.EXCEPTION` 并中断整棵树（3.4 节） |
 
 **副作用靠约定**
@@ -355,12 +354,11 @@ abstract class Node {
     get abortsLower(): boolean;     // 有 lower/both 的项
     get abortsSelf(): boolean;      // 有 self/both 的项
 
-    // 条件树返回 error 时返回 ERROR（3.2 节）
-    evalConditions(tree): boolean | typeof ERROR;      // 进入和抢占时使用：全部项 AND，短路
-    evalSelfConditions(tree): boolean | typeof ERROR;  // 重入时使用：只检查 self/both 的项
+    evalConditions(tree): boolean;      // 进入和抢占时使用：全部项 AND，短路
+    evalSelfConditions(tree): boolean;  // 重入时使用：只检查 self/both 的项
 
-    /** 返回左侧第一个能抢占的子节点下标，没有则返回 running，条件树返回 error 时返回 ERROR */
-    protected _checkPreempt(tree, running: number): number | typeof ERROR;
+    /** 返回左侧第一个能抢占的子节点下标，没有则返回 running */
+    protected _checkPreempt(tree, running: number): number;
 }
 
 class Selector extends Node {
@@ -371,9 +369,7 @@ class Selector extends Node {
             i = 0;
         } else {
             const k = this._checkPreempt(tree, i);
-            if (k === ERROR) {
-                return "error";
-            } else if (k !== i) {
+            if (k !== i) {
                 this.children[i].abort(tree);
                 i = k;
                 checked = true;
@@ -501,8 +497,8 @@ export class MyNode extends Node {
 - 返回 running 时启动了需要清理的东西（移动、监听、定时器），在 `onAbort` 里清理。
 - **组合节点和装饰节点收到子节点的 `"error"` 时，要返回 `"error"`**（ErrorToFailure 这类专门处理 error 的节点除外）。框架不会替节点传递 error。
 - 数据不可信时返回 `"error"` 并打印 warning；代码 bug 用 `this.throw(msg)` 或直接抛异常。
-- 辅助函数返回 `ERROR` 时（`_checkOneof`、`evalConditions`、`_checkPreempt`），先判断 `=== ERROR` 再使用返回值。
-- 声明了 `preemptive` 的组合节点，在重入 running 的子节点之前调用 `_checkPreempt`，返回 `ERROR` 时返回 `"error"`。
+- `_checkOneof` 返回 `ERROR` 时，返回 `"error"`。
+- 声明了 `preemptive` 的组合节点，在重入 running 的子节点之前调用 `_checkPreempt`。
 - 会放进条件树的节点要声明 `status`，编辑器才能检查（4.4 节）。
 - 修改或交出去的参数声明成 `json`（第 5 节）。
 
@@ -550,10 +546,9 @@ export class MyNode extends Node {
 
 **状态与错误**
 
-- `error` 由父节点逐层传递，不当成 failure（第 3 节），新增 `ErrorToFailure`。依靠 error 表达"目标不存在就走下一个分支"的树（比如 GetField 的对象不存在），要包一层 `ErrorToFailure`，或者在前面加 NotNull 判断。条件树返回 error 时不当成 false。
+- `error` 由父节点逐层传递，不当成 failure（第 3 节），新增 `ErrorToFailure`。依靠 error 表达"目标不存在就走下一个分支"的树（比如 GetField 的对象不存在），要包一层 `ErrorToFailure`，或者在前面加 NotNull 判断。
 - 执行时数据不对一律返回 error（3.3 节）。1.x 里 Math 参数个数不对、最小值大于最大值时打日志并返回 failure。
 - 节点抛异常时中断整棵树：新增 `TreeEvent.EXCEPTION`，`TreeStatus` 新增 `"exception"`。
-- `evalConditions`、`evalSelfConditions` 返回 `boolean | typeof ERROR`，`_checkPreempt` 返回 `number | typeof ERROR`。
 
 **节点和参数**
 

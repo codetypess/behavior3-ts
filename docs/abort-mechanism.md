@@ -221,11 +221,9 @@ Selector  (preemptive)
 8. 只有声明了 `preemptive: true` 的组合节点（内置节点里只有 Selector）才做抢占检查；其他父节点下没有任何额外开销。
 9. 被打断的分支会经过 `abort()`：从下往上调用 `onAbort`，清掉状态。下次再执行时**从头开始**。需要接着之前的进度，就把进度存进黑板。
 10. 条件在阈值附近抖动的问题，框架不处理，由条件自己做滞回，或者在 abort 模式上选择不配 self。
-11. 条件树返回 error 时不当成 false：检查条件的节点返回 `"error"`，抢占检查时由父节点返回 `"error"`，正在运行的分支被中止。
+11. 条件只有 true 和 false：条件树返回 error（数据不可信）时，条件为 false，不运行被装饰的节点。
 
 ## 9. 代码骨架
-
-省略了中断和 error 的处理：条件树返回 error 时，`evalConditions`、`evalSelfConditions` 和 `_checkPreempt` 返回 `ERROR`，节点返回 `"error"`（见 [design.md](design.md) 4.3 节）。
 
 ```ts
 // Node.tick：进入检查 + self 检查

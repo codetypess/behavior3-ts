@@ -143,7 +143,7 @@ export type AbortMode = "none" | "self" | "lower" | "both";
 export interface ConditionData {
     /** Default `none`. */
     abort?: AbortMode;
-    /** The condition tree, it must only return `success`, `failure` or `error`. */
+    /** The condition tree, `success` is true, `failure` and `error` are false, `running` is not allowed. */
     root: NodeData;
 }
 
@@ -284,18 +284,26 @@ export abstract class Node {
 
     /**
      * Evaluates all conditions, used when entering the node and when checking preemption.
-     * Returns `ERROR` when a condition tree returns `error`.
      */
-    evalConditions(tree: Tree<Context, unknown>): boolean | typeof ERROR {
-        return Node._evalConditions(tree, this._conditions);
+    evalConditions(tree: Tree<Context, unknown>): boolean {
+        for (const condition of this._conditions) {
+            if (!Node._evalCondition(tree, condition.root)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
      * Evaluates `self` and `both` conditions, used when the node is running.
-     * Returns `ERROR` when a condition tree returns `error`.
      */
-    evalSelfConditions(tree: Tree<Context, unknown>): boolean | typeof ERROR {
-        return Node._evalConditions(tree, this._selfConditions);
+    evalSelfConditions(tree: Tree<Context, unknown>): boolean {
+        for (const condition of this._selfConditions) {
+            if (!Node._evalCondition(tree, condition.root)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -320,10 +328,10 @@ export abstract class Node {
         }
 
         if (this._conditions.length > 0) {
-            let passed: boolean | typeof ERROR;
+            let passed: boolean;
             if (tree.isRunning(this)) {
                 passed = this.evalSelfConditions(tree);
-                if (passed !== true && !tree.__interrupted) {
+                if (!passed && !tree.__interrupted) {
                     this.abort(tree);
                 }
             } else {
@@ -331,11 +339,6 @@ export abstract class Node {
             }
             if (tree.__interrupted) {
                 return "running";
-            } else if (passed === ERROR) {
-                if (cfg.debug || tree.debug) {
-                    this._debugStatus(tree, "error", " (conditions)");
-                }
-                return "error";
             } else if (!passed) {
                 if (cfg.debug || tree.debug) {
                     this._debugStatus(tree, "failure", " (conditions)");
@@ -511,20 +514,16 @@ export abstract class Node {
      *
      * @param tree The behavior tree instance
      * @param running The index of the running child
-     * @returns The index of the child to run, `running` if no child preempts it, `ERROR` when
-     * a condition tree returns `error`, the node should return `error` then
+     * @returns The index of the child to run, `running` if no child preempts it
      */
-    protected _checkPreempt(tree: Tree<Context, unknown>, running: number): number | typeof ERROR {
+    protected _checkPreempt(tree: Tree<Context, unknown>, running: number): number {
         const preemptors = this._preemptors;
         if (preemptors) {
             for (const i of preemptors) {
                 if (i >= running) {
                     break;
                 }
-                const passed = this._children[i].evalConditions(tree);
-                if (passed === ERROR) {
-                    return ERROR;
-                } else if (passed) {
+                if (this._children[i].evalConditions(tree)) {
                     return i;
                 }
             }
@@ -556,21 +555,8 @@ export abstract class Node {
         );
     }
 
-    /** ANDs the conditions, stops at the first `false` or `ERROR`. */
-    private static _evalConditions(
-        tree: Tree<Context, unknown>,
-        conditions: readonly Condition[],
-    ): boolean | typeof ERROR {
-        for (let i = 0; i < conditions.length; i++) {
-            const passed = Node._evalCondition(tree, conditions[i].root);
-            if (passed !== true) {
-                return passed;
-            }
-        }
-        return true;
-    }
-
-    private static _evalCondition(tree: Tree<Context, unknown>, root: Node): boolean | typeof ERROR {
+    /** A condition is only true or false, `error` (untrustworthy data) is false. */
+    private static _evalCondition(tree: Tree<Context, unknown>, root: Node): boolean {
         const status = root.tick(tree);
         if (tree.__interrupted) {
             return false;
@@ -578,9 +564,6 @@ export abstract class Node {
             root.error(`condition tree must not return 'running'`);
             root.abort(tree);
             return false;
-        } else if (status === "error") {
-            // not false, the node checking the conditions returns `error`
-            return ERROR;
         } else {
             return status === "success";
         }

@@ -161,17 +161,14 @@ describe("error status", () => {
 });
 
 describe("error in conditions", () => {
-    it("is not false when entering", () => {
-        const spec = (root: NodeSpec) =>
-            n("Selector", "sel", { children: [probe("a", { conditions: [cond(root)] }), probe("b")] });
-        const bad = run(spec(err("c")));
-        assert.equal(bad.status, "error");
-        assert.deepEqual(bad.log, ["tick:c"]);
+    // a condition is only true or false: error is false, the decorated node is not run
 
-        // handled in the condition tree: false
-        const handled = run(spec(n("ErrorToFailure", "etf", { children: [err("c")] })));
-        assert.equal(handled.status, "success");
-        assert.deepEqual(handled.log, ["tick:c", "tick:b"]);
+    it("is false when entering", () => {
+        const { status, log } = run(
+            n("Selector", "sel", { children: [probe("a", { conditions: [cond(err("c"))] }), probe("b")] }),
+        );
+        assert.equal(status, "success");
+        assert.deepEqual(log, ["tick:c", "tick:b"]);
     });
 
     it("aborts the running node when a self condition returns error", () => {
@@ -181,12 +178,12 @@ describe("error in conditions", () => {
         tree.tick();
         ctx.takeLog();
         tree.blackboard.set("c", "error");
-        assert.equal(tree.tick(), "error");
+        assert.equal(tree.tick(), "failure");
         assert.deepEqual(ctx.takeLog(), ["tick:c", "abort:a"]);
         assert.equal(tree.isRunning(tree.root!), false);
     });
 
-    it("the preemptive parent returns error when checking preemption", () => {
+    it("doesn't preempt when a lower condition returns error", () => {
         for (const parent of ["Selector", "PrioritySelector"]) {
             const ctx = new TestContext();
             const tree = ctx.createTree(
@@ -197,17 +194,21 @@ describe("error in conditions", () => {
             tree.tick();
             ctx.takeLog();
             tree.blackboard.set("c", "error");
-            assert.equal(tree.tick(), "error", parent);
-            // _checkPreempt returns ERROR, the running child is aborted when the parent finishes
-            assert.deepEqual(ctx.takeLog(), ["tick:c", "abort:b"], parent);
-            assert.equal(tree.isRunning(tree.root!), false, parent);
+            assert.equal(tree.tick(), "running", parent);
+            assert.deepEqual(ctx.takeLog(), ["tick:c", "tick:b"], parent);
         }
     });
 
     it("stops at the first error", () => {
         const { status, log } = run(probe("a", { conditions: [cond(err("c1")), cond(probe("c2"))] }));
-        assert.equal(status, "error");
+        assert.equal(status, "failure");
         assert.deepEqual(log, ["tick:c1"]);
+    });
+
+    it("a condition node in the main tree still returns error", () => {
+        const { status, log } = run(n("Selector", "sel", { children: [err("isHero"), probe("minion")] }));
+        assert.equal(status, "error");
+        assert.deepEqual(log, ["tick:isHero"]);
     });
 });
 
