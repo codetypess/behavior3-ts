@@ -1,6 +1,7 @@
 import {
     AbortMode,
     Context,
+    ERROR,
     Node,
     NodeData,
     NodeDef,
@@ -166,7 +167,9 @@ export class PrioritySelector extends Node {
             i = 0;
         } else {
             const k = this._checkPreempt(tree, i);
-            if (k !== i) {
+            if (k === ERROR) {
+                return "error";
+            } else if (k !== i) {
                 this.children[i].abort(tree);
                 i = k;
                 checked = true;
@@ -178,8 +181,8 @@ export class PrioritySelector extends Node {
             if (status === "running") {
                 tree.setState(this, i);
                 return "running";
-            } else if (status === "success") {
-                return "success";
+            } else if (status === "success" || status === "error") {
+                return status;
             }
         }
         return "failure";

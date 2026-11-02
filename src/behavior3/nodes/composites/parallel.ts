@@ -1,55 +1,88 @@
 import { type Context } from "../../context";
-import { Node, NodeDef, Status } from "../../node";
+import { Node, NodeData, NodeDef, Status } from "../../node";
 import { registerNode } from "../../register-node";
 import { Tree } from "../../tree";
 
 /**
- * Parallel node executes all child nodes simultaneously.
+ * Parallel node executes all child nodes every tick until the result is decided.
  *
- * The execution flow is:
- * 1. Execute all child nodes in parallel
- * 2. If any child returns `running`, store its state and continue next tick
- * 3. Return `running` until all children complete
- * 4. When all children complete, return `success`
+ * With `successCount` (all children by default):
+ * + `success`: as soon as `successCount` children have succeeded
+ * + `failure`: as soon as so many children have failed that `successCount` can't be reached
+ * + `error`: as soon as a child returns `error`
+ * + `running`: otherwise, the finished children are not ticked again
  *
- * Each child's execution state is tracked independently, allowing true parallel behavior.
- * The node only succeeds when all children have completed successfully.
+ * The children still running are aborted when this node finishes.
  */
 @registerNode
 export class Parallel extends Node {
+    declare args: { readonly successCount?: number };
+
+    constructor(context: Context, cfg: NodeData) {
+        super(context, cfg);
+
+        const count = this.args.successCount;
+        if (
+            count !== undefined &&
+            (!Number.isInteger(count) || count < 1 || count > this.children.length)
+        ) {
+            this.throw(`successCount must be in [1, ${this.children.length}]: ${count}`);
+        }
+    }
+
     override onTick(tree: Tree<Context, unknown>): Status {
         const children = this.children;
-        const done = tree.getState<boolean[]>(this) ?? [];
-        let count = 0;
+        const successCount = this.args.successCount ?? children.length;
+        // the maximum number of failed children while successCount is still reachable
+        const failureCount = children.length - successCount;
+        const results = tree.getState<Status[]>(this) ?? [];
+        let succeeded = 0;
+        let failed = 0;
 
         for (let i = 0; i < children.length; i++) {
-            if (!done[i] && children[i].tick(tree) !== "running") {
-                done[i] = true;
+            if (results[i] === undefined) {
+                const status = children[i].tick(tree);
+                if (status === "error") {
+                    return "error";
+                } else if (status !== "running") {
+                    results[i] = status;
+                }
             }
-            if (done[i]) {
-                count++;
+            if (results[i] === "success" && ++succeeded >= successCount) {
+                return "success";
+            } else if (results[i] === "failure" && ++failed > failureCount) {
+                return "failure";
             }
         }
 
-        if (count === children.length) {
+        if (succeeded >= successCount) {
+            // no children
             return "success";
-        } else {
-            tree.setState(this, done);
-            return "running";
         }
+        tree.setState(this, results);
+        return "running";
     }
 
     static override get descriptor(): NodeDef {
         return {
             name: "Parallel",
             type: "Composite",
-            status: ["success", "|running"],
+            status: ["|success", "|failure", "|running"],
             children: -1,
             desc: "并行执行",
+            args: [
+                {
+                    name: "successCount",
+                    type: "int?",
+                    desc: "成功数量（达到即成功，默认全部）",
+                },
+            ],
             doc: `
-                + 并行执行所有子节点
-                + 当有子节点返回 \`running\` 时，返回 \`running\` 状态
-                + 执行完所有子节点后，返回 \`success\``,
+                + 每次执行时，执行所有还没结束的子节点
+                + 成功的子节点达到 \`successCount\`（默认全部子节点）时，立即返回 \`success\`
+                + 失败的子节点多到不可能达到 \`successCount\` 时，立即返回 \`failure\`
+                + 有子节点返回 \`error\` 时，立即返回 \`error\`
+                + 返回时中止其他还在运行的子节点`,
         };
     }
 }

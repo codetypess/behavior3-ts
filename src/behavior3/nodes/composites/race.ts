@@ -26,9 +26,9 @@ export class Race extends Node {
         for (let i = 0; i < children.length; i++) {
             if (!failed[i]) {
                 const status = children[i].tick(tree);
-                if (status === "success") {
+                if (status === "success" || status === "error") {
                     // the other running children are aborted when this node finishes
-                    return "success";
+                    return status;
                 } else if (status !== "running") {
                     failed[i] = true;
                 }

@@ -1,5 +1,5 @@
 import { type Context, type ObjectType } from "../../context";
-import { Node, NodeDef, Status } from "../../node";
+import { ERROR, Node, NodeDef, Status } from "../../node";
 import { registerNode } from "../../register-node";
 import { Tree } from "../../tree";
 
@@ -14,15 +14,19 @@ export class SetField extends Node {
     override onTick(tree: Tree<Context, unknown>): Status {
         const [obj] = this.input;
         if (typeof obj !== "object" || !obj) {
-            this.throw(`invalid object: ${obj}`);
+            this.warn(`invalid object: ${obj}`);
+            return "error";
         }
 
         const args = this.args;
         const field = this._checkOneof(1, args.field);
         const value = this._checkOneof(2, args.value, null);
 
-        if (typeof field !== "string" && typeof field !== "number") {
-            this.throw(`invalid field: ${field}`);
+        if (field === ERROR) {
+            return "error";
+        } else if (typeof field !== "string" && typeof field !== "number") {
+            this.warn(`invalid field: ${field}`);
+            return "error";
         } else if (value === null || value === undefined) {
             delete obj[field];
             return "success";
@@ -46,8 +50,8 @@ export class SetField extends Node {
             ],
             doc: `
                 + 对输入对象设置 \`field\` 和 \`value\`
-                + 输入参数1必须为对象，否则返回 \`failure\`
-                + 如果 \`field\` 不为 \`string\`, 也返回 \`failure\`
+                + 输入参数1必须为对象，否则返回 \`error\`
+                + 如果 \`field\` 不为 \`string\` 或 \`number\`，也返回 \`error\`
                 + 如果 \`value\` 为 \`undefined\` 或 \`null\`, 则删除 \`field\` 的值
             `,
         };

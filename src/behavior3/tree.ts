@@ -14,8 +14,8 @@ export interface TreeData {
 export const enum TreeEvent {
     CLEANED = "treeCleaned",
     INTERRUPTED = "treeInterrupted",
-    /** A node throws an error while ticking, args: `(error: Error, node: Node)`. */
-    ERROR = "treeError",
+    /** A node throws an exception while ticking, args: `(error: Error, node: Node)`. */
+    EXCEPTION = "treeException",
     BEFORE_TICKED = "treeBeforeTicked",
     AFTER_TICKED = "treeAfterTicked",
     TICKED_SUCCESS = "treeTickedSuccess",
@@ -24,10 +24,11 @@ export const enum TreeEvent {
 
 /**
  * The status of the tree.
+ * + `error`: A node returns `error` and it is not handled by `ErrorToFailure`.
  * + `interrupted`: The tree is interrupted by `tree.interrupt()`.
- * + `error`: A node throws in this tick, the tree is interrupted.
+ * + `exception`: A node throws in this tick, the tree is interrupted.
  */
-export type TreeStatus = Status | "interrupted" | "error";
+export type TreeStatus = Status | "interrupted" | "exception";
 
 let treeId = 0;
 
@@ -54,7 +55,7 @@ export class Tree<C extends Context, Owner> {
     private _root?: Node;
     private _status: TreeStatus = "success";
     private _states: unknown[] = [];
-    private _tickError: boolean = false;
+    private _tickException: boolean = false;
     private _callback?: { interrupt: boolean };
     /** The tick count when the node is ticked last time, only recorded in debug mode. */
     private _ticked: number[] = [];
@@ -122,8 +123,8 @@ export class Tree<C extends Context, Owner> {
 
     /**
      * @private Ticks the node in an async callback (like `Listen` and `Delay`), which is
-     * independent of `tick`. An error only stops this subtree without interrupting the tree,
-     * and the running nodes left in the subtree are aborted.
+     * independent of `tick`. An error or an exception only stops this subtree without affecting
+     * the tree, and the running nodes left in the subtree are aborted.
      */
     __tickInCallback(node: Node) {
         const outer = this._callback;
@@ -147,14 +148,14 @@ export class Tree<C extends Context, Owner> {
         }
     }
 
-    /** @private Called when a node throws, dispatches `ERROR` and stops the tick. */
-    __error(node: Node, error: Error) {
-        this.context.dispatch(TreeEvent.ERROR, this, error, node);
+    /** @private Called when a node throws, dispatches `EXCEPTION` and stops the tick. */
+    __exception(node: Node, error: Error) {
+        this.context.dispatch(TreeEvent.EXCEPTION, this, error, node);
         if (this._callback) {
             // only stops the subtree of the callback
             this.__interrupted = true;
         } else {
-            this._tickError = true;
+            this._tickException = true;
             this.interrupt();
         }
     }
@@ -239,7 +240,7 @@ export class Tree<C extends Context, Owner> {
         }
 
         this._ticking = true;
-        this._tickError = false;
+        this._tickException = false;
 
         if (!this.isRunning(root)) {
             context.dispatch(TreeEvent.BEFORE_TICKED, this);
@@ -257,6 +258,11 @@ export class Tree<C extends Context, Owner> {
             this.__runningNode = undefined;
             context.dispatch(TreeEvent.AFTER_TICKED, this);
             context.dispatch(TreeEvent.TICKED_FAILURE, this);
+        } else if (status === "error") {
+            // finished like `failure`, the error is logged by the node returning it
+            this._status = "error";
+            this.__runningNode = undefined;
+            context.dispatch(TreeEvent.AFTER_TICKED, this);
         } else {
             this._status = "running";
         }
@@ -275,8 +281,8 @@ export class Tree<C extends Context, Owner> {
 
     private _doInterrupt() {
         const values = this.blackboard.values;
-        this._status = this._tickError ? "error" : "interrupted";
-        this._tickError = false;
+        this._status = this._tickException ? "exception" : "interrupted";
+        this._tickException = false;
         if (this.root) {
             this._abortAll(this.root);
         }

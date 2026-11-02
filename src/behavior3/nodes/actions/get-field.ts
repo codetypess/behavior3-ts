@@ -1,5 +1,5 @@
 import { type Context } from "../../context";
-import { Node, NodeDef, Status } from "../../node";
+import { ERROR, Node, NodeDef, Status } from "../../node";
 import { registerNode } from "../../register-node";
 import { Tree } from "../../tree";
 
@@ -11,15 +11,21 @@ export class GetField extends Node {
     override onTick(tree: Tree<Context, unknown>): Status {
         const [obj] = this.input;
         if (typeof obj !== "object" || !obj) {
-            this.throw(`invalid object: ${obj}`);
+            this.warn(`invalid object: ${obj}`);
+            return "error";
         }
 
         const args = this.args;
         const field = this._checkOneof(1, args.field);
+        if (field === ERROR) {
+            return "error";
+        } else if (typeof field !== "string" && typeof field !== "number") {
+            this.warn(`invalid field: ${field}`);
+            return "error";
+        }
+
         const value = obj[field];
-        if (typeof field !== "string" && typeof field !== "number") {
-            this.throw(`invalid field: ${field}`);
-        } else if (value !== undefined && value !== null) {
+        if (value !== undefined && value !== null) {
             this.output.push(value);
             return "success";
         } else {
@@ -47,6 +53,7 @@ export class GetField extends Node {
             doc: `
                 + 合法元素不包括 \`undefined\` 和 \`null\`
                 + 只有获取到合法元素时候才会返回 \`success\`，否则返回 \`failure\`
+                + 输入不是对象，或者 \`field\` 不为 \`string\` 或 \`number\` 时，返回 \`error\`
             `,
         };
     }

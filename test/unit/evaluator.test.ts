@@ -168,8 +168,8 @@ describe("expressions in nodes", () => {
     it("a bad value in an expression is an error", () => {
         const ctx = new TestContext();
         const tree = ctx.createTree(n("Check", "c", { args: { value: "hp > 1" } }));
-        const { result, error } = captureConsole(() => tree.tick());
+        const { result, warn } = captureConsole(() => tree.tick());
         assert.equal(result, "error");
-        assert.match(error[0], /'hp' is not found/);
+        assert.match(warn[0], /Check#c: .*'hp' is not found/);
     });
 });

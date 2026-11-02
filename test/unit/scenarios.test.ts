@@ -94,6 +94,7 @@ describe("conditions in composites", () => {
         const ctx = new TestContext();
         const tree = ctx.createTree(
             n("Parallel", "par", {
+                args: { successCount: 1 },
                 children: [
                     n("Group", "g", { conditions: [cond(probe("ok"), "self")], children: [probe("a")] }),
                     probe("b"),
@@ -107,7 +108,7 @@ describe("conditions in composites", () => {
         tree.blackboard.set("ok", "failure");
         assert.equal(tree.tick(), "running");
         assert.deepEqual(ctx.takeLog(), ["tick:ok", "abort:a", "abort:g", "tick:b"]);
-        // the aborted branch counts as finished
+        // the aborted branch fails, one success is enough
         tree.blackboard.set("b", "success");
         assert.equal(tree.tick(), "success");
         assert.deepEqual(ctx.takeLog(), ["tick:b"]);

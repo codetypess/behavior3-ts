@@ -10,7 +10,8 @@ export class Filter extends Node {
     override onTick(tree: Tree<Context, unknown>): Status {
         const [arr] = this.input;
         if (!(arr instanceof Array)) {
-            this.throw(`invalid array: ${arr}`);
+            this.warn(`invalid array: ${arr}`);
+            return "error";
         }
 
         if (arr.length === 0) {
@@ -29,6 +30,8 @@ export class Filter extends Node {
             if (status === "running") {
                 tree.setState(this, [i, newArr]);
                 return "running";
+            } else if (status === "error") {
+                return "error";
             } else if (status === "success") {
                 newArr.push(arr[i]);
             }
@@ -52,6 +55,7 @@ export class Filter extends Node {
                 + 只能有一个子节点，多个仅执行第一个
                 + 遍历输入数组，将当前元素写入\`变量\`，满足条件的元素放入新数组
                 + 只有当新数组不为空时，才返回 \`success\`
+                + 输入不是数组，或者子节点返回 \`error\` 时，返回 \`error\`
             `,
         };
     }

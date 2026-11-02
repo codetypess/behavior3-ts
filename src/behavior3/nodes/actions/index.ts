@@ -1,5 +1,5 @@
 import { type Context } from "../../context";
-import { Node, NodeDef, Status } from "../../node";
+import { ERROR, Node, NodeDef, Status } from "../../node";
 import { registerNode } from "../../register-node";
 import { Tree } from "../../tree";
 
@@ -12,16 +12,22 @@ export class Index extends Node {
         const [arr] = this.input;
 
         if (!Array.isArray(arr)) {
-            this.throw(`invalid array: ${arr}`);
+            this.warn(`invalid array: ${arr}`);
+            return "error";
         }
 
         const index = this._checkOneof(1, this.args.index);
+        if (index === ERROR) {
+            return "error";
+        } else if (typeof index !== "number" || isNaN(index)) {
+            this.warn(`invalid index: ${index}`);
+            return "error";
+        }
+
         const value = arr[index];
         if (value !== undefined && value !== null) {
             this.output.push(value);
             return "success";
-        } else if (typeof index !== "number" || isNaN(index)) {
-            this.throw(`invalid index: ${index}`);
         }
 
         return "failure";
@@ -48,6 +54,7 @@ export class Index extends Node {
                 + 合法元素不包括 \`undefined\` 和 \`null\`
                 + 索引数组的时候，第一个元素的索引为 0
                 + 只有索引到有合法元素时候才会返回 \`success\`，否则返回 \`failure\`
+                + 输入不是数组，或者索引不是数字时，返回 \`error\`
             `,
         };
     }

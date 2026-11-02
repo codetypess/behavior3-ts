@@ -153,41 +153,38 @@ describe("interrupt", () => {
         assert.equal(tree.isRunning(tree.root!), false);
     });
 
-    it("an error stops the tick and returns error", () => {
+    it("an exception stops the tick and returns exception", () => {
         const ctx = new TestContext();
         const tree = ctx.createTree(n("Sequence", "seq", { children: [probe("a"), n("Throw", "t"), probe("b")] }));
         const { result, error } = captureConsole(() => tree.tick());
-        assert.equal(result, "error");
+        assert.equal(result, "exception");
         assert.match(error[0], /boom/);
         assert.deepEqual(ctx.takeLog(), ["tick:a"]);
         assert.equal(tree.isRunning(tree.root!), false);
     });
 
-    it("dispatches ERROR with the error and the node, then INTERRUPTED", () => {
+    it("dispatches EXCEPTION with the error and the node, then INTERRUPTED", () => {
         const ctx = new TestContext();
-        const tree = ctx.createTree(
-            n("Selector", "sel", { children: [n("Concat", "x", { input: ["a", "b"] }), probe("b")] }),
-        );
-        tree.blackboard.set("a", 1);
+        const tree = ctx.createTree(n("Selector", "sel", { children: [n("Throw", "x"), probe("b")] }));
         const events: string[] = [];
-        ctx.on(TreeEvent.ERROR, tree, (error: Error, node: Node) => events.push(`error:${node.id}:${error.message}`), "test");
+        ctx.on(TreeEvent.EXCEPTION, tree, (error: Error, node: Node) => events.push(`exception:${node.id}:${error.message}`), "test");
         ctx.on(TreeEvent.INTERRUPTED, tree, () => events.push("interrupted"), "test");
         const { result, error } = captureConsole(() => tree.tick());
-        assert.equal(result, "error");
-        assert.match(error[0], /Concat#x: invalid array: 1 or undefined/);
-        assert.equal(events.length, 2);
-        assert.match(events[0], /^error:x:.*invalid array/);
-        assert.equal(events[1], "interrupted");
-        // the Selector doesn't take the error as a failure and fall back to the next child
+        assert.equal(result, "exception");
+        assert.match(error[0], /Throw#x: Error: boom/);
+        assert.deepEqual(events, ["exception:x:boom", "interrupted"]);
+        // the Selector doesn't take the exception as a failure and fall back to the next child
         assert.deepEqual(ctx.takeLog(), []);
     });
 
     it("prints the location of the node once", () => {
         const ctx = new TestContext();
-        const thrown = ctx.createTree(n("Concat", "x", { input: ["a", "b"] }));
+        const thrown = ctx.createTree(probe("x"));
+        const node = thrown.root!;
+        node.onTick = () => node.throw("bad data");
         const e1 = captureConsole(() => thrown.tick()).error[0];
-        assert.match(e1, /^Error: test-tree-\d+->Concat#x: invalid array/);
-        assert.equal(e1.match(/Concat#x/g)!.length, 1);
+        assert.match(e1, /^Error: test-tree-\d+->Probe#x: bad data/);
+        assert.equal(e1.match(/Probe#x/g)!.length, 1);
 
         // an error not thrown by node.throw gets the location
         const plain = ctx.createTree(n("Throw", "t"));
@@ -202,9 +199,9 @@ describe("interrupt", () => {
             throw "oops";
         };
         let received: unknown;
-        ctx.on(TreeEvent.ERROR, tree, (error: Error) => (received = error), "test");
+        ctx.on(TreeEvent.EXCEPTION, tree, (error: Error) => (received = error), "test");
         const { result } = captureConsole(() => tree.tick());
-        assert.equal(result, "error");
+        assert.equal(result, "exception");
         assert.ok(received instanceof Error);
         assert.equal((received as Error).message, "oops");
     });
@@ -255,21 +252,21 @@ describe("interrupt", () => {
     });
 });
 
-describe("errors", () => {
-    it("the error status is only for the tick with the error", () => {
+describe("exceptions", () => {
+    it("the exception status is only for the tick with the exception", () => {
         const ctx = new TestContext();
         const tree = ctx.createTree(n("Sequence", "seq", { children: [probe("a"), probe("b")] }));
         tree.blackboard.set("a", "running");
         tree.tick();
         const probeNode = tree.root!.children[0];
         const onTick = probeNode.onTick;
-        // the error wins over an interrupt in the same tick
+        // the exception wins over an interrupt in the same tick
         probeNode.onTick = (t) => {
             t.interrupt();
             throw new Error("boom");
         };
-        assert.equal(captureConsole(() => tree.tick()).result, "error");
-        assert.equal(tree.status, "error");
+        assert.equal(captureConsole(() => tree.tick()).result, "exception");
+        assert.equal(tree.status, "exception");
         assert.equal(tree.isRunning(tree.root!), false);
 
         probeNode.onTick = onTick;
@@ -291,14 +288,14 @@ describe("errors", () => {
         const ctx = new TestContext();
         const tree = ctx.createTree(listenTree());
         const events: string[] = [];
-        ctx.on(TreeEvent.ERROR, tree, (_: Error, node: Node) => events.push(`error:${node.id}`), "test");
+        ctx.on(TreeEvent.EXCEPTION, tree, (_: Error, node: Node) => events.push(`exception:${node.id}`), "test");
         ctx.on(TreeEvent.INTERRUPTED, tree, () => events.push("interrupted"), "test");
         tree.tick();
         ctx.takeLog();
 
         const { error } = captureConsole(() => ctx.dispatch("e"));
         assert.match(error[0], /boom/);
-        assert.deepEqual(events, ["error:t"]);
+        assert.deepEqual(events, ["exception:t"]);
         // no fallback, and the main branch is still running
         assert.deepEqual(ctx.takeLog(), []);
         assert.equal(tree.status, "running");
@@ -308,7 +305,7 @@ describe("errors", () => {
         assert.deepEqual(ctx.takeLog(), ["tick:main"]);
         // the listener still works
         captureConsole(() => ctx.dispatch("e"));
-        assert.deepEqual(events, ["error:t", "error:t"]);
+        assert.deepEqual(events, ["exception:t", "exception:t"]);
     });
 
     it("aborts the running nodes of the callback subtree", () => {

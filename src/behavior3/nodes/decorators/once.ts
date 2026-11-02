@@ -21,8 +21,9 @@ export class Once extends Node {
         }
 
         const status = this.children[0].tick(tree);
-        if (status === "running") {
-            return "running";
+        if (status === "running" || status === "error") {
+            // not used up by an error
+            return status;
         }
         tree.blackboard.set(onceKey, true);
         return "success";
@@ -37,7 +38,8 @@ export class Once extends Node {
             desc: "只执行一次",
             doc: `
                 + 只能有一个子节点，多个仅执行第一个
-                + 第一次执行完全部子节点时返回 \`success\`，之后永远返回 \`failure\``,
+                + 第一次执行完全部子节点时返回 \`success\`，之后永远返回 \`failure\`
+                + 当子节点返回 \`error\` 时返回 \`error\`，不算执行过，下次还会执行`,
         };
     }
 }

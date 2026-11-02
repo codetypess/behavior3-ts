@@ -5,7 +5,7 @@ import { captureConsole, n, NodeSpec, probe, TestContext } from "./helpers";
 
 /**
  * Ticks a single node once with the given blackboard values.
- * The status is `error` when the node throws.
+ * The status is `exception` when the node throws.
  */
 const run = (spec: NodeSpec, values: Record<string, unknown> = {}) => {
     const ctx = new TestContext();
@@ -138,7 +138,7 @@ describe("action nodes", () => {
         assert.equal(run(byInput, { obj: [1, 2], key: 1 }).bb.get("v"), 2);
         const bad = run(byInput, { obj: {}, key: true });
         assert.equal(bad.status, "error");
-        assert.match(bad.error[0], /invalid field: true/);
+        assert.match(bad.warn[0], /invalid field: true/);
     });
 
     it("SetField sets or deletes a field", () => {
@@ -152,7 +152,7 @@ describe("action nodes", () => {
         assert.equal(run(n("SetField", "x", { args: { field: "a" }, input: ["obj"] }), { obj: 1 }).status, "error");
         const bad = run(n("SetField", "x", { input: ["obj", "f"] }), { obj, f: true });
         assert.equal(bad.status, "error");
-        assert.match(bad.error[0], /invalid field: true/);
+        assert.match(bad.warn[0], /invalid field: true/);
     });
 
     it("SetField gets a fresh json value every tick", () => {
@@ -178,7 +178,7 @@ describe("action nodes", () => {
         assert.equal(run(byInput, { arr: [1, 2], i: -1 }).status, "failure");
         const bad = run(byInput, { arr: [1, 2], i: "a" });
         assert.equal(bad.status, "error");
-        assert.match(bad.error[0], /invalid index: a/);
+        assert.match(bad.warn[0], /invalid index: a/);
     });
 
     it("Push pushes an element", () => {
@@ -248,7 +248,7 @@ describe("action nodes", () => {
         }
     });
 
-    it("Math throws on bad parameters", () => {
+    it("Math returns error on bad parameters", () => {
         const math = (op: string, values: Record<string, unknown>, opts: Record<string, unknown> = {}) =>
             run(n("Math", "x", { args: { op, ...opts }, input: Object.keys(values), output: ["v"] }), values);
         const cases: [string, Record<string, unknown>, Record<string, unknown>, RegExp][] = [
@@ -263,9 +263,9 @@ describe("action nodes", () => {
             ["sqrt", { a: -1 }, {}, /result is NaN/],
         ];
         for (const [op, values, opts, msg] of cases) {
-            const { status, error } = math(op, values, opts);
+            const { status, warn } = math(op, values, opts);
             assert.equal(status, "error", op);
-            assert.match(error[0], msg);
+            assert.match(warn[0], msg);
         }
     });
 
@@ -335,19 +335,29 @@ describe("action nodes", () => {
         assert.equal(tree.tick(), "success");
     });
 
-    it("missing required input throws", () => {
+    it("missing required input returns error", () => {
         const ctx = new TestContext();
         const tree = ctx.createTree(n("Index", "x", { input: ["arr", "i"], output: ["v"] }));
         tree.blackboard.set("arr", [1]);
-        const { result, error } = captureConsole(() => tree.tick());
+        tree.blackboard.set("v", 0);
+        const { result, warn } = captureConsole(() => tree.tick());
         assert.equal(result, "error");
-        assert.match(error[0], /missing input 'i'/);
+        assert.match(warn[0], /Index#x: missing input 'i'/);
+        // the output of an error is not written
+        assert.equal(tree.blackboard.get("v"), 0);
     });
 
-    it("an input of the wrong type throws", () => {
-        const { status, error } = run(n("Concat", "x", { input: ["a", "b"] }), { a: [1], b: 2 });
+    it("missing input with a default value only warns", () => {
+        const { status, warn } = run(n("Wait", "x", { input: ["t"] }));
+        assert.equal(status, "running");
+        assert.match(warn[0], /missing input 't'/);
+    });
+
+    it("an input of the wrong type returns error", () => {
+        const { status, warn, error } = run(n("Concat", "x", { input: ["a", "b"] }), { a: [1], b: 2 });
         assert.equal(status, "error");
-        assert.match(error[0], /Concat#x: invalid array: 1 or 2/);
+        assert.match(warn[0], /Concat#x: invalid array: 1 or 2/);
+        assert.deepEqual(error, []);
     });
 });
 

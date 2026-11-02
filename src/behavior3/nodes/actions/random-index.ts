@@ -10,7 +10,8 @@ export class RandomIndex extends Node {
     override onTick(tree: Tree<Context, unknown>): Status {
         const [arr] = this.input;
         if (!(arr instanceof Array)) {
-            this.throw(`invalid array: ${arr}`);
+            this.warn(`invalid array: ${arr}`);
+            return "error";
         }
 
         if (arr.length === 0) {
@@ -41,6 +42,7 @@ export class RandomIndex extends Node {
                 + 合法元素不包括 \`undefined\` 和 \`null\`
                 + 在输入数组中，随机返回其中一个
                 + 当输入数组为空时，或者没有合法元素，返回 \`failure\`
+                + 输入不是数组时，返回 \`error\`
             `,
         };
     }

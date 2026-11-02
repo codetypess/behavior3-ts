@@ -35,6 +35,8 @@ export class RetryUntilSuccess extends Node {
 
         if (status === "success") {
             return "success";
+        } else if (status === "error") {
+            return "error";
         } else {
             tree.setState(this, count);
             return "running";
@@ -58,7 +60,8 @@ export class RetryUntilSuccess extends Node {
             ],
             doc: `
                 + 只能有一个子节点，多个仅执行第一个
-                + 只有当子节点返回 \`success\` 时，才返回 \`success\`，其它情况返回 \`running\` 状态
+                + 只有当子节点返回 \`success\` 时，才返回 \`success\`；返回 \`failure\` 或 \`running\` 时返回 \`running\` 状态
+                + 当子节点返回 \`error\` 时返回 \`error\`，不再重试
                 + 如果设定了尝试次数，超过指定次数则返回 \`failure\``,
         };
     }

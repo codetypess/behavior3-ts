@@ -22,8 +22,8 @@ export class Sequence extends Node {
 
         for (; i < children.length; i++) {
             const status = children[i].tick(tree);
-            if (status === "failure") {
-                return "failure";
+            if (status === "failure" || status === "error") {
+                return status;
             } else if (status === "running") {
                 tree.setState(this, i);
                 return "running";

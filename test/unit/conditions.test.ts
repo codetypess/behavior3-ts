@@ -272,6 +272,8 @@ describe("lower (preemption)", () => {
         const { result: tree, warn } = captureConsole(() =>
             ctx.createTree(
                 n("Parallel", "par", {
+                    // a fails without ending the Parallel
+                    args: { successCount: 1 },
                     children: [
                         probe("a", { conditions: [c("c", "lower")] }),
                         probe("b", { args: { status: "running" } }),
@@ -381,7 +383,7 @@ describe("condition trees", () => {
         const ctx = new TestContext();
         const tree = ctx.createTree(n("Sequence", "seq", { children: [probe("a", { conditions: [cond(n("Throw", "t"))] })] }));
         const { result, error } = captureConsole(() => tree.tick());
-        assert.equal(result, "error");
+        assert.equal(result, "exception");
         assert.match(error[0], /boom/);
         assert.deepEqual(ctx.takeLog(), []);
     });

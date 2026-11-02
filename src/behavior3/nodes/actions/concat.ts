@@ -10,7 +10,8 @@ export class Concat extends Node {
     override onTick(tree: Tree<Context, unknown>): Status {
         const [arr1, arr2] = this.input;
         if (!Array.isArray(arr1) || !Array.isArray(arr2)) {
-            this.throw(`invalid array: ${arr1} or ${arr2}`);
+            this.warn(`invalid array: ${arr1} or ${arr2}`);
+            return "error";
         }
         this.output.push(arr1.concat(arr2));
         return "success";
@@ -26,7 +27,7 @@ export class Concat extends Node {
             input: ["数组1", "数组2"],
             output: ["新数组"],
             doc: `
-                + 如果输入不是数组，则返回 \`failure\`
+                + 如果输入不是数组，则返回 \`error\`
             `,
         };
     }

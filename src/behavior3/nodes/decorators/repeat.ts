@@ -16,8 +16,8 @@ export class Repeat extends Node {
             if (status === "running") {
                 tree.setState(this, i);
                 return "running";
-            } else if (status === "failure") {
-                return "failure";
+            } else if (status === "failure" || status === "error") {
+                return status;
             }
         }
         return "success";
@@ -41,7 +41,7 @@ export class Repeat extends Node {
             ],
             doc: `
                 + 只能有一个子节点，多个仅执行第一个
-                + 当子节点返回 \`failure\` 时，退出遍历并返回 \`failure\` 状态
+                + 当子节点返回 \`failure\` 或 \`error\` 时，退出循环并返回该状态
                 + 执行完所有子节点后，返回 \`success\`
             `,
         };

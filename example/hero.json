@@ -12,6 +12,9 @@
           {
             "id": 3,
             "name": "Parallel",
+            "args": {
+              "successCount": 1
+            },
             "children": [
               {
                 "id": 4,
@@ -133,6 +136,9 @@
                   {
                     "id": 21,
                     "name": "Parallel",
+                    "args": {
+                      "successCount": 2
+                    },
                     "children": [
                       {
                         "id": 22,

@@ -17,7 +17,14 @@ export class Check extends Node {
     }
 
     override onTick(tree: Tree<Context, unknown>): Status {
-        const value = tree.blackboard.eval(this.args.value);
+        let value: unknown;
+        try {
+            value = tree.blackboard.eval(this.args.value);
+        } catch (e) {
+            // a bad value in the blackboard, such as a missing variable
+            this.warn(e instanceof Error ? e.message : String(e));
+            return "error";
+        }
         return value ? "success" : "failure";
     }
 
@@ -31,6 +38,7 @@ export class Check extends Node {
             args: [{ name: "value", type: "expr", desc: "值" }],
             doc: `
                 + 做简单数值公式判定，返回 \`success\` 或 \`failure\`
+                + 求值出错时（比如引用不存在的变量），返回 \`error\`
             `,
         };
     }

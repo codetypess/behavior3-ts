@@ -28,6 +28,8 @@ export class IfElse extends Node {
             if (status === "running") {
                 tree.setState(this, 0);
                 return "running";
+            } else if (status === "error") {
+                return "error";
             }
             i = status === "success" ? 1 : 2;
         }

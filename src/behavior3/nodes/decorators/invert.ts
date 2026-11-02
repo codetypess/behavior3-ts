@@ -7,8 +7,8 @@ import { Tree } from "../../tree";
 export class Invert extends Node {
     override onTick(tree: Tree<Context, unknown>): Status {
         const status = this.children[0].tick(tree);
-        if (status === "running") {
-            return "running";
+        if (status === "running" || status === "error") {
+            return status;
         }
         return status === "failure" ? "success" : "failure";
     }
@@ -24,6 +24,7 @@ export class Invert extends Node {
                 + 只能有一个子节点，多个仅执行第一个
                 + 当子节点返回 \`success\` 时返回 \`failure\`
                 + 当子节点返回 \`failure\` 时返回 \`success\`
+                + 当子节点返回 \`running\` 或 \`error\` 时原样返回，\`error\` 不会被反转
             `,
         };
     }

@@ -10,7 +10,8 @@ export class Includes extends Node {
     override onTick(tree: Tree<Context, unknown>): Status {
         const [arr, element] = this.input;
         if (!Array.isArray(arr)) {
-            this.throw(`invalid array: ${arr}`);
+            this.warn(`invalid array: ${arr}`);
+            return "error";
         } else if (element === undefined || element === null) {
             return "failure";
         }
@@ -27,6 +28,7 @@ export class Includes extends Node {
             desc: "判断元素是否在数组中",
             input: ["数组", "元素"],
             doc: `
+                + 若输入的数组不是数组，返回 \`error\`
                 + 若输入的元素不合法，返回 \`failure\`
                 + 只有数组包含元素时返回 \`success\`，否则返回 \`failure\`
             `,

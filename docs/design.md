@@ -1,22 +1,19 @@
-# behavior3-ts 2.0 设计
+# behavior3-ts 设计
 
-> 状态：运行时已按本文实现，编辑器尚未支持。打断与抢占的逐帧例子和使用建议见 [abort-mechanism.md](abort-mechanism.md)。
+本文是运行时的设计说明。打断与抢占的逐帧例子和使用建议见 [abort-mechanism.md](abort-mechanism.md)，编辑器需要配合的部分见第 9 节，和 1.x 的区别见第 12 节。
 
 ## 1. 概述
 
-2.0 的核心是**参考 UE（Unreal Engine）行为树的装饰器打断（Observer Aborts）实现条件打断**：节点上可以挂条件，条件按 `none` / `self` / `lower` / `both` 四种模式，在节点运行期间打断自己，或者让高优先级的分支抢占正在运行的低优先级分支。
-
-为了让挂在祖先节点上的条件每帧都能被重新判断，执行模型从"基于栈恢复"改为**每帧从根节点重入**，框架也因此简化。同时整理了中止、错误处理和参数语义。
-
-存在不兼容改动，版本号升到 **2.0**（见第 9 节）。
+- **树和单位分开**：同一个树文件只创建一份 Node 实例，存在 `context.trees[path]` 里，所有单位共享。每个单位有自己的 `Tree`，运行状态和黑板都存在 Tree 上。
+- **每帧从根节点执行**：每次 `tree.tick()` 都从根节点出发，沿着 running 的路径往下执行。执行路径上的每个节点每帧都会被执行到，所以挂在祖先节点上的条件每帧都能重新判断。
+- **条件与打断**：节点上可以挂条件，参考 UE（Unreal Engine）行为树的装饰器打断（Observer Aborts），按 `none` / `self` / `lower` / `both` 四种模式，在节点运行期间打断自己，或者让高优先级的分支抢占正在运行的低优先级分支（第 4 节）。
+- **四种节点状态**：`success`、`failure`、`running`、`error`。`error` 表示数据不可信，和代码 bug 引起的异常分开处理（第 3 节）。
 
 ## 2. 执行模型
 
-### 2.1 每帧从根节点重入
+### 2.1 每帧从根节点执行
 
-1.x 把 running 的节点保存在 `tree.stack` 里，每帧从栈顶继续执行，**祖先节点不会被执行到**，挂在祖先上的条件没有机会重新判断。`Parallel`、`Race`、`Timeout` 为了每帧都能执行，只能把子栈搬进 `StackSlice` 自己维护，逻辑复杂。
-
-2.0 每帧调用 `root.tick()`，沿着 running 路径一路走到正在运行的节点，父节点直接拿到 `child.tick()` 的返回值。`Stack`、`StackSlice`、`tree.yield`/`tree.resume`、`onTick` 的 `status` 参数，以及各节点里的搬栈代码都删除了。
+`tree.tick()` 调用 `root.tick()`，父节点在 `onTick` 里调用 `child.tick()`，直接拿到子节点的返回值：
 
 ```ts
 // Sequence 示意
@@ -27,19 +24,24 @@ onTick(tree) {
         if (status === "running") {
             tree.setState(this, i);
             return "running";
-        } else if (status === "failure") {
-            return "failure";
+        } else if (status === "failure" || status === "error") {
+            return status;
         }
     }
     return "success";
 }
 ```
 
-`Node.tick` 不允许重写，它负责条件检查、读写 input/output、调用 `onTick`、捕获异常和维护状态；节点只实现 `onTick`。`node.tick()` 只能由父节点或框架调用，外部一律用 `tree.tick()`：节点出错时要靠 `tree.tick()`（或回调）把这一次执行退出来，绕开 Tree 直接调用时出错只会得到 `failure`。
+`Node.tick` 不允许重写，节点只实现 `onTick`。`Node.tick` 负责：
+
+1. 检查条件（第 4 节）；
+2. 从黑板读取 input，准备 `json` 参数的副本（第 5 节）；
+3. 调用 `onTick`，捕获异常（3.4 节）；
+4. 节点结束时写回 output，中止仍在运行的子节点，清除自己的状态；返回 running 时记录运行状态。
+
+`node.tick()` 只能由父节点或框架调用，外部一律用 `tree.tick()`。节点抛异常时要靠 `tree.tick()`（或回调）把这一次执行退出来，绕开 Tree 直接调用时只会得到 `failure`。
 
 ### 2.2 节点状态
-
-同一个树文件对应的 Node 实例被所有单位共享（`context.trees[path]`），所以每个单位的运行状态存在 Tree 上：
 
 ```ts
 tree.getState<T>(node): T | undefined
@@ -49,7 +51,8 @@ tree.isRunning(node)
 
 - 构建树时给每个节点（包括条件树里的节点）分配连续的 `index`，状态存在 Tree 的数组里，按下标读写。数组保持紧凑，不留空洞，稀疏数组在 V8 里明显更慢。
 - 节点返回 running 但没有设置状态时，框架记一个内部标记：`isRunning` 为 true，`getState` 返回 `undefined`。
-- 黑板只用来放业务变量。需要跨越多次执行的持久状态（比如 `Once` 的"已执行"标记）存在黑板的私有变量里，中断不会清除它，`tree.clear()` 才会。
+- 一个节点在 running，它的父节点也一定在 running，所以从任意一个节点往下，沿着 running 的子节点就能找到所有还在运行的节点。
+- 黑板只用来放业务变量。需要跨越多次执行的持久状态（比如 `Once` 的"已执行"标记）存在黑板的私有变量里（`Blackboard.makePrivateVar`），中断不会清除，`tree.clear()` 才会。临时变量（`Blackboard.makeTempVar`）在中断时清除。
 
 ### 2.3 中止（abort）
 
@@ -59,10 +62,10 @@ onAbort(tree): void      // 节点自己清理：停止移动、移除监听和�
 ```
 
 - **显式中止**：组合节点切换分支、或者自己被中止时，主动调用 `child.abort(tree)`，保证旧分支先清理完、新分支才开始。
-- **兜底**：节点返回非 running 时，框架对它仍在 running 的子节点调用 `abort()`。所以 Race 一个子节点成功、Timeout 超时时，其他还在运行的分支都会被清理。
-- 被中止的节点状态被清除，下次执行从头开始。1.x 的 `StackSlice.clear()` 只截断数组，`Wait` 下次执行时会拿到上一次的到期时间，这个问题随之修复。
+- **结束时的中止**：节点返回 running 以外的结果时，框架对它仍在 running 的子节点调用 `abort()`。所以 Race 一个子节点成功、Timeout 超时、Parallel 结果确定时，其他还在运行的分支都会被清理。
+- 被中止的节点状态被清除，下次执行从头开始。
 - `onAbort` 里的异常只打日志，不影响中止流程。
-- **debug 模式下检查漏掉的中止**：兜底只能覆盖"节点结束"的情况。组合节点自己一直 running、中途换了分支却没有中止旧分支时，旧分支的状态会残留，下次进入会从残留状态继续执行。`tree.debug` 开启时，每次 tick 结束检查"仍在 running、但这一帧没有被执行到"的节点，打印 warning。故意不每帧执行 running 子节点的自定义节点（比如节流）会被误报。
+- **debug 模式下检查漏掉的中止**：结束时的中止只覆盖"节点结束"的情况。组合节点自己一直 running、中途换了分支却没有中止旧分支时，旧分支的状态会残留，下次进入会从残留状态继续执行。`tree.debug` 开启时，每次 tick 结束检查"仍在 running、但这一帧没有被执行到"的节点，打印 warning。故意不每帧执行 running 子节点的自定义节点（比如节流）会被误报。
 
 ### 2.4 中断（interrupt）
 
@@ -72,50 +75,143 @@ onAbort(tree): void      // 节点自己清理：停止移动、移除监听和�
 - 不在 tick 过程中调用时立即执行上述清理；树没有在运行时什么都不做。
 - 下一帧从根节点重新开始。
 
-### 2.5 错误处理
+### 2.5 Tree 的状态和事件
 
-节点状态只有 `success`、`failure`、`running`，**没有 `error`**：
+`tree.tick()` 的返回值和 `tree.status`：
 
-- **failure 只表示正常的否定结果**：没有敌人、数组里不包含这个值等，父节点据此选分支。
-- **数据或配置错了就抛异常**：输入类型不对、计算结果是 NaN、缺少必需的输入等，用 `node.throw(msg)`。
+| 值 | 含义 |
+|---|---|
+| `success` / `failure` | 根节点返回的结果 |
+| `running` | 根节点还在运行 |
+| `error` | 根节点返回 `error`：error 一直传到根节点都没有被处理（3.1 节） |
+| `interrupted` | 这一帧调用了 `tree.interrupt()` |
+| `exception` | 这一帧有节点抛了异常，整棵树被中断（3.4 节）；和 `interrupted` 同时发生时以它为准 |
 
-1.x 的 `error` 在大多数父节点里被当成 failure：Selector 会接着试下一个分支，AlwaysSuccess 会吞掉，条件树当成 false。结果是数据错了，逻辑却走进了另一个分支。要让 `error` 真正起作用，每个组合节点和装饰节点（包括用户自定义的）都得特别处理它，等于手写一遍异常传递，漏一个就退化成 failure。
+`TreeEvent`（通过 `context.on(event, tree, callback, tag)` 监听）：
+
+| 事件 | 时机 |
+|---|---|
+| `BEFORE_TICKED` | 根节点不在 running，开始新的一轮执行之前 |
+| `AFTER_TICKED` | 根节点返回 `success`、`failure` 或 `error`，这一轮结束 |
+| `TICKED_SUCCESS` / `TICKED_FAILURE` | 根节点返回 `success` / `failure` |
+| `INTERRUPTED` | 树被中断 |
+| `EXCEPTION` | 节点抛异常，参数是 `(error: Error, node: Node)` |
+| `CLEANED` | 调用 `tree.clear()` |
+
+## 3. error 与异常
+
+| | error 状态 | 异常 |
+|---|---|---|
+| 含义 | 节点发现**运行时数据不可信**，没法给出 success/failure：id 非法、输入类型不对、缺少必需的输入、Math 参数不合法、结果是 NaN 等 | **代码或配置有 bug**：节点代码里的 TypeError、游戏接口抛错、节点主动 `this.throw(msg)`、加载时的配置错误 |
+| 怎么产生 | `onTick` 返回 `"error"` | `throw` |
+| 传递 | 逐层返回 `"error"`，直到被 `ErrorToFailure` 转成 failure | 中断整棵树 |
+| 日志 | `warn`，带树名、节点 id 和原因 | `error`，带调用栈 |
+| 事件 | 无 | `TreeEvent.EXCEPTION` |
+| `tree.tick()` 返回 | 没有被处理时返回 `"error"` | `"exception"` |
+
+- **failure 只表示正常的否定结果**：没有敌人、不是英雄、数组里不包含这个值等，父节点据此选分支。
+- **数据不可信就返回 error**，不能返回 failure。比如 IsHero 拿到非法 id 时如果返回 failure，后面的分支会把它当成小兵继续执行，但它其实也不是小兵。
+
+### 3.1 传递规则
+
+**节点收到子节点的 `"error"`，自己也返回 `"error"`，只有 `ErrorToFailure` 例外。**
+
+- 内置的组合节点和装饰节点都这样处理：Selector 不执行下一个分支，Parallel、Race 不执行后面的子节点，Invert、AlwaysSuccess、AlwaysFailure、Repeat、Retry、ForEach、Timeout 等原样返回 `"error"`。
+- `ErrorToFailure`（装饰节点）：子节点返回 `"error"` 时返回 `"failure"`，其他结果原样返回。这条分支出错，交给其它分支处理：
+
+```
+Selector
+├─ ErrorToFailure      ← 子树返回 error → failure，Selector 接着试下一个分支
+│  └─ Sequence
+│     ├─ IsHero        ← id 非法：返回 error
+│     └─ 英雄逻辑
+├─ Sequence
+│  ├─ IsMinion
+│  └─ 小兵逻辑
+└─ 默认逻辑
+```
+
+- **error 只是一个返回值**：Tree 上没有"出错"的标记，`Node.tick` 也不改写节点的返回值，传递 error 完全靠每个节点自己。自定义的组合节点和装饰节点漏处理时（比如把它当成 failure 去执行下一个分支），框架不会拦。
+- **error 是结束状态**，走正常的结束流程：不写 output（结果不可信）；中止仍在 running 的子节点，清除自己的状态。每一层返回时清理自己这一层，所以 Parallel 其他在运行的分支、Selector 记下的下标都会被清掉，下一次从头执行。不中断整棵树，不清临时变量。
+- **条件树返回 error** 时不当成 false：挂条件的节点返回 `"error"`（4.3 节）。
+- **没有被处理**：一直传到根节点时，`tree.tick()` 返回 `"error"`，树和返回 success/failure 一样正常结束，下一帧从根节点开始。
+
+### 3.2 在节点里返回 error
+
+```ts
+override onTick(tree: Tree<Context, unknown>): Status {
+    const [id] = this.input;
+    if (typeof id !== "number") {
+        this.warn(`invalid id: ${id}`);
+        return "error";
+    }
+    return isHero(id) ? "success" : "failure";
+}
+```
+
+辅助函数没法替节点返回状态，出错时返回专用值 `ERROR`（模块级的 `unique symbol`），调用方判断后返回 `"error"`。返回类型是 `V | typeof ERROR`，不判断就当成 `V` 使用会编译报错；也不用像返回 tuple 那样每次分配数组（`_checkOneof` 在 Wait、Repeat、Timeout 等节点里每帧都会调用）：
+
+```ts
+const field = this._checkOneof(1, args.field);   // 缺少必需的输入：打印 warning，返回 ERROR
+if (field === ERROR) return "error";
+```
+
+`evalConditions`、`evalSelfConditions`、`_checkPreempt` 也用 `ERROR` 表示条件树返回了 error。`ERROR` 是 symbol，在布尔上下文里为真，所以要先判断 `=== ERROR`，不能直接写 `if (node.evalConditions(tree))`。
+
+表达式求值器用 `throw` 报运行时错误（不是对象、不是数字、找不到等），`blackboard.eval` 也会抛出；Check、Calculate 在调用处捕获，打印 warning 后返回 `"error"`。
+
+### 3.3 内置节点返回 error 的情况
+
+执行时数据不对一律返回 `error`，并打印 warning 说明原因：
+
+| 节点 | 情况 |
+|---|---|
+| Concat、Push、Index、RandomIndex、Filter、ForEach、Includes | 输入的数组不是数组 |
+| Index | 下标不是数字 |
+| GetField、SetField | 对象不是对象，field 不是字符串或数字 |
+| Math | 参数个数不对、最小值大于最大值、结果是 NaN |
+| Check、Calculate | 表达式求值出错，比如引用不存在的变量、对非对象取属性 |
+| Assert | 子节点返回 failure，message 打在 warning 里 |
+| 有必需输入的节点 | 输入没有默认值，黑板上又不存在（`_checkOneof`），比如 GetField/SetField 的 field、Index 的下标 |
+
+### 3.4 异常
 
 **`tree.tick()` 里的异常**
 
 1. 抛异常的节点在自己的 `Node.tick` 里捕获，打印带树名、节点 id 和调用栈的错误日志。
-2. 派发 `TreeEvent.ERROR`，参数是 `(error: Error, node: Node)`，抛出的不是 `Error` 时包装成 `Error`。游戏可以在这里统一上报、禁用这棵树等。Listen 不提供这个事件：错误由游戏代码处理，树不处理自己的 bug（也避免 Listen 的子节点出错后再次触发 ERROR 形成死循环）。
-3. 中断整棵树（2.4 节），父节点拿到的是 running，不会误判。
-4. `tree.tick()` 返回 `"error"`，`tree.status` 也是 `"error"`，表示**这一次 tick 有节点出错**，和主动中断的 `"interrupted"` 区分开；同一帧里两者都有时以 `"error"` 为准。下一帧从根节点重新开始，返回正常的结果。
+2. 派发 `TreeEvent.EXCEPTION`，参数是 `(error: Error, node: Node)`，抛出的不是 `Error` 时包装成 `Error`。游戏可以在这里统一上报、禁用这棵树等。Listen 不提供这个事件：异常由游戏代码处理，树不处理自己的 bug（也避免 Listen 的子节点出错后再次触发 EXCEPTION 形成死循环）。
+3. 中断整棵树（2.4 节），父节点拿到的是 running，不会误判。`ErrorToFailure` 不处理异常。
+4. `tree.tick()` 返回 `"exception"`，表示**这一帧有节点抛了异常**。下一帧从根节点重新开始，返回正常的结果。
 
-**异步回调里的异常**
+**加载时的异常**（节点重写了 `tick` 或 `abort`、abort 取值不合法、子节点数量不够、Switch 下放了 Case 以外的节点、Math 的 op 不认识、Parallel 的 `successCount` 不合法、表达式编译不过等）不捕获，直接抛给加载树的调用方。
+
+### 3.5 异步回调里的 error 和异常
 
 `Listen`、`Delay` 在事件或定时器回调里执行子节点，这和 `tree.tick()` 无关，所以回调里出错**不影响主树**：不中断，`tree.status` 不变，主树正在 running 的分支继续执行。
 
 - 回调通过内部方法 `tree.__tickInCallback(node)` 执行子树，相当于一次只针对这棵子树的独立执行。
-- 出错时同样打印日志、派发 `TreeEvent.ERROR`，然后只停下这棵子树：这次回调里不再执行任何节点。
+- 子树返回 `"error"` 时只打印日志。`ErrorToFailure` 要放在回调的子树里面才有效，包在 Listen 外面处理不到。
+- 抛异常时同样打印日志、派发 `TreeEvent.EXCEPTION`，然后只停下这棵子树：这次回调里不再执行任何节点。
 - 子树执行完后，中止其中所有 running 的节点（回调里的子树不能跨帧运行）。
 - 事件在主树 tick 过程中同步派发时，也按回调处理，不影响这一次 tick。
 - 回调里的节点主动调用 `tree.interrupt()` 仍然中断整棵树，回调结束后生效（在 tick 过程中则在这一帧结束时生效）。
 
-**加载时的异常**（节点重写了 `tick` 或 `abort`、abort 取值不合法、子节点数量不够等）不捕获，直接抛给加载树的调用方。
+## 4. 条件与打断
 
-## 3. 条件与打断（参考 UE）
-
-### 3.1 和 UE 的对应关系
+### 4.1 和 UE 的对应关系
 
 | UE | behavior3-ts |
 |---|---|
 | 挂在节点上的条件装饰器（Decorator） | 节点的 `conditions` 数组中的一项 |
-| 装饰器的判断逻辑 | 条件树 `root`：一棵普通的行为树，只返回 success 或 failure |
+| 装饰器的判断逻辑 | 条件树 `root`：一棵普通的行为树，返回 success、failure 或 error |
 | Observer Aborts：None / Self / Lower Priority / Both | `abort`：`none` / `self` / `lower` / `both` |
 | `UBTCompositeNode::CanAbortLowerPriority()`（Selector 支持，Sequence 不支持） | NodeDef 的 `preemptive` 标记（内置只有 Selector） |
 | Lower Priority 的作用范围：同一个组合节点下、优先级更低的分支 | 同一个父节点下、右侧的兄弟分支 |
 | 打断后中止正在运行的任务，从被装饰的分支开始执行 | abort 正在运行的子节点 j，从子节点 i 开始执行 |
 
-语义上和 UE 保持一致，实现方式的差异见 3.7 节。
+语义上和 UE 一致，实现方式的差异见 4.7 节。
 
-### 3.2 树文件格式
+### 4.2 树文件格式
 
 ```jsonc
 {
@@ -156,13 +252,13 @@ interface NodeData {
 ```
 
 - 条件树本身就是一棵行为树。树内部的 AND 用 `Sequence`，OR 用 `Selector`，取反用 `Invert`，都复用现有节点。
-- **abort 写在条件项上，不写在节点上**，作用于整棵条件树。这样条件树里的节点和普通节点格式一致，编辑器和运行时都可以直接复用现有的节点解析；一棵带 OR 的树也没法只判断其中一部分，所以不给树内部的节点单独配置 abort。
-- **运行时完整支持多项**，类似 UE 在一个节点上挂多个装饰器。编辑器可以先限制为 1 项，以后放开时运行时和已有的树文件都不用改。
-- 可以通过 Subtree 引用条件文件，比如 `cond/can-attack.json`，在多个节点之间复用。
-- 条件树里的节点不占主树的编号，由编辑器分配：宿主第 n 项条件（从 1 数）的条件树里，节点 id 是 `<宿主 id>.<n>-<k>`，`k` 在这棵条件树内按节点、子节点的顺序从 1 数（上例的 `3.1-1` 到 `3.1-6`）。这样增删条件不会让主树节点改号。树的 `prefix` 照旧加在最前面（`H3.1-1`）。运行时只把 id 当字符串用（日志里显示成 `Check#3.1-2`），状态数组用的是 `index`，和 id 无关。
+- **abort 写在条件项上，不写在节点上**，作用于整棵条件树。这样条件树里的节点和普通节点格式一致，编辑器和运行时都可以直接复用节点解析；一棵带 OR 的树也没法只判断其中一部分，所以不给树内部的节点单独配置 abort。
+- 一个节点可以挂多项条件，类似 UE 在一个节点上挂多个装饰器。
+- 可以通过子树引用条件文件，比如 `cond/can-attack.json`，在多个节点之间复用。子树由编辑器导出时展开。
+- 条件树里的节点不占主树的编号：宿主第 n 项条件（从 1 数）的条件树里，节点 id 是 `<宿主 id>.<n>-<k>`，`k` 在这棵条件树内按节点、子节点的顺序从 1 数（上例的 `3.1-1` 到 `3.1-6`）。这样增删条件不会让主树节点改号。树的 `prefix` 加在最前面（`H3.1-1`）。运行时只把 id 当字符串用（日志里显示成 `Check#3.1-2`），状态数组用的是 `index`，和 id 无关。
 - 条件树内部不允许再挂条件。
 
-### 3.3 语义
+### 4.3 语义
 
 设节点 `N` 挂了条件 `C1, C2, ..., Cn`，每一项有自己的 abort 模式；`N` 是组合节点 `P` 的第 i 个子节点。
 
@@ -173,6 +269,7 @@ interface NodeData {
 | `P` 准备重入正在 running 的子节点 j（j > i）之前，并且 `P` 是 preemptive | 至少有一项是 `lower` 或 `both` 时才判断；判断时检查**全部**项 | 全部为 true：abort 子节点 j，从子节点 i 开始执行 |
 
 - 各项按数组顺序求值，遇到第一个 false 就停止（短路）。
+- 某一项返回 error 时同样停止，但不当成 false：进入、重入时 `N` 返回 `"error"`（重入时先 abort 自己）；抢占检查时 `_checkPreempt` 返回 `ERROR`，`P` 返回 `"error"`，正在运行的子节点在 `P` 结束时被中止。
 - 抢占时检查**全部**项，标准和"进入"一致。`lower` 只决定"要不要去判断"，真正能不能抢占要看全部条件。这样可以避免"抢占成功、一进去就失败"：比如 `[HasEnemy(lower), HpAbove50(none)]`，只有发现敌人并且血量足够时才会打断巡逻。
 - abort 为 `none` 的项只在进入时判断（以及作为抢占时的附加条件），效果等同于放一个前置 Condition 子节点，好处是树更扁。
 
@@ -197,7 +294,7 @@ interface NodeData {
 - 每帧从根节点沿 running 路径往下，路径上**每个** preemptive 祖先都会检查自己左侧的子节点。离根越近越先检查，所以外层的高优先级分支能先抢占。
 - 条件在阈值附近抖动导致分支频繁切换的问题，框架不处理，由条件自己做滞回。
 
-### 3.4 条件树的约束
+### 4.4 条件树的约束
 
 条件树可能每帧都被求值，而且是一次性求值，**不能返回 running**。分工如下：
 
@@ -229,7 +326,8 @@ function canRun(cfg: NodeData, defs: Record<string, NodeDef>): boolean {
 | `success` | 条件为 true |
 | `failure` | 条件为 false |
 | `running` | 报错（带上树名和节点 id），中止条件树，条件为 false |
-| 抛异常 | 和普通节点一样，派发 `TreeEvent.ERROR` 并中断整棵树（2.5 节） |
+| `error` | 不当成 false，挂条件的节点返回 `"error"`（4.3 节）；条件树里用 `ErrorToFailure` 处理后按 failure 算 |
+| 抛异常 | 和普通节点一样，派发 `TreeEvent.EXCEPTION` 并中断整棵树（3.4 节） |
 
 **副作用靠约定**
 
@@ -241,7 +339,7 @@ function canRun(cfg: NodeData, defs: Record<string, NodeDef>): boolean {
 
 这一类不做强制限制，约定**条件树里只放判断逻辑**。编辑器不对 `type` 为 Action 或声明了 `output` 的节点报错或警告：先取数据再判断（比如 `GetHp` 再 `Cmp`）是正常写法，按类型拦会误伤。
 
-### 3.5 抢占的实现
+### 4.5 抢占的实现
 
 `Node` 构造时解析 `cfg.conditions`，为每一项创建条件树，并筛出 self/both 的项。preemptive 的父节点在构造时记下哪些子节点带 lower/both 的条件：
 
@@ -257,11 +355,12 @@ abstract class Node {
     get abortsLower(): boolean;     // 有 lower/both 的项
     get abortsSelf(): boolean;      // 有 self/both 的项
 
-    evalConditions(tree): boolean;      // 进入和抢占时使用：全部项 AND，短路
-    evalSelfConditions(tree): boolean;  // 重入时使用：只检查 self/both 的项
+    // 条件树返回 error 时返回 ERROR（3.2 节）
+    evalConditions(tree): boolean | typeof ERROR;      // 进入和抢占时使用：全部项 AND，短路
+    evalSelfConditions(tree): boolean | typeof ERROR;  // 重入时使用：只检查 self/both 的项
 
-    /** 返回左侧第一个能抢占的子节点下标，没有则返回 running */
-    protected _checkPreempt(tree, running: number): number;
+    /** 返回左侧第一个能抢占的子节点下标，没有则返回 running，条件树返回 error 时返回 ERROR */
+    protected _checkPreempt(tree, running: number): number | typeof ERROR;
 }
 
 class Selector extends Node {
@@ -272,7 +371,9 @@ class Selector extends Node {
             i = 0;
         } else {
             const k = this._checkPreempt(tree, i);
-            if (k !== i) {
+            if (k === ERROR) {
+                return "error";
+            } else if (k !== i) {
                 this.children[i].abort(tree);
                 i = k;
                 checked = true;
@@ -290,7 +391,7 @@ class Selector extends Node {
 - 没有子节点带 lower/both 时（大多数情况），重入几乎没有额外开销。
 - 抢占成功后，父节点用 `tick(tree, true)` 进入子节点 i，跳过进入检查：它的条件刚在 `_checkPreempt` 里全部求值过。这样每个节点的条件每帧最多求值一次，带随机性的条件也不会出现"抢占时为 true、进入时为 false"。
 
-### 3.6 `preemptive` 标记
+### 4.6 `preemptive` 标记
 
 ```ts
 interface NodeDef {
@@ -307,10 +408,10 @@ interface NodeDef {
 | IfElse / Switch | 按条件选分支 | 没有 |
 
 - 内置节点里只有 `Selector` 标记了 `preemptive`，和 UE 一样，Sequence 不支持 Lower Priority。
-- 用户自定义的组合节点（比如 `WeightedSelector`）由作者决定是否声明这个标记，并调用 `_checkPreempt` 实现检查。
-- 加载时的 warning：子节点配置了 `lower`/`both` 但父节点不是 preemptive；根节点的条件配置了 `lower`/`both`。abort 取值不合法时抛错。
+- 自定义的组合节点（比如 `WeightedSelector`）可以声明这个标记，并调用 `_checkPreempt` 实现检查（第 7 节）。
+- 加载时的 warning：子节点配置了 `lower`/`both` 但父节点不是 preemptive；根节点的条件配置了 `lower`/`both`。abort 取值不合法时抛异常。
 
-### 3.7 和 UE 的区别
+### 4.7 和 UE 的区别
 
 | | UE | behavior3-ts |
 |---|---|---|
@@ -318,14 +419,14 @@ interface NodeDef {
 | 判断优先级 | 比较节点的执行索引（`FBTNodeIndex`） | 比较子节点下标 i < j |
 | 打断之后 | 中止任务（可以延迟中止），从父组合节点重新搜索 | 立即 abort 子节点 j，从子节点 i 开始执行 |
 
-UE 用事件驱动，是因为它的行为树不会每帧从根节点重入。本方案每帧重入，轮询更简单。以后如果有性能需要，可以加"依赖的 key 不变就不重新判断"的缓存，相当于把事件驱动当作一种优化补上。
+UE 的行为树不会每帧从根节点重入，所以用事件驱动。这里每帧重入，轮询更简单；条件求值的开销可以在条件节点里缓存（依赖的数据不变就不重新计算）来降低。
 
-## 4. 参数语义
+## 5. 参数语义
 
 | 参数类型 | 语义 | 实现 |
 |---|---|---|
 | `json`、`json?`、`json[]`、`json[]?`，以及 descriptor 里没声明的参数 | **字面量**：每次 tick 都生成新副本，归本次执行所有，可以修改，也可以交出去 | 缓存 JSON 字符串，每次 tick 调用 `JSON.parse` |
-| 其他对象参数（`int[]`、`string[]`、`expr[]` 等） | **只读配置**：所有树、所有次执行共享 | 构造时解析一次并 deep freeze |
+| 其他对象参数（`int[]`、`string[]`、`expr[]` 等） | **只读配置**：所有树、所有次执行共享 | 构造时解析一次并 deep freeze，修改时抛异常 |
 
 - 判断规则：**这个值会被修改或者交出去吗？会，就声明成 `json`。**
 - 来自 input 的值是**黑板对象的引用**，不是副本，修改它就是修改黑板。
@@ -342,62 +443,124 @@ class RandomPick extends Node {
 }
 ```
 
-## 5. 内置节点说明
+- 参数可以和 input 二选一（NodeDef 里 arg 的 `oneof`）：配置了 input 就用黑板上的值，否则用参数。用 `_checkOneof(inputIndex, argValue, defaultValue?)` 读取：input 不存在时，有默认值就打印 warning 并使用默认值，没有就返回 `ERROR`。
 
+## 6. 内置节点
+
+各节点的完整说明在 NodeDef 的 `doc` 里，编辑器会显示。这里只列出需要特别说明的行为。
+
+**组合节点**
+
+- **Parallel**：参数 `successCount`（默认全部子节点）。每次执行所有还没结束的子节点，已经结束的不再执行。
+  - 成功的子节点达到 `successCount`（≥）时立即返回 success；
+  - 失败的子节点多到不可能达到时（失败数 > 子节点数 − `successCount`）立即返回 failure；
+  - 有子节点返回 error 时立即返回 error；
+  - 返回时中止还在运行的子节点。
+
+  所以默认是"全部成功才成功，任何一个失败就失败"，`successCount` 为 1 时和 Race 一样。不需要关心某个子节点的成败时，给它包一层 AlwaysSuccess（连 error 也要忽略时，再在里面包一层 ErrorToFailure）。`successCount` 不是 [1, 子节点数] 之间的整数时，加载时抛异常。
+- **Race**：有子节点成功时立即返回 success，全部失败时返回 failure，返回时中止其他还在运行的子节点。
 - **Switch / Case**：Case 只是把判断节点和执行节点组织在一起的虚拟节点，不会被执行，Switch 直接执行 Case 的两个子节点。所以 Switch 在 `onAbort` 里中止正在运行的那个孙节点；挂在 Case 上的条件不会生效，加载时给出 warning。Case 的判断节点可以跨帧运行、可以有副作用和输出，所以不能用条件替代。
-- **RetryUntilSuccess / RetryUntilFailure**：子节点立即完成时，下一帧再重试；子节点 running 之后才完成时，同一帧立即重试（和 1.x 的时序一致）。
-- **ForEach / Filter**：output 用来把循环变量传给子节点，节点结束时框架把 output 写回黑板，循环变量随之被清掉，不会留在循环外面。Filter 修复了 1.x 恢复执行时下标被重置为 0 的问题。
-- **WaitForEvent**：用状态加 `onAbort` 移除监听，不再依赖 `TreeEvent.INTERRUPTED`。
-- **Listen / Delay**：执行时注册监听或定时器，立即返回 success。回调里的子节点通过 `__tickInCallback` 执行（2.5 节）。
+
+**装饰节点**
+
+- **AlwaysSuccess / AlwaysFailure**：子节点返回 success 或 failure 时，返回 success / failure；返回 running 和 error 时原样返回。error 表示数据不可信，不会被当成成功或失败吞掉，需要忽略 error 时先包一层 ErrorToFailure（比如 `AlwaysSuccess → ErrorToFailure → 子节点`）。
+- **ErrorToFailure**：子节点返回 error 时返回 failure，其他结果原样返回。不处理异常。
+- **Once**：第一次执行完子节点后返回 success，之后一直返回 failure。子节点返回 error 时不算执行过，下次还会执行。
+- **RetryUntilSuccess / RetryUntilFailure**：子节点立即完成时，下一帧再重试；子节点 running 之后才完成时，同一帧立即重试。
+- **ForEach / Filter**：output 用来把循环变量传给子节点，节点结束时框架把 output 写回黑板，循环变量随之被清掉，不会留在循环外面。running 后恢复执行时，从上次的元素继续。
+- **Listen / Delay**：执行时注册监听或定时器，立即返回 success。回调里的子节点通过 `__tickInCallback` 执行（3.5 节）。
   - Listen 每次执行都会注册一次监听，通常要包在 `Once` 下面使用。
   - **注册属于整棵树，不属于分支**：它们执行完就结束了，不会处于 running，所以中止、抢占、`interrupt()` 都不影响已注册的监听和定时器，只有 `tree.clear()` 会移除。比如战斗分支里注册的受击监听，分支被抢占后仍然有效。
-  - 需要跟着分支走的等待，用 `WaitForEvent`：它一直 running，被中止时注销监听。以后如果需要"分支运行期间持续监听"，再新增一个一直 running、被中止时注销的监听节点。
-- **原来返回 `error` 的节点**（Concat、GetField、SetField、Index、Push、Includes、RandomIndex、Math、Filter）：输入类型不对时改为抛异常。Math 参数个数不对、最小值大于最大值时，也从"打日志并返回 failure"改为抛异常。
-- **表达式（Check、Calculate）**：修复了求值器的几个问题：三元表达式取错了分支；`&&`、`||` 两边是布尔变量时报错；`^`、`~` 无法解析；多层属性访问（`a.b.c`）和字符串属性（`a.name == 'x'`）出错；下标里带运算（`arr[i + 1]`）解析错误。另外，只写一个变量名（比如 Check 的 `isDead`）时，原来返回的是变量名字符串（永远为真），现在返回变量的值。表达式里引用不存在的变量一律抛异常（和 1.x 一致），判断变量是否存在用 IsNull/NotNull 节点。
-- **Watchdog**：删除。每帧检查条件改用 `abort: self` 的条件；被打断时的清理放进节点的 `onAbort`。
+  - 需要跟着分支走的等待，用 `WaitForEvent`：它一直 running，被中止时注销监听。
 
-## 6. 编辑器
+**行为节点和条件节点**
 
-**发布顺序**：2.0 运行时和完成第 1 步的编辑器一起发布，第 2–4 步放在编辑器后续版本。
+- **WaitForEvent**：用状态加 `onAbort` 移除监听。
+- **Check、Calculate**：表达式支持算术、比较、逻辑、位运算、三元表达式、多层属性访问（`a.b.c`）、下标（`arr[i + 1]`）和字符串。只写一个变量名（比如 Check 的 `isDead`）时返回变量的值。引用不存在的变量时返回 error，判断变量是否存在用 IsNull/NotNull。表达式在加载时编译，编译不过时抛异常；`context.registerCode` 可以为表达式注册预先生成的函数，跳过解析。
+- 数据不对时返回 error 的情况见 3.3 节。
 
-1. **数据层**（发布前必须完成）：编辑器解析节点时只保留已知字段，现在打开再保存会把 `conditions` 删掉。需要读写 `conditions`（条件树按普通节点递归解析，id/uuid 分配包括条件树里的节点）、保留 NodeDef 的 `preemptive`、导出时带上条件（包括条件树里引用的子树）、升级 `DOCUMENT_VERSION`。
-2. **展示和编辑**、3. **校验**、4. **提示**：见下文。
+## 7. 自定义节点
 
+```ts
+@registerNode                        // 注册到全局，创建 Context 时自动注册；也可以用 context.registerNode(MyNode)
+export class MyNode extends Node {
+    declare input: [number];
+    declare args: { readonly range: number };
+
+    override onTick(tree: Tree<Context, unknown>): Status { ... }
+    override onAbort(tree: Tree<Context, unknown>): void { ... }
+
+    static override get descriptor(): NodeDef {
+        return { name: "MyNode", type: "Action", desc: "……", status: ["success", "failure"] };
+    }
+}
+```
+
+- 只实现 `onTick` 和 `onAbort`。重写 `tick` 或 `abort` 时加载抛异常。
+- 跨帧的状态用 `tree.setState`，不要存在节点实例上：节点实例被所有单位共享。
+- 返回 running 时启动了需要清理的东西（移动、监听、定时器），在 `onAbort` 里清理。
+- **组合节点和装饰节点收到子节点的 `"error"` 时，要返回 `"error"`**（ErrorToFailure 这类专门处理 error 的节点除外）。框架不会替节点传递 error。
+- 数据不可信时返回 `"error"` 并打印 warning；代码 bug 用 `this.throw(msg)` 或直接抛异常。
+- 辅助函数返回 `ERROR` 时（`_checkOneof`、`evalConditions`、`_checkPreempt`），先判断 `=== ERROR` 再使用返回值。
+- 声明了 `preemptive` 的组合节点，在重入 running 的子节点之前调用 `_checkPreempt`，返回 `ERROR` 时返回 `"error"`。
+- 会放进条件树的节点要声明 `status`，编辑器才能检查（4.4 节）。
+- 修改或交出去的参数声明成 `json`（第 5 节）。
+
+## 8. 黑板与 Context
+
+- **黑板**：`get`、`set`（设成 `undefined` 或 `null` 时删除）、`eval(code)`。私有变量和临时变量的说明见 2.2 节。
+- **Context**：所有树共享，提供节点注册、树的加载和缓存（`loadTree` 由使用方实现）、时间（`time`、`update(dt)`）、定时器（`delay`）、事件（`on`、`off`、`offAll`、`dispatch`）、表达式编译（`compileCode`、`registerCode`）。
+- `supportGroupTypes` 决定注册哪些带 `group` 的节点：节点声明了 `group` 时，只有 Context 支持其中一个 group 才会注册。
+
+## 9. 编辑器
+
+编辑器需要支持以下功能，运行时才能用上条件：
+
+- **数据**：读写 `conditions`（条件树按普通节点递归解析，id/uuid 分配包括条件树里的节点）；保留 NodeDef 的 `preemptive`；导出时带上条件，包括条件树里引用的子树；升级文档版本 `DOCUMENT_VERSION`。
 - **展示**：条件以徽标的形式显示在节点顶部，标出条件项的 abort 模式和条件树根节点的名称；可以展开或折叠，或者像子树那样在独立视图里编辑。一个节点可以挂多项条件：每项一块，按数组顺序从上到下叠在节点上方，选中某一块编辑这一项；用右键菜单或快捷键上移、下移调整顺序（顺序就是求值顺序）。
 - **校验**：
   - 每个条件项必须有 `root`；`abort` 只出现在条件项上；
-  - 条件树不能返回 running：按 `status` 递归推导（3.4 节），不通过就报错；没有声明 `status` 的节点不检查。条件树里可以有 Action 类节点和声明了 `output` 的节点（比如先取数据再判断），不报错也不警告；
+  - 条件树不能返回 running：按 `status` 递归推导（4.4 节），不通过就报错；没有声明 `status` 的节点不检查。条件树里可以有 Action 类节点和声明了 `output` 的节点（比如先取数据再判断），不报错也不警告；
   - 父节点不是 preemptive 时，禁用 `lower` 和 `both`，已有的值标红，构建报错；
   - 树的根节点不能挂条件。子树的根节点同样不挂，条件挂在引用它的节点上，因为只有在引用处才知道父节点；子树展开时，根节点使用引用处的条件；
-  - id 树内唯一（包括条件树里的节点，编号规则见 3.2 节）。
+  - id 树内唯一（包括条件树里的节点，编号规则见 4.2 节）。
 - **提示**：选中一个条件时，高亮它能影响的范围。`self` 高亮自己的子树，`lower` 高亮右侧兄弟节点的子树。
 - **`.b3-setting`**：导出 `preemptive`。`status` 本来就会导出，条件树的检查直接使用它。
-- **文档版本**：树文件的 `version` 是编辑器的文档格式版本（`DOCUMENT_VERSION`），运行时不检查。编辑器支持 `conditions` 时升级这个版本，旧版编辑器打开新文件会给出提示。
+- **文档版本**：树文件的 `version` 是编辑器的文档格式版本，运行时不检查。旧版编辑器打开带 `conditions` 的文件时给出提示。
 
-## 7. 性能
+## 10. 性能
 
-- 每帧多出"树深度"那么多次 `Node.tick` 调用；同时不再有 StackSlice 的 `splice`/`push` 和栈的 push/pop。
-- 优化：非 json 的对象参数不再每帧 `JSON.parse`；状态用数组下标存储并保持紧凑；`Node.tick` 的热路径不创建闭包；没有子节点带 lower/both 时不做抢占检查。
-- 基准测试：`npm run bench`（`test/bench.ts`），1000 个实例各 tick 1000 次，不在 `npm test` 里，改运行时前后手动对比。两棵树：`deep` 是 8 层、running 路径上有 Parallel 和 Timeout、每帧求值 Check/Calculate 表达式；`preempt` 是带 self/both 条件、敌人周期性出现和离开的抢占场景。参考值（Apple M5，Node 26）：deep 约 1050 ns/tick，preempt 约 750 ns/tick。
-- 重写时和 1.x 的对比（另一棵不含表达式的 8 层树）：1.x 约 540ms，2.0 约 580ms，每帧执行的节点数大约是 1.x 的两倍。
+- 每帧执行 running 路径上的所有节点，调用次数等于树的深度。
+- `json` 以外的对象参数在构造时解析一次；状态用数组下标存储并保持紧凑；`Node.tick` 的热路径不创建闭包；没有子节点带 lower/both 时不做抢占检查。
+- 基准测试：`npm run bench`（`test/bench.ts`），1000 个实例各 tick 1000 次，不在 `npm test` 里，改运行时前后手动对比。两棵树：`deep` 是 8 层、running 路径上有 Parallel 和 Timeout、每帧求值 Check/Calculate 表达式；`preempt` 是带 self/both 条件、敌人周期性出现和离开的抢占场景。参考值（Apple M5，Node 26）：deep 约 1050 ns/tick，preempt 约 700 ns/tick。
 
-## 8. 测试
+## 11. 测试
 
-- `npm test` 运行 `test/unit` 下的单元测试（node:test），覆盖执行模型、状态接口、每个内置节点、中止与中断、错误处理（包括异步回调和嵌套回调）、条件与抢占、表达式求值、黑板、Context 的定时器和事件、节点注册，以及多个节点组合的场景。
-- `npm run bench` 运行基准测试（第 7 节）。
+- `npm test` 运行 `test/unit` 下的单元测试（node:test），覆盖执行模型、状态接口、每个内置节点、中止与中断、error 的传递（`error.test.ts`）、异常（包括异步回调和嵌套回调）、条件与抢占、表达式求值、黑板、Context 的定时器和事件、节点注册，以及多个节点组合的场景。
+- `npm run bench` 运行基准测试（第 10 节）。
 - `npm start` 运行 `test/main.ts`，用 `example/*.json` 跑一遍，并重新生成 `example/node-config.b3-setting`。
 
-## 9. 不兼容改动（2.0）
+## 12. 与 1.x 的区别
 
-- `onTick(tree, status)` 改为 `onTick(tree)`；用户自定义的组合节点和装饰节点需要重写。
-- `tree.yield` / `tree.resume` 改为 `getState` / `setState` / `isRunning`。
-- 删除 `Stack`、`StackSlice`、`tree.stack`。
-- 删除 `Watchdog` 节点。
-- 非 json 的对象参数变为只读。自定义节点如果修改过数组参数，会抛错（参数被 deep freeze，ES module 是严格模式）。
-- 去掉 `error` 状态：`Status` 只有 `success`/`failure`/`running`。原来返回 `error` 的内置节点改为抛异常，树会被中断，不再当成 failure 继续执行。如果以前靠这些节点的 `error` 表达"目标不存在就走下一个分支"（比如 GetField 的对象不存在），要在前面加 NotNull 判断。自定义节点里的 `return "error"` 要改成 `this.throw(msg)`。新增 `TreeEvent.ERROR`，`TreeStatus` 新增 `"error"`。
-- 表达式只写一个变量名时返回变量的值（原来返回变量名字符串，永远为真）；变量不存在时和其他写法一样抛异常。
-- 树文件新增 `conditions` 字段。每一项是 `{ abort, root }`，`root` 是条件树，节点数据格式不变。
+**执行模型**
 
-## 10. 待定问题
+- 1.x 把 running 的节点保存在 `tree.stack` 里，每帧从栈顶继续执行，祖先节点不会被执行到；2.0 每帧从根节点执行（2.1 节）。删除了 `Stack`、`StackSlice`、`tree.stack`。
+- `onTick(tree, status)` 改为 `onTick(tree)`；自定义的组合节点和装饰节点需要按"调用 `child.tick()`、拿返回值"的方式重写。
+- `tree.yield` / `tree.resume` 改为 `getState` / `setState` / `isRunning`。被中止的节点状态会被清除，Wait 等节点不会拿到上一次的到期时间。
 
-暂无。（原来的"编辑器什么时候放开多项 `conditions`、怎么展示和调整顺序"已经解决，见第 6 节"展示"。）
+**状态与错误**
+
+- `error` 由父节点逐层传递，不当成 failure（第 3 节），新增 `ErrorToFailure`。依靠 error 表达"目标不存在就走下一个分支"的树（比如 GetField 的对象不存在），要包一层 `ErrorToFailure`，或者在前面加 NotNull 判断。条件树返回 error 时不当成 false。
+- 执行时数据不对一律返回 error（3.3 节）。1.x 里 Math 参数个数不对、最小值大于最大值时打日志并返回 failure。
+- 节点抛异常时中断整棵树：新增 `TreeEvent.EXCEPTION`，`TreeStatus` 新增 `"exception"`。
+- `evalConditions`、`evalSelfConditions` 返回 `boolean | typeof ERROR`，`_checkPreempt` 返回 `number | typeof ERROR`。
+
+**节点和参数**
+
+- 树文件新增 `conditions` 字段（第 4 节）。
+- 删除 Watchdog 节点：每帧检查条件改用 `abort: self` 的条件，被打断时的清理放进节点的 `onAbort`。
+- Parallel 新增 `successCount`，默认全部子节点成功才返回 success，任何一个失败就返回 failure；1.x 的 Parallel 在子节点全部结束后总是返回 success。
+- `json` 以外的对象参数只读，修改时抛异常（参数被 deep freeze，ES module 是严格模式）。
+- Filter 恢复执行时从上次的元素继续，1.x 会从第 0 个重新开始。
+- 表达式：只写一个变量名时返回变量的值，1.x 返回变量名字符串（永远为真）；修复了三元表达式取错分支、`&&`/`||` 两边是布尔变量时报错、`^`/`~` 无法解析、多层属性访问和字符串属性出错、下标里带运算解析错误等问题。
+- 在 2.0 的执行模型下，每帧执行的节点数大约是 1.x 的两倍；一棵不含表达式的 8 层树，1.x 约 540ms，2.0 约 580ms。

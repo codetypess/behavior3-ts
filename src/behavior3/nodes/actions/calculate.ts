@@ -17,7 +17,14 @@ export class Calculate extends Node {
     }
 
     override onTick(tree: Tree<Context, unknown>): Status {
-        const value = tree.blackboard.eval(this.args.value);
+        let value: unknown;
+        try {
+            value = tree.blackboard.eval(this.args.value);
+        } catch (e) {
+            // a bad value in the blackboard, such as a missing variable
+            this.warn(e instanceof Error ? e.message : String(e));
+            return "error";
+        }
         this.output.push(value);
         return "success";
     }
@@ -33,6 +40,7 @@ export class Calculate extends Node {
             output: ["计算结果"],
             doc: `
                 + 做简单的数值公式计算，返回结果到输出
+                + 求值出错时（比如引用不存在的变量），返回 \`error\`
             `,
         };
     }

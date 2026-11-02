@@ -129,8 +129,75 @@ describe("composites", () => {
         assert.deepEqual(ctx.takeLog(), ["tick:a", "tick:b", "tick:c"]);
         assert.equal(tree.tick(), "running");
         assert.deepEqual(ctx.takeLog(), ["tick:b"]);
-        tree.blackboard.set("b", "failure");
+        tree.blackboard.set("b", "success");
         assert.equal(tree.tick(), "success");
+        assert.deepEqual(ctx.takeLog(), ["tick:b"]);
+    });
+
+    it("Parallel fails at the first failure by default", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(n("Parallel", "par", { children: [probe("a"), probe("b"), probe("c")] }));
+        tree.blackboard.set("a", "running");
+        tree.blackboard.set("b", "failure");
+        assert.equal(tree.tick(), "failure");
+        // c is not ticked, the running a is aborted
+        assert.deepEqual(ctx.takeLog(), ["tick:a", "tick:b", "abort:a"]);
+    });
+
+    it("Parallel succeeds when successCount children succeed", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            n("Parallel", "par", { args: { successCount: 2 }, children: [probe("a"), probe("b"), probe("c")] }),
+        );
+        tree.blackboard.set("b", "running");
+        tree.blackboard.set("c", "running");
+        assert.equal(tree.tick(), "running");
+        ctx.takeLog();
+        tree.blackboard.set("b", "success");
+        assert.equal(tree.tick(), "success");
+        assert.deepEqual(ctx.takeLog(), ["tick:b", "abort:c"]);
+    });
+
+    it("Parallel fails when successCount can't be reached", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            n("Parallel", "par", { args: { successCount: 2 }, children: [probe("a"), probe("b"), probe("c")] }),
+        );
+        tree.blackboard.set("a", "failure");
+        tree.blackboard.set("b", "running");
+        assert.equal(tree.tick(), "running");
+        ctx.takeLog();
+        // one failure is allowed, the second one makes 2 successes impossible
+        tree.blackboard.set("b", "failure");
+        assert.equal(tree.tick(), "failure");
+        assert.deepEqual(ctx.takeLog(), ["tick:b"]);
+    });
+
+    it("Parallel with successCount 1 is like Race", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            n("Parallel", "par", { args: { successCount: 1 }, children: [probe("a"), probe("b")] }),
+        );
+        tree.blackboard.set("a", "failure");
+        tree.blackboard.set("b", "running");
+        assert.equal(tree.tick(), "running");
+        tree.blackboard.set("b", "failure");
+        assert.equal(tree.tick(), "failure");
+        tree.blackboard.set("a", "running");
+        tree.blackboard.set("b", "success");
+        assert.equal(tree.tick(), "success");
+        assert.equal(tree.isRunning(tree.root!.children[0]), false);
+    });
+
+    it("Parallel checks successCount when loading", () => {
+        const ctx = new TestContext();
+        for (const successCount of [0, 3, 1.5]) {
+            assert.throws(
+                () => ctx.createTree(n("Parallel", "par", { args: { successCount }, children: [probe("a"), probe("b")] })),
+                /successCount must be in \[1, 2\]/,
+            );
+        }
+        assert.equal(ctx.createTree(n("Parallel", "par")).tick(), "success");
     });
 
     it("Race succeeds with the first success and aborts the others", () => {
@@ -358,14 +425,14 @@ describe("decorators", () => {
         assert.deepEqual(ctx.takeLog(), ["tick:a", "tick:a", "abort:a"]);
     });
 
-    it("Assert throws when the child fails", () => {
+    it("Assert returns error when the child fails", () => {
         const ctx = new TestContext();
         const tree = ctx.createTree(
             n("Assert", "assert", { args: { message: "oops" }, children: [probe("a", { args: { status: "failure" } })] }),
         );
-        const { result, error } = captureConsole(() => tree.tick());
+        const { result, warn } = captureConsole(() => tree.tick());
         assert.equal(result, "error");
-        assert.match(error[0], /oops/);
+        assert.match(warn[0], /Assert#assert: oops/);
     });
 
     it("AlwaysRunning restarts its child after it finishes", () => {
@@ -517,7 +584,7 @@ describe("args", () => {
         const ctx = new TestContext();
         const tree = ctx.createTree(n("ArgsSpy", "spy", { args: { list: [1, 2] } }));
         const { result, error } = captureConsole(() => tree.tick());
-        assert.equal(result, "error");
+        assert.equal(result, "exception");
         assert.match(error[0], /not extensible|read.only|frozen/i);
     });
 
@@ -625,12 +692,12 @@ describe("tree", () => {
         assert.deepEqual(events.splice(0), [TreeEvent.CLEANED]);
     });
 
-    it("ticking the tree in a node is an error", () => {
+    it("ticking the tree in a node is an exception", () => {
         const ctx = new TestContext();
         const tree = ctx.createTree(probe("a"));
         tree.root!.onTick = (t) => (t.tick(), "success");
         const { result, error } = captureConsole(() => tree.tick());
-        assert.equal(result, "error");
+        assert.equal(result, "exception");
         assert.match(error[0], /already ticking: Probe#a/);
         assert.equal(tree.ticking, false);
     });

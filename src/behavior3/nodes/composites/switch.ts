@@ -44,6 +44,8 @@ export class Switch extends Node {
                 if (status === "running") {
                     tree.setState(this, step);
                     return "running";
+                } else if (status === "error") {
+                    return "error";
                 } else if (status !== "success") {
                     step = i * 2 + 2;
                     continue;

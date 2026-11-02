@@ -10,7 +10,8 @@ export class Push extends Node {
     override onTick(tree: Tree<Context, unknown>): Status {
         const [arr, element] = this.input;
         if (!Array.isArray(arr)) {
-            this.throw(`arr is not an array: ${arr}`);
+            this.warn(`arr is not an array: ${arr}`);
+            return "error";
         }
         arr.push(element);
         return "success";
@@ -25,7 +26,7 @@ export class Push extends Node {
             desc: "向数组中添加元素",
             input: ["数组", "元素"],
             doc: `
-                + 当变量\`数组\`不是数组类型时返回 \`failure\`
+                + 当变量\`数组\`不是数组类型时返回 \`error\`
                 + 其余返回 \`success\`
             `,
         };

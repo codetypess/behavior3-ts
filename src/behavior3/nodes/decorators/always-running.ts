@@ -6,8 +6,8 @@ import { Tree } from "../../tree";
 @registerNode
 export class AlwaysRunning extends Node {
     override onTick(tree: Tree<Context, unknown>): Status {
-        this.children[0].tick(tree);
-        return "running";
+        const status = this.children[0].tick(tree);
+        return status === "error" ? "error" : "running";
     }
 
     static override get descriptor(): NodeDef {
@@ -19,7 +19,7 @@ export class AlwaysRunning extends Node {
             desc: "始终返回运行中状态",
             doc: `
                 + 只能有一个子节点，多个仅执行第一个
-                + 始终返回 \`running\`
+                + 子节点返回 \`error\` 时返回 \`error\`，其它情况都返回 \`running\`
             `,
         };
     }

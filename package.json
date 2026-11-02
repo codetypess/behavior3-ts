@@ -1,6 +1,6 @@
 {
   "name": "behavior3",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Behavior Tree framework for TypeScript/JavaScript — simplifies game AI, skills, and buff logic.",
   "author": "codetypess",
   "license": "MIT",

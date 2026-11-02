@@ -8,7 +8,7 @@
       "|running"
     ],
     "desc": "始终返回失败",
-    "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 当子节点返回 `running` 时，返回 `running`\n+ 其它情况，不管子节点是否成功都返回 `failure`\n"
+    "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 当子节点返回 `running` 时，返回 `running`\n+ 当子节点返回 `error` 时，返回 `error`：数据不可信，不能当成失败；要忽略 `error`，在子节点外面先包一层 `ErrorToFailure`\n+ 子节点返回 `success` 或 `failure` 时，都返回 `failure`\n"
   },
   {
     "name": "AlwaysRunning",
@@ -18,7 +18,7 @@
       "running"
     ],
     "desc": "始终返回运行中状态",
-    "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 始终返回 `running`\n"
+    "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 子节点返回 `error` 时返回 `error`，其它情况都返回 `running`\n"
   },
   {
     "name": "AlwaysSuccess",
@@ -29,7 +29,7 @@
       "|running"
     ],
     "desc": "始终返回成功",
-    "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 当子节点返回 `running` 时，返回 `running`\n+ 其它情况，不管子节点是否成功都返回 `success`\n"
+    "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 当子节点返回 `running` 时，返回 `running`\n+ 当子节点返回 `error` 时，返回 `error`：数据不可信，不能当成成功；要忽略 `error`，在子节点外面先包一层 `ErrorToFailure`\n+ 子节点返回 `success` 或 `failure` 时，都返回 `success`\n"
   },
   {
     "name": "Assert",
@@ -46,7 +46,7 @@
         "desc": "消息"
       }
     ],
-    "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 当子节点返回 `failure` 时，抛出异常\n+ 其余情况返回子节点的执行状态\n"
+    "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 当子节点返回 `failure` 时，打印 message 并返回 `error`\n+ 其余情况返回子节点的执行状态\n"
   },
   {
     "name": "Attack",
@@ -75,7 +75,7 @@
     "output": [
       "计算结果"
     ],
-    "doc": "+ 做简单的数值公式计算，返回结果到输出\n"
+    "doc": "+ 做简单的数值公式计算，返回结果到输出\n+ 求值出错时（比如引用不存在的变量），返回 `error`\n"
   },
   {
     "name": "Case",
@@ -105,7 +105,7 @@
         "desc": "值"
       }
     ],
-    "doc": "+ 做简单数值公式判定，返回 `success` 或 `failure`\n"
+    "doc": "+ 做简单数值公式判定，返回 `success` 或 `failure`\n+ 求值出错时（比如引用不存在的变量），返回 `error`\n"
   },
   {
     "name": "Concat",
@@ -123,7 +123,7 @@
     "output": [
       "新数组"
     ],
-    "doc": "+ 如果输入不是数组，则返回 `failure`\n"
+    "doc": "+ 如果输入不是数组，则返回 `error`\n"
   },
   {
     "name": "Delay",
@@ -149,7 +149,19 @@
         "desc": "暂存环境变量"
       }
     ],
-    "doc": "+ 当延时触发时，执行第一个子节点，多个仅执行第一个\n+ 如果子节点返回 `running`，会被中止\n+ 定时器属于整棵树，所在分支被中止或打断后仍会触发，只有清理行为树时才会移除"
+    "doc": "+ 当延时触发时，执行第一个子节点，多个仅执行第一个\n+ 如果子节点返回 `running`，会被中止\n+ 子节点返回 `error` 或抛异常时只打印日志，不影响行为树正在运行的分支\n+ 定时器属于整棵树，所在分支被中止或打断后仍会触发，只有清理行为树时才会移除"
+  },
+  {
+    "name": "ErrorToFailure",
+    "type": "Decorator",
+    "children": 1,
+    "status": [
+      "|success",
+      "|failure",
+      "|running"
+    ],
+    "desc": "错误转失败",
+    "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 当子节点返回 `error` 时，返回 `failure`，父节点可以接着执行其它分支\n+ 其余情况返回子节点的执行状态\n+ 不处理异常：子树里抛异常时，仍然中断整棵树\n"
   },
   {
     "name": "Filter",
@@ -168,7 +180,7 @@
       "变量",
       "新数组"
     ],
-    "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 遍历输入数组，将当前元素写入`变量`，满足条件的元素放入新数组\n+ 只有当新数组不为空时，才返回 `success`\n"
+    "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 遍历输入数组，将当前元素写入`变量`，满足条件的元素放入新数组\n+ 只有当新数组不为空时，才返回 `success`\n+ 输入不是数组，或者子节点返回 `error` 时，返回 `error`\n"
   },
   {
     "name": "FindEnemy",
@@ -212,7 +224,7 @@
       "变量",
       "索引?"
     ],
-    "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 遍历输入数组，将当前元素写入`变量`\n+ 当子节点返回 `failure` 时，退出遍历并返回 `failure` 状态\n+ 执行完所有子节点后，返回 `success`"
+    "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 遍历输入数组，将当前元素写入`变量`\n+ 当子节点返回 `failure` 或 `error` 时，退出遍历并返回该状态\n+ 输入不是数组时，返回 `error`\n+ 执行完所有子节点后，返回 `success`"
   },
   {
     "name": "GetField",
@@ -238,7 +250,7 @@
     "output": [
       "字段值(value)"
     ],
-    "doc": "+ 合法元素不包括 `undefined` 和 `null`\n+ 只有获取到合法元素时候才会返回 `success`，否则返回 `failure`\n"
+    "doc": "+ 合法元素不包括 `undefined` 和 `null`\n+ 只有获取到合法元素时候才会返回 `success`，否则返回 `failure`\n+ 输入不是对象，或者 `field` 不为 `string` 或 `number` 时，返回 `error`\n"
   },
   {
     "name": "GetHp",
@@ -278,7 +290,7 @@
       "数组",
       "元素"
     ],
-    "doc": "+ 若输入的元素不合法，返回 `failure`\n+ 只有数组包含元素时返回 `success`，否则返回 `failure`\n"
+    "doc": "+ 若输入的数组不是数组，返回 `error`\n+ 若输入的元素不合法，返回 `failure`\n+ 只有数组包含元素时返回 `success`，否则返回 `failure`\n"
   },
   {
     "name": "Index",
@@ -304,7 +316,7 @@
     "output": [
       "值"
     ],
-    "doc": "+ 合法元素不包括 `undefined` 和 `null`\n+ 索引数组的时候，第一个元素的索引为 0\n+ 只有索引到有合法元素时候才会返回 `success`，否则返回 `failure`\n"
+    "doc": "+ 合法元素不包括 `undefined` 和 `null`\n+ 索引数组的时候，第一个元素的索引为 0\n+ 只有索引到有合法元素时候才会返回 `success`，否则返回 `failure`\n+ 输入不是数组，或者索引不是数字时，返回 `error`\n"
   },
   {
     "name": "Invert",
@@ -316,7 +328,7 @@
       "|running"
     ],
     "desc": "反转子节点运行结果",
-    "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 当子节点返回 `success` 时返回 `failure`\n+ 当子节点返回 `failure` 时返回 `success`\n"
+    "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 当子节点返回 `success` 时返回 `failure`\n+ 当子节点返回 `failure` 时返回 `success`\n+ 当子节点返回 `running` 或 `error` 时原样返回，`error` 不会被反转\n"
   },
   {
     "name": "IsNull",
@@ -469,7 +481,7 @@
         ]
       }
     ],
-    "doc": "+ 当事件触发时，执行第一个子节点，多个仅执行第一个\n+ 如果子节点返回 `running`，会被中止\n+ 每次执行都会注册一次侦听，通常放在 `Once` 下使用\n+ 侦听属于整棵树，所在分支被中止或打断后仍然有效，只有清理行为树时才会移除"
+    "doc": "+ 当事件触发时，执行第一个子节点，多个仅执行第一个\n+ 如果子节点返回 `running`，会被中止\n+ 子节点返回 `error` 或抛异常时只打印日志，不影响行为树正在运行的分支\n+ 每次执行都会注册一次侦听，通常放在 `Once` 下使用\n+ 侦听属于整棵树，所在分支被中止或打断后仍然有效，只有清理行为树时才会移除"
   },
   {
     "name": "Log",
@@ -526,6 +538,7 @@
     "name": "Math",
     "type": "Action",
     "desc": "执行数学运算",
+    "doc": "+ 优先使用参数1、参数2，没有配置时依次使用输入\n+ 参数个数不对、最小值大于最大值、结果为 NaN 时，返回 `error`\n",
     "input": [
       "参数..."
     ],
@@ -700,18 +713,26 @@
       "|running"
     ],
     "desc": "只执行一次",
-    "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 第一次执行完全部子节点时返回 `success`，之后永远返回 `failure`"
+    "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 第一次执行完全部子节点时返回 `success`，之后永远返回 `failure`\n+ 当子节点返回 `error` 时返回 `error`，不算执行过，下次还会执行"
   },
   {
     "name": "Parallel",
     "type": "Composite",
     "status": [
-      "success",
+      "|success",
+      "|failure",
       "|running"
     ],
     "children": -1,
     "desc": "并行执行",
-    "doc": "+ 并行执行所有子节点\n+ 当有子节点返回 `running` 时，返回 `running` 状态\n+ 执行完所有子节点后，返回 `success`"
+    "args": [
+      {
+        "name": "successCount",
+        "type": "int?",
+        "desc": "成功数量（达到即成功，默认全部）"
+      }
+    ],
+    "doc": "+ 每次执行时，执行所有还没结束的子节点\n+ 成功的子节点达到 `successCount`（默认全部子节点）时，立即返回 `success`\n+ 失败的子节点多到不可能达到 `successCount` 时，立即返回 `failure`\n+ 有子节点返回 `error` 时，立即返回 `error`\n+ 返回时中止其他还在运行的子节点"
   },
   {
     "name": "Push",
@@ -726,7 +747,7 @@
       "数组",
       "元素"
     ],
-    "doc": "+ 当变量`数组`不是数组类型时返回 `failure`\n+ 其余返回 `success`\n"
+    "doc": "+ 当变量`数组`不是数组类型时返回 `error`\n+ 其余返回 `success`\n"
   },
   {
     "name": "Race",
@@ -756,7 +777,7 @@
       "随机目标",
       "索引?"
     ],
-    "doc": "+ 合法元素不包括 `undefined` 和 `null`\n+ 在输入数组中，随机返回其中一个\n+ 当输入数组为空时，或者没有合法元素，返回 `failure`\n"
+    "doc": "+ 合法元素不包括 `undefined` 和 `null`\n+ 在输入数组中，随机返回其中一个\n+ 当输入数组为空时，或者没有合法元素，返回 `failure`\n+ 输入不是数组时，返回 `error`\n"
   },
   {
     "name": "Repeat",
@@ -779,7 +800,7 @@
         "oneof": "循环次数"
       }
     ],
-    "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 当子节点返回 `failure` 时，退出遍历并返回 `failure` 状态\n+ 执行完所有子节点后，返回 `success`\n"
+    "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 当子节点返回 `failure` 或 `error` 时，退出循环并返回该状态\n+ 执行完所有子节点后，返回 `success`\n"
   },
   {
     "name": "RetryUntilFailure",
@@ -801,7 +822,7 @@
         "desc": "最大尝试次数"
       }
     ],
-    "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 只有当子节点返回 `failure` 时，才返回 `success`，其它情况返回 `running` 状态\n+ 如果设定了尝试次数，超过指定次数则返回 `failure`"
+    "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 只有当子节点返回 `failure` 时，才返回 `success`；返回 `success` 或 `running` 时返回 `running` 状态\n+ 当子节点返回 `error` 时返回 `error`，不再重试\n+ 如果设定了尝试次数，超过指定次数则返回 `failure`"
   },
   {
     "name": "RetryUntilSuccess",
@@ -823,7 +844,7 @@
         "desc": "最大尝试次数"
       }
     ],
-    "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 只有当子节点返回 `success` 时，才返回 `success`，其它情况返回 `running` 状态\n+ 如果设定了尝试次数，超过指定次数则返回 `failure`"
+    "doc": "+ 只能有一个子节点，多个仅执行第一个\n+ 只有当子节点返回 `success` 时，才返回 `success`；返回 `failure` 或 `running` 时返回 `running` 状态\n+ 当子节点返回 `error` 时返回 `error`，不再重试\n+ 如果设定了尝试次数，超过指定次数则返回 `failure`"
   },
   {
     "name": "Selector",
@@ -878,7 +899,7 @@
         "oneof": "值(value)"
       }
     ],
-    "doc": "+ 对输入对象设置 `field` 和 `value`\n+ 输入参数1必须为对象，否则返回 `failure`\n+ 如果 `field` 不为 `string`, 也返回 `failure`\n+ 如果 `value` 为 `undefined` 或 `null`, 则删除 `field` 的值\n"
+    "doc": "+ 对输入对象设置 `field` 和 `value`\n+ 输入参数1必须为对象，否则返回 `error`\n+ 如果 `field` 不为 `string` 或 `number`，也返回 `error`\n+ 如果 `value` 为 `undefined` 或 `null`, 则删除 `field` 的值\n"
   },
   {
     "name": "Switch",
@@ -913,7 +934,7 @@
         "oneof": "超时时间"
       }
     ],
-    "doc": "+ 在限定时间内执行子节点，超时则失败\n+ 只能有一个子节点，多个仅执行第一个\n+ 当子节点执行超时或返回 `failure` 时，返回 `failure`\n+ 其余情况返回子节点的执行状态\n"
+    "doc": "+ 在限定时间内执行子节点，超时则失败\n+ 只能有一个子节点，多个仅执行第一个\n+ 当子节点执行超时或返回 `failure` 时，返回 `failure`\n+ 当子节点返回 `error` 时，返回 `error`\n+ 其余情况返回子节点的执行状态\n"
   },
   {
     "name": "Wait",

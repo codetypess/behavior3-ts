@@ -35,6 +35,7 @@ import "./nodes/decorators/always-running";
 import "./nodes/decorators/always-success";
 import "./nodes/decorators/assert";
 import "./nodes/decorators/delay";
+import "./nodes/decorators/error-to-failure";
 import "./nodes/decorators/filter";
 import "./nodes/decorators/foreach";
 import "./nodes/decorators/invert";
