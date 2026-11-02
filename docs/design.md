@@ -119,19 +119,19 @@ onAbort(tree): void      // 节点自己清理：停止移动、移除监听和�
 
 ```jsonc
 {
-  "id": 3,
+  "id": "3",
   "name": "Sequence",
   "conditions": [                  // 条件数组，项与项之间是 AND
     {
       "abort": "both",             // none | self | lower | both，默认 none；作用于整棵条件树
       "root": {                    // 条件树的根节点，和普通节点的数据格式完全一样
-        "id": 4,
+        "id": "3.1-1",
         "name": "Selector",
         "children": [
-          { "id": 5, "name": "Check", "args": { "value": "hp < 20" } },
-          { "id": 6, "name": "Sequence", "children": [
-              { "id": 7, "name": "IsStatus", "args": { "status": "stunned" } },
-              { "id": 8, "name": "Invert", "children": [ { "id": 9, "name": "HasShield" } ] }
+          { "id": "3.1-2", "name": "Check", "args": { "value": "hp < 20" } },
+          { "id": "3.1-3", "name": "Sequence", "children": [
+              { "id": "3.1-4", "name": "IsStatus", "args": { "status": "stunned" } },
+              { "id": "3.1-5", "name": "Invert", "children": [ { "id": "3.1-6", "name": "HasShield" } ] }
           ] }
         ]
       }
@@ -159,7 +159,7 @@ interface NodeData {
 - **abort 写在条件项上，不写在节点上**，作用于整棵条件树。这样条件树里的节点和普通节点格式一致，编辑器和运行时都可以直接复用现有的节点解析；一棵带 OR 的树也没法只判断其中一部分，所以不给树内部的节点单独配置 abort。
 - **运行时完整支持多项**，类似 UE 在一个节点上挂多个装饰器。编辑器可以先限制为 1 项，以后放开时运行时和已有的树文件都不用改。
 - 可以通过 Subtree 引用条件文件，比如 `cond/can-attack.json`，在多个节点之间复用。
-- 条件树里节点的 id 和普通节点共用一个编号序列，树内唯一，由编辑器分配。
+- 条件树里的节点不占主树的编号，由编辑器分配：宿主第 n 项条件（从 1 数）的条件树里，节点 id 是 `<宿主 id>.<n>-<k>`，`k` 在这棵条件树内按节点、子节点的顺序从 1 数（上例的 `3.1-1` 到 `3.1-6`）。这样增删条件不会让主树节点改号。树的 `prefix` 照旧加在最前面（`H3.1-1`）。运行时只把 id 当字符串用（日志里显示成 `Check#3.1-2`），状态数组用的是 `index`，和 id 无关。
 - 条件树内部不允许再挂条件。
 
 ### 3.3 语义
@@ -180,9 +180,9 @@ interface NodeData {
 
 ```jsonc
 "conditions": [
-  { "abort": "both", "root": { "id": 4, "name": "HasEnemy" } },     // A
-  { "abort": "self", "root": { "id": 5, "name": "HpAbove50" } },    // B
-  { "abort": "none", "root": { "id": 6, "name": "NotStunned" } }    // C
+  { "abort": "both", "root": { "id": "3.1-1", "name": "HasEnemy" } },     // A
+  { "abort": "self", "root": { "id": "3.2-1", "name": "HpAbove50" } },    // B
+  { "abort": "none", "root": { "id": "3.3-1", "name": "NotStunned" } }    // C
 ]
 // 为了简短，这里每棵条件树都只有一个节点；实际可以是任意深度的树
 ```
@@ -369,7 +369,7 @@ class RandomPick extends Node {
   - 条件树不能返回 running：按 `status` 递归推导（3.4 节），不通过就报错；没有声明 `status` 的节点不检查。条件树里可以有 Action 类节点和声明了 `output` 的节点（比如先取数据再判断），不报错也不警告；
   - 父节点不是 preemptive 时，禁用 `lower` 和 `both`，已有的值标红，构建报错；
   - 树的根节点不能挂条件。子树的根节点同样不挂，条件挂在引用它的节点上，因为只有在引用处才知道父节点；子树展开时，根节点使用引用处的条件；
-  - id 树内唯一（包括条件树里的节点）。
+  - id 树内唯一（包括条件树里的节点，编号规则见 3.2 节）。
 - **提示**：选中一个条件时，高亮它能影响的范围。`self` 高亮自己的子树，`lower` 高亮右侧兄弟节点的子树。
 - **`.b3-setting`**：导出 `preemptive`。`status` 本来就会导出，条件树的检查直接使用它。
 - **文档版本**：树文件的 `version` 是编辑器的文档格式版本（`DOCUMENT_VERSION`），运行时不检查。编辑器支持 `conditions` 时升级这个版本，旧版编辑器打开新文件会给出提示。
