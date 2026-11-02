@@ -22,6 +22,7 @@ export class IsStatus extends Node {
         return {
             name: "IsStatus",
             type: "Condition",
+            group: ["Example"],
             children: 1,
             status: ["success", "failure"],
             desc: "检查子节点状态",

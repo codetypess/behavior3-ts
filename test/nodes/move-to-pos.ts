@@ -19,6 +19,7 @@ export class MoveToPos extends Node {
         return {
             name: "MoveToPos",
             type: "Action",
+            group: ["Example"],
             desc: "移动到位置",
             args: [
                 { name: "x", type: "float", desc: "x坐标" },

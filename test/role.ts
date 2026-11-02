@@ -42,6 +42,10 @@ export class RoleContext extends Context {
         });
     }
 
+    override get supportGroupTypes() {
+        return ["Core", "Example"];
+    }
+
     override loadTree(path: string): Promise<Node> {
         const treeData = JSON.parse(fs.readFileSync(path, "utf-8")) as TreeData;
         const rootNode = this._createTree(treeData);

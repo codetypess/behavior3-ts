@@ -83,9 +83,10 @@ export interface NodeDef<GroupType extends string = string> {
     icon?: string;
     color?: string;
     /**
-     * Used in Behavior3 Editor, to help editor manage available nodes in file tree.
+     * A Context only registers the nodes of the groups it supports (`supportGroupTypes`),
+     * and Behavior3 Editor checks a tree's groups against it. Builtin nodes are in `Core`.
      */
-    group?: GroupType[];
+    group: GroupType[];
     /**
      * Used in Behavior3 Editor, to help editor deduce the status of the node.
      *
@@ -128,7 +129,6 @@ export interface NodeDef<GroupType extends string = string> {
      */
     preemptive?: boolean;
 }
-
 
 /**
  * When the conditions of a node are checked after entering it:

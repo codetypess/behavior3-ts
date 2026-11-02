@@ -19,6 +19,7 @@ export class Attack extends Node {
         return {
             name: "Attack",
             type: "Action",
+            group: ["Example"],
             desc: "攻击",
             input: ["目标敌人"],
             args: [],

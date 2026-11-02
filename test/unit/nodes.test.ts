@@ -30,7 +30,7 @@ describe("node creation", () => {
                 return "success";
             }
             static override get descriptor(): NodeDef {
-                return { name: "BadTick", type: "Action", desc: "" };
+                return { name: "BadTick", type: "Action", group: ["Test"], desc: "" };
             }
         }
         const ctx = new TestContext();

@@ -11,6 +11,7 @@ export class Idle extends Node {
         return {
             name: "Idle",
             type: "Action",
+            group: ["Example"],
             desc: "待机",
         };
     }

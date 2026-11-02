@@ -441,7 +441,7 @@ class Switcher extends Node {
     }
 
     static override get descriptor(): NodeDef {
-        return { name: "Switcher", type: "Composite", desc: "leaks the running child", children: -1 };
+        return { name: "Switcher", type: "Composite", group: ["Test"], desc: "leaks the running child", children: -1 };
     }
 }
 

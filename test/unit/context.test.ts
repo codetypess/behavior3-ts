@@ -161,12 +161,14 @@ describe("node registration", () => {
         assert.equal(ctx.nodeDefs.Selector.preemptive, true);
     });
 
-    it("puts every builtin node in the Core group and always registers it", () => {
-        const ctx = new GroupContext();
+    it("registers the builtin Core nodes only when Core is supported", () => {
+        const core = new TestContext();
+        const other = new GroupContext();
         for (const { name, group } of getNodeDescriptors()) {
             if (name !== "GroupOnly") {
                 assert.deepEqual(group, ["Core"], name);
-                assert.ok(ctx.nodeDefs[name], name);
+                assert.ok(core.nodeDefs[name], name);
+                assert.equal(other.nodeDefs[name], undefined, name);
             }
         }
     });
@@ -193,6 +195,7 @@ describe("node registration", () => {
                 return {
                     name: "Doc",
                     type: "Action",
+                    group: ["Test"],
                     desc: "doc",
                     doc: `
                         + line 1

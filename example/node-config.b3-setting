@@ -63,6 +63,9 @@
   {
     "name": "Attack",
     "type": "Action",
+    "group": [
+      "Example"
+    ],
     "desc": "攻击",
     "input": [
       "目标敌人"
@@ -218,6 +221,9 @@
   {
     "name": "FindEnemy",
     "type": "Action",
+    "group": [
+      "Example"
+    ],
     "desc": "寻找敌人",
     "output": [
       "敌人"
@@ -294,6 +300,9 @@
   {
     "name": "GetHp",
     "type": "Action",
+    "group": [
+      "Example"
+    ],
     "desc": "获取生命值",
     "output": [
       "hp"
@@ -302,6 +311,9 @@
   {
     "name": "Idle",
     "type": "Action",
+    "group": [
+      "Example"
+    ],
     "desc": "待机"
   },
   {
@@ -400,6 +412,9 @@
   {
     "name": "IsStatus",
     "type": "Condition",
+    "group": [
+      "Example"
+    ],
     "children": 1,
     "status": [
       "success",
@@ -728,6 +743,9 @@
   {
     "name": "MoveToPos",
     "type": "Action",
+    "group": [
+      "Example"
+    ],
     "desc": "移动到位置",
     "args": [
       {
@@ -745,6 +763,9 @@
   {
     "name": "MoveToTarget",
     "type": "Action",
+    "group": [
+      "Example"
+    ],
     "desc": "移动到目标",
     "input": [
       "目标"

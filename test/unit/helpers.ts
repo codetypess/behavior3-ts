@@ -47,7 +47,7 @@ export class Probe extends Node {
     }
 
     static override get descriptor(): NodeDef {
-        return { name: "Probe", type: "Action", desc: "test probe", args: [] };
+        return { name: "Probe", type: "Action", group: ["Test"], desc: "test probe", args: [] };
     }
 }
 
@@ -63,7 +63,7 @@ export class Leaky extends Node {
     }
 
     static override get descriptor(): NodeDef {
-        return { name: "Leaky", type: "Decorator", desc: "ignore running child", children: 1 };
+        return { name: "Leaky", type: "Decorator", group: ["Test"], desc: "ignore running child", children: 1 };
     }
 }
 
@@ -88,7 +88,7 @@ export class Group extends Node {
     }
 
     static override get descriptor(): NodeDef {
-        return { name: "Group", type: "Composite", desc: "sequence with abort log", children: -1 };
+        return { name: "Group", type: "Composite", group: ["Test"], desc: "sequence with abort log", children: -1 };
     }
 }
 
@@ -99,7 +99,7 @@ export class Throw extends Node {
     }
 
     static override get descriptor(): NodeDef {
-        return { name: "Throw", type: "Action", desc: "throw an error" };
+        return { name: "Throw", type: "Action", group: ["Test"], desc: "throw an error" };
     }
 }
 
@@ -111,7 +111,7 @@ export class Interrupt extends Node {
     }
 
     static override get descriptor(): NodeDef {
-        return { name: "Interrupt", type: "Action", desc: "interrupt the tree" };
+        return { name: "Interrupt", type: "Action", group: ["Test"], desc: "interrupt the tree" };
     }
 }
 
@@ -125,7 +125,7 @@ export class Emit extends Node {
     }
 
     static override get descriptor(): NodeDef {
-        return { name: "Emit", type: "Action", desc: "dispatch an event", args: [] };
+        return { name: "Emit", type: "Action", group: ["Test"], desc: "dispatch an event", args: [] };
     }
 }
 
@@ -148,6 +148,7 @@ export class ArgsSpy extends Node {
         return {
             name: "ArgsSpy",
             type: "Action",
+            group: ["Test"],
             desc: "record args",
             args: [
                 { name: "value", type: "json?", desc: "json" },
@@ -189,6 +190,7 @@ export class PrioritySelector extends Node {
         return {
             name: "PrioritySelector",
             type: "Composite",
+            group: ["Test"],
             desc: "custom preemptive composite",
             children: -1,
             preemptive: true,

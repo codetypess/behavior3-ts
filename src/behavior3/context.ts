@@ -44,7 +44,7 @@ export abstract class Context {
     }
 
     get supportGroupTypes(): string[] {
-        return [];
+        return ["Core"];
     }
 
     /**
@@ -108,7 +108,7 @@ export abstract class Context {
         event: string,
         callbackOrTarget: EventTarget | Callback,
         tagOrCallback: Callback,
-        tag?: TagType
+        tag?: TagType,
     ) {
         let target: EventTarget;
         let callback: Callback;

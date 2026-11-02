@@ -12,6 +12,7 @@ export class GetHp extends Node {
         return {
             name: "GetHp",
             type: "Action",
+            group: ["Example"],
             desc: "获取生命值",
             output: ["hp"],
         };

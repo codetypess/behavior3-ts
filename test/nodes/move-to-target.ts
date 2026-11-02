@@ -36,6 +36,7 @@ export class MoveToTarget extends Node {
         return {
             name: "MoveToTarget",
             type: "Action",
+            group: ["Example"],
             desc: "移动到目标",
             input: ["目标"],
         };

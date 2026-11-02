@@ -83,6 +83,7 @@ export class FindEnemy extends Node {
         return {
             name: "FindEnemy",
             type: "Action",
+            group: ["Example"],
             desc: "寻找敌人",
             args: [
                 { name: "w", type: "int", desc: "宽度" },
@@ -108,7 +109,7 @@ export class FindEnemy extends Node {
 | `children` | 允许的子节点个数：`-1` 不限，`0`、`1`、`2`、`3` |
 | `status` | 节点可能返回的状态，编辑器用来推导和校验 |
 | `preemptive` | 组合节点是否支持抢占（见[条件与打断](#条件与打断)） |
-| `group` | 节点分组，Context 只注册它支持的分组（`supportGroupTypes`）；内置节点都属于 `Core` 分组，总会注册 |
+| `group` | 节点分组，必填。用 `registerNode` 注册的节点，Context 只注册分组在 `supportGroupTypes` 里的（默认 `["Core"]`）；内置节点都属于 `Core`，重写 `supportGroupTypes` 时要带上它。用 `context.registerNode` 直接注册的节点不受限制 |
 
 ### 黑板、输入和输出
 

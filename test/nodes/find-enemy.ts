@@ -35,6 +35,7 @@ export class FindEnemy extends Node {
         return {
             name: "FindEnemy",
             type: "Action",
+            group: ["Example"],
             desc: "寻找敌人",
             output: ["敌人"],
             args: [
