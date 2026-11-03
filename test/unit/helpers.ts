@@ -305,6 +305,36 @@ export class ClearSpy extends Node {
     }
 }
 
+/**
+ * Registers a listener of `args.event` bound with `tree.bindCallback`: the callback logs
+ * `cb:<id>=<value>` of blackboard key `args.key`, sets `args.write` to 1 and ticks the child.
+ */
+export class BindListen extends Node {
+    declare args: { readonly event: string; readonly key: string; readonly write?: string };
+
+    override onTick(tree: Tree<TestContext, unknown>): Status {
+        const { event, key, write } = this.args;
+        tree.context.on(
+            event,
+            tree.bindCallback(() => {
+                tree.context.log.push(`cb:${this.id}=${String(tree.blackboard.get(key))}`);
+                if (write) {
+                    tree.blackboard.set(write, 1);
+                }
+                if (this.children[0]) {
+                    tree.__tickInCallback(this.children[0]);
+                }
+            }),
+            tree,
+        );
+        return "success";
+    }
+
+    static override get descriptor(): NodeDef {
+        return { name: "BindListen", type: "Decorator", group: ["Test"], desc: "bound listener", args: [] };
+    }
+}
+
 let pathId = 0;
 
 export class TestContext extends Context {
@@ -329,6 +359,7 @@ export class TestContext extends Context {
         this.registerNode(Write);
         this.registerNode(TempWrite);
         this.registerNode(ClearSpy);
+        this.registerNode(BindListen);
     }
 
     /** The paths loaded asynchronously, see `deferLoad`. */

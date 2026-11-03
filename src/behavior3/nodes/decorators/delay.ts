@@ -13,19 +13,19 @@ export class Delay extends Node {
     override onTick(tree: Tree<Context, unknown>): Status {
         const args = this.args;
         const delay = this._checkOneof(0, args.delay, 0);
-        // the callback runs in the scope where it is registered, even if the scope has ended
         const blackboard = tree.blackboard;
         const keys = args.cacheVars ?? [];
         const cacheArgs: unknown[] = keys.map((key) => blackboard.get(key));
 
         tree.context.delay(
             delay,
-            () => {
+            // the callback runs in the scope where it is registered, even if the scope has ended
+            tree.bindCallback(() => {
                 const cacheOldArgs: unknown[] = keys.map((key) => blackboard.get(key));
                 keys.forEach((key, i) => blackboard.set(key, cacheArgs[i]));
-                tree.__tickInCallback(this.children[0], blackboard);
+                tree.__tickInCallback(this.children[0]);
                 keys.forEach((key, i) => blackboard.set(key, cacheOldArgs[i]));
-            },
+            }),
             tree
         );
         return "success";

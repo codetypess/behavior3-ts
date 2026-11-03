@@ -189,6 +189,7 @@ if (field === ERROR) return "error";
 `Listen`、`Delay` 在事件或定时器回调里执行子节点，这和 `tree.tick()` 无关，所以回调里出错**不影响主树**：不中断，`tree.status` 不变，主树正在 running 的分支继续执行。
 
 - 回调通过内部方法 `tree.__tickInCallback(node)` 执行子树，相当于一次只针对这棵子树的独立执行。
+- 注册回调时用 `tree.bindCallback(fn)` 包一层，回调就在注册时的作用域里执行（[scope-design.md](scope-design.md) 第 8 节）。
 - 子树返回 `"error"` 时只打印日志。`ErrorToFailure` 要放在回调的子树里面才有效，包在 Listen 外面处理不到。
 - 抛异常时同样打印日志、派发 `TreeEvent.EXCEPTION`，然后只停下这棵子树：这次回调里不再执行任何节点。
 - 子树执行完后，中止其中所有 running 的节点（回调里的子树不能跨帧运行）。
@@ -504,6 +505,7 @@ export class MyNode extends Node {
 - 只实现 `onTick`、`onAbort` 和 `onClear`。重写 `tick` 或 `abort` 时加载抛异常。
 - `onClear` 在 `tree.clear()` 时对每个节点（包括条件树里的）调用一次：在 running 的节点 `onAbort` 之后、清空黑板之前，用来释放节点为这棵树保留的东西（比如私有变量里缓存的子树实例）。
 - `onTick` 里的 `tree.blackboard` 是当前作用域，在 `Scope` 或条件树里是它的覆盖层（[scope-design.md](scope-design.md) 第 10 节）。
+- 注册监听或定时器时，回调用 `tree.bindCallback(fn)` 包一层，触发时回到注册时的作用域；不包的回调在 tick 之外执行时用的是根黑板，放在 `Scope` 里会写到外面。
 - 跨帧的状态用 `tree.setState`，不要存在节点实例上：节点实例被所有单位共享。
 - 返回 running 时启动了需要清理的东西（移动、监听、定时器），在 `onAbort` 里清理。
 - **组合节点和装饰节点收到子节点的 `"error"` 时，要返回 `"error"`**（ErrorToFailure 这类专门处理 error 的节点除外）。框架不会替节点传递 error。

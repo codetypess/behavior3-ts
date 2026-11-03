@@ -56,12 +56,11 @@ export class Listen extends Node {
         }
 
         // the callback runs in the scope where it is registered, even if the scope has ended
-        const scope = tree.blackboard;
         const callback = (eventTarget?: EventTarget) => {
-            return (...eventArgs: unknown[]) => {
-                tree.__withScope(scope, () => this._processOutput(tree, eventTarget, ...eventArgs));
-                tree.__tickInCallback(this.children[0], scope);
-            };
+            return tree.bindCallback((...eventArgs: unknown[]) => {
+                this._processOutput(tree, eventTarget, ...eventArgs);
+                tree.__tickInCallback(this.children[0]);
+            });
         };
         if (target !== undefined) {
             if (target instanceof Array) {

@@ -542,3 +542,93 @@ describe("SKIP", () => {
         assert.equal(tree.blackboard.hasOwn("y"), false);
     });
 });
+
+describe("tree.bindCallback", () => {
+    const bindListen = (id: string, opts: { key: string; write?: string; children?: NodeSpec[] }) =>
+        n("BindListen", id, {
+            args: { event: "hit", key: opts.key, write: opts.write },
+            children: opts.children,
+        });
+
+    it("runs the callback in the scope where it is bound", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            scope("s", seq("in", letv("l", "y", 1), bindListen("b", { key: "y", write: "z" }))),
+        );
+        tree.blackboard.set("y", 100);
+        tree.tick();
+        ctx.dispatch("hit");
+        assert.deepEqual(ctx.takeLog(), ["cb:b=1"]);
+        assert.equal(tree.blackboard.get("y"), 100);
+        assert.equal(tree.blackboard.get("z"), undefined);
+    });
+
+    it("runs in the root blackboard when bound outside a scope", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(bindListen("b", { key: "y", write: "z" }));
+        tree.blackboard.set("y", 100);
+        tree.tick();
+        ctx.dispatch("hit");
+        assert.deepEqual(ctx.takeLog(), ["cb:b=100"]);
+        assert.equal(tree.blackboard.get("z"), 1);
+    });
+
+    it("ticks the children in the bound scope", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            scope("s", seq("in", letv("l", "y", 1), bindListen("b", { key: "y", write: "z", children: [read("r", "z")] }))),
+        );
+        tree.tick();
+        ctx.dispatch("hit");
+        assert.deepEqual(ctx.takeLog(), ["cb:b=1", "read:r=1"]);
+    });
+
+    it("restores the scope after the callback", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(scope("s", seq("in", letv("l", "y", 1), bindListen("b", { key: "y" }))));
+        tree.tick();
+        ctx.dispatch("hit");
+        assert.equal(tree.blackboard, tree.__rootBlackboard);
+    });
+
+    it("restores the scope when the callback throws", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(scope("s", probe("p")));
+        let bound: () => void = () => {};
+        const inner = tree.blackboard.fork();
+        tree.__withScope(inner, () => {
+            bound = tree.bindCallback(() => {
+                throw new Error("boom");
+            });
+        });
+        assert.throws(() => bound(), /boom/);
+        assert.equal(tree.blackboard, tree.__rootBlackboard);
+    });
+
+    it("passes the arguments and returns the result", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(probe("p"));
+        const inner = tree.blackboard.fork();
+        inner.set("base", 10);
+        const add = tree.__withScope(inner, () =>
+            tree.bindCallback((a: number, b: number) => a + b + tree.blackboard.get<number>("base")!),
+        );
+        assert.equal(add(1, 2), 13);
+    });
+
+    it("runs a callback dispatched during a tick in the bound scope", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            seq(
+                "main",
+                bindListen("b", { key: "y", write: "z" }),
+                scope("s", seq("in", letv("l", "y", 1), n("Emit", "e", { args: { event: "hit" } }))),
+                read("r", "z"),
+            ),
+        );
+        tree.blackboard.set("y", 100);
+        tree.tick();
+        // bound in the root blackboard, the emitter's scope doesn't leak into the callback
+        assert.deepEqual(ctx.takeLog(), ["cb:b=100", "read:r=1"]);
+    });
+});

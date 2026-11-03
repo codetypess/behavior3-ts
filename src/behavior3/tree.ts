@@ -105,6 +105,24 @@ export class Tree<C extends Context, Owner> {
         }
     }
 
+    /**
+     * Binds a callback to the current scope, call it in `onTick` when registering a listener or
+     * a timer. The returned function runs `fn` in the scope where it was bound, even if that
+     * `Scope` or condition tree has ended (like a closure): `tree.blackboard` is the bound scope,
+     * and the children ticked by `__tickInCallback` run in it.
+     */
+    bindCallback<A extends unknown[], R>(fn: (...args: A) => R): (...args: A) => R {
+        const scope = this._scope;
+        return (...args: A) => {
+            const outer = this.__swapScope(scope);
+            try {
+                return fn(...args);
+            } finally {
+                this._scope = outer;
+            }
+        };
+    }
+
     get root(): Node | undefined {
         return (this._root ||= this.context.trees[this.path]);
     }
@@ -163,10 +181,10 @@ export class Tree<C extends Context, Owner> {
      * independent of `tick`. An error or an exception only stops this subtree without affecting
      * the tree, and the running nodes left in the subtree are aborted.
      *
-     * @param scope The scope captured when the callback was registered, the callback runs in it
-     * even if the scope has ended (like a closure).
+     * @param scope The scope to tick the node in, the current scope by default: the bound scope in
+     * a callback from `bindCallback`, the root blackboard in a callback outside the tick.
      */
-    __tickInCallback(node: Node, scope: Blackboard = this._rootBlackboard) {
+    __tickInCallback(node: Node, scope: Blackboard = this._scope) {
         const outer = this._callback;
         const interrupted = this.__interrupted;
         const runningNode = this.__runningNode;

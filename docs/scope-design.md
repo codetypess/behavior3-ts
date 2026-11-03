@@ -316,8 +316,23 @@ override get __isScope(): boolean {
 
 改法：
 
-- 回调节点在 `onTick` 里捕获 `const scope = tree.blackboard`，改成 `__tickInCallback(node, scope)`，进入时用 `__withScope` 重新切进去。
-- `Listen._processOutput` 写到捕获的那一层。
+- 回调节点在 `onTick` 里注册回调时，用 `tree.bindCallback(fn)` 包一层：它记下当前作用域，回调触发时切回这个作用域执行 `fn`，结束后切回原来的。
+- 回调里 `tree.blackboard` 就是绑定的作用域，`Listen._processOutput` 自然写到这一层；`__tickInCallback(node)` 默认在当前作用域里 tick，也就是绑定的作用域。
+- 宿主的自定义节点注册监听或定时器时，同样用 `bindCallback` 包一层，不需要接触 `__` 开头的内部方法。没有包的回调在触发时的当前作用域里执行：tick 之外是根黑板，在 tick 中同步派发时是派发者所在的作用域。
+
+```ts
+override onTick(tree: Tree<Context, unknown>): Status {
+    tree.context.on(
+        "hit",
+        tree.bindCallback((attacker) => {
+            tree.blackboard.set("attacker", attacker);   // 写进注册时的作用域
+            tree.__tickInCallback(this.children[0]);      // 子节点也在这个作用域里执行
+        }),
+        tree,
+    );
+    return "success";
+}
+```
 
 回调触发时，所在的 `Scope` 往往已经结束了：`Listen` 和 `Delay` 都是注册完回调就立即返回 success，`Scope` 常常在同一帧就结束。这里采用**闭包语义**，和编程语言里函数返回后闭包照样能用它捕获的变量一样：
 
@@ -364,6 +379,7 @@ override get __isScope(): boolean {
 | 自定义节点在 `onTick` 里调用 `tree.blackboard.set`                   | 当前作用域     | 变化，这是预期的隔离                        |
 | 节点 `onTick` 里调用宿主代码，宿主代码再访问 `tree.blackboard`       | 当前作用域     | 变化，同上                                  |
 | 节点在 `onTick` 里保存 `tree.blackboard`，交给宿主的异步任务以后使用 | 保存时的作用域 | 变化，和 `Listen` 一样是闭包语义（第 8 节） |
+| 节点注册的回调用 `tree.bindCallback` 包了一层                        | 注册时的作用域 | 新增的公开方法（第 8 节）                   |
 
 - `readonly blackboard: Blackboard` 改成 getter，读取是兼容的；原来就是 readonly，宿主不会给它赋值。
 - 根黑板只以 `__rootBlackboard` 的形式给框架内部使用（`_doInterrupt`、`Tree.clear`、覆盖层转发私有变量和临时变量），不提供公开的 `rootBlackboard`。公开出来，宿主的节点在 `Scope` 里调用它就能绕过隔离，这正是第 7.2 节不支持的用法；而宿主在 tick 之外用 `tree.blackboard` 就是根黑板，并不需要它。
@@ -374,22 +390,22 @@ override get __isScope(): boolean {
 
 - **性能**：
     - 覆盖层的 `values` 在第一次写入时才创建（`Object.create`），没写过的覆盖层直接读外层的 `values`。只读的条件树（大多数情况）每次求值只多一个 `Blackboard` 对象。内层先写入时，会先为还没写过的外层创建 `values`，保证原型链能看到外层之后的写入。`Scope` 只在进入时 fork 一次，running 期间每帧用的是同一个覆盖层。
-  - 实测（`npm run bench`，和改动前交替运行）：deep 和 preempt 都在误差范围内，没有变慢。
-    - 原型链的查找深度等于嵌套层数，正常嵌套很浅。
-    - 不复用覆盖层对象：条件树里的 `Listen`/`Delay` 会捕获那次求值的覆盖层（第 8 节），复用后回调会读到被清空的数据，或者别的求值写的数据。
-    - 要关注的是 `tree.blackboard` 变成 getter 后，每个节点的 `tick` 都会调用一次，用 `npm run bench` 前后对比确认。
+    - 实测（`npm run bench`，和改动前交替运行）：deep 和 preempt 都在误差范围内，没有变慢。
+        - 原型链的查找深度等于嵌套层数，正常嵌套很浅。
+        - 不复用覆盖层对象：条件树里的 `Listen`/`Delay` 会捕获那次求值的覆盖层（第 8 节），复用后回调会读到被清空的数据，或者别的求值写的数据。
+        - 要关注的是 `tree.blackboard` 变成 getter 后，每个节点的 `tick` 都会调用一次，用 `npm run bench` 前后对比确认。
 - **节点状态不受作用域影响**：`tree.setState` 的状态按节点存在 Tree 上，不在黑板里，和私有变量一样不参与作用域。
 
 ## 12. 改动清单
 
-| 文件                        | 改动                                                                                                                                                                        |
-| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `blackboard.ts`             | `parent`、`fork()`、`hasOwn()`，覆盖层里删除时存 `undefined` 遮蔽，私有变量和临时变量转发到根黑板；`clear()` 原地清空                                                       |
-| `tree.ts`                   | `blackboard` 改 getter，新增 `__rootBlackboard`、`__withScope`；`__tickInCallback` 加 scope 参数；中断和清理时重置作用域，`_doInterrupt` 和 `clear` 改用 `__rootBlackboard` |
-| `node.ts`                   | `SKIP`；output 循环跳过 `SKIP`；`_evalCondition` 进入隐式作用域，根节点是 `Scope` 时直接 tick；`__isScope` 标记；`abort` 里判断 `__isScope`，在覆盖层里中止子节点           |
-| `nodes/decorators/scope.ts` | 新的 `Scope` 节点，覆盖 `__isScope`                                                                                                                                         |
-| `index.ts`                  | import `nodes/decorators/scope`                                                                                                                                             |
-| `listen.ts`、`delay.ts`     | 捕获作用域，回调时重新进入                                                                                                                                                  |
+| 文件                        | 改动                                                                                                                                                                                                          |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `blackboard.ts`             | `parent`、`fork()`、`hasOwn()`，覆盖层里删除时存 `undefined` 遮蔽，私有变量和临时变量转发到根黑板；`clear()` 原地清空                                                                                         |
+| `tree.ts`                   | `blackboard` 改 getter，新增 `__rootBlackboard`、`__withScope`、`bindCallback`；`__tickInCallback` 加 scope 参数，默认是当前作用域；中断和清理时重置作用域，`_doInterrupt` 和 `clear` 改用 `__rootBlackboard` |
+| `node.ts`                   | `SKIP`；output 循环跳过 `SKIP`；`_evalCondition` 进入隐式作用域，根节点是 `Scope` 时直接 tick；`__isScope` 标记；`abort` 里判断 `__isScope`，在覆盖层里中止子节点                                             |
+| `nodes/decorators/scope.ts` | 新的 `Scope` 节点，覆盖 `__isScope`                                                                                                                                                                           |
+| `index.ts`                  | import `nodes/decorators/scope`                                                                                                                                                                               |
+| `listen.ts`、`delay.ts`     | 用 `bindCallback` 包住回调                                                                                                                                                                                    |
 
 **测试**
 
