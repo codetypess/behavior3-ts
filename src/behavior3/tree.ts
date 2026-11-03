@@ -38,7 +38,6 @@ const RUNNING = {};
 export class Tree<C extends Context, Owner> {
     readonly context: C;
     readonly path: string;
-    readonly blackboard: Blackboard;
     readonly id: number = ++treeId;
 
     debug: boolean = false;
@@ -53,6 +52,9 @@ export class Tree<C extends Context, Owner> {
     __interrupted: boolean = false;
 
     private _root?: Node;
+    private readonly _rootBlackboard: Blackboard;
+    /** The current scope, switched by `Scope` nodes and condition trees while ticking. */
+    private _scope: Blackboard;
     private _status: TreeStatus = "success";
     private _states: unknown[] = [];
     private _tickException: boolean = false;
@@ -64,13 +66,43 @@ export class Tree<C extends Context, Owner> {
     constructor(context: C, owner: Owner, path: string) {
         this.context = context;
         this.path = path;
-        this.blackboard = new Blackboard(this);
+        this._rootBlackboard = this._scope = new Blackboard(this);
         this.context.loadTree(this.path);
         this._owner = owner;
     }
 
     get owner() {
         return this._owner;
+    }
+
+    /**
+     * The blackboard of the current scope. Outside a tick it is the root blackboard of the tree,
+     * inside a `Scope` node or a condition tree it is the overlay of the scope.
+     */
+    get blackboard(): Blackboard {
+        return this._scope;
+    }
+
+    /** @private The root blackboard, for the framework only. */
+    get __rootBlackboard(): Blackboard {
+        return this._rootBlackboard;
+    }
+
+    /** @private Sets the current scope and returns the previous one, restore it with `finally`. */
+    __swapScope(scope: Blackboard): Blackboard {
+        const outer = this._scope;
+        this._scope = scope;
+        return outer;
+    }
+
+    /** @private Runs `fn` in the scope. */
+    __withScope<T>(scope: Blackboard, fn: () => T): T {
+        const outer = this.__swapScope(scope);
+        try {
+            return fn();
+        } finally {
+            this._scope = outer;
+        }
     }
 
     get root(): Node | undefined {
@@ -101,11 +133,16 @@ export class Tree<C extends Context, Owner> {
         this.__interrupted = interrupted;
 
         this.interrupt();
+        if (this.root) {
+            // after the running nodes are aborted, before the private vars are cleared
+            this._clearAll(this.root);
+        }
         this.debug = false;
         this.__interrupted = false;
         this._status = "success";
         this._states.length = 0;
-        this.blackboard.clear();
+        this._scope = this._rootBlackboard;
+        this._rootBlackboard.clear();
         this.context.offAll(this);
     }
 
@@ -125,17 +162,25 @@ export class Tree<C extends Context, Owner> {
      * @private Ticks the node in an async callback (like `Listen` and `Delay`), which is
      * independent of `tick`. An error or an exception only stops this subtree without affecting
      * the tree, and the running nodes left in the subtree are aborted.
+     *
+     * @param scope The scope captured when the callback was registered, the callback runs in it
+     * even if the scope has ended (like a closure).
      */
-    __tickInCallback(node: Node) {
+    __tickInCallback(node: Node, scope: Blackboard = this._rootBlackboard) {
         const outer = this._callback;
         const interrupted = this.__interrupted;
         const runningNode = this.__runningNode;
         const callback = (this._callback = { interrupt: false });
         this.__interrupted = false;
 
-        node.tick(this);
+        const outerScope = this.__swapScope(scope);
+        try {
+            node.tick(this);
+            this._abortAll(node);
+        } finally {
+            this._scope = outerScope;
+        }
 
-        this._abortAll(node);
         this._callback = outer;
         this.__runningNode = runningNode;
         this.__interrupted = interrupted || callback.interrupt;
@@ -280,7 +325,7 @@ export class Tree<C extends Context, Owner> {
     }
 
     private _doInterrupt() {
-        const values = this.blackboard.values;
+        const values = this._rootBlackboard.values;
         this._status = this._tickException ? "exception" : "interrupted";
         this._tickException = false;
         if (this.root) {
@@ -292,6 +337,7 @@ export class Tree<C extends Context, Owner> {
                 delete values[key];
             }
         }
+        this._scope = this._rootBlackboard;
         this.__interrupted = false;
     }
 
@@ -302,8 +348,17 @@ export class Tree<C extends Context, Owner> {
         for (const condition of node.conditions) {
             this._abortAll(condition.root);
         }
-        for (const child of node.children) {
-            this._abortAll(child);
+        // the children of a running Scope are aborted in its overlay
+        const scope = node.__isScope ? this.getState<Blackboard>(node) : undefined;
+        const outer = scope ? this.__swapScope(scope) : undefined;
+        try {
+            for (const child of node.children) {
+                this._abortAll(child);
+            }
+        } finally {
+            if (outer) {
+                this._scope = outer;
+            }
         }
         if (this.isRunning(node)) {
             try {
@@ -312,6 +367,21 @@ export class Tree<C extends Context, Owner> {
                 node.error(`${e instanceof Error ? e.message : e}`);
             }
             this.__clearState(node);
+        }
+    }
+
+    /** Calls `onClear` of every node, including the nodes of the condition trees. */
+    private _clearAll(node: Node) {
+        for (const condition of node.conditions) {
+            this._clearAll(condition.root);
+        }
+        for (const child of node.children) {
+            this._clearAll(child);
+        }
+        try {
+            node.onClear(this);
+        } catch (e) {
+            node.error(`${e instanceof Error ? e.message : e}`);
         }
     }
 }

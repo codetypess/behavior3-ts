@@ -22,6 +22,11 @@ export type Status = "success" | "failure" | "running" | "error";
  */
 export const ERROR: unique symbol = Symbol("error");
 
+/**
+ * Set to an output to leave the variable untouched, the framework doesn't write it back.
+ */
+export const SKIP: unique symbol = Symbol("skip");
+
 export interface NodeDef<GroupType extends string = string> {
     name: string;
     /**
@@ -283,6 +288,14 @@ export abstract class Node {
     }
 
     /**
+     * @private Whether the node is a `Scope`: its children run in its overlay, and as the root of
+     * a condition tree it replaces the implicit scope of the condition.
+     */
+    get __isScope(): boolean {
+        return false;
+    }
+
+    /**
      * Evaluates all conditions, used when entering the node and when checking preemption.
      */
     evalConditions(tree: Tree<Context, unknown>): boolean {
@@ -384,7 +397,10 @@ export abstract class Node {
                 // the result of an error is not trustworthy, don't write it back
                 const outputKeys = cfg.output;
                 for (let i = 0; i < outputKeys.length; i++) {
-                    blackboard.set(outputKeys[i], output[i]);
+                    const value = output[i];
+                    if (value !== SKIP) {
+                        blackboard.set(outputKeys[i], value);
+                    }
                 }
             }
             // a finished node must not leave running children behind
@@ -412,8 +428,17 @@ export abstract class Node {
         if (!tree.isRunning(this)) {
             return;
         }
-        for (const child of this._children) {
-            child.abort(tree);
+        // the children of a Scope are aborted in its overlay, which is its state while running
+        const scope = this.__isScope ? tree.getState<Blackboard>(this) : undefined;
+        const outer = scope ? tree.__swapScope(scope) : undefined;
+        try {
+            for (const child of this._children) {
+                child.abort(tree);
+            }
+        } finally {
+            if (outer) {
+                tree.__swapScope(outer);
+            }
         }
         try {
             this.onAbort(tree);
@@ -555,18 +580,35 @@ export abstract class Node {
         );
     }
 
-    /** A condition is only true or false, `error` (untrustworthy data) is false. */
+    /**
+     * A condition is only true or false, `error` (untrustworthy data) is false.
+     *
+     * The condition tree runs in an implicit scope which is dropped after the evaluation, unless
+     * its root is a `Scope`: the `Scope` replaces it and exports its output when it succeeds.
+     */
     private static _evalCondition(tree: Tree<Context, unknown>, root: Node): boolean {
+        let status: Status;
+        if (root.__isScope) {
+            status = Node._tickCondition(tree, root);
+        } else {
+            const outer = tree.__swapScope(tree.blackboard.fork());
+            try {
+                status = Node._tickCondition(tree, root);
+            } finally {
+                tree.__swapScope(outer);
+            }
+        }
+        return !tree.__interrupted && status === "success";
+    }
+
+    /** Ticks the condition tree, a running condition tree is aborted in its scope. */
+    private static _tickCondition(tree: Tree<Context, unknown>, root: Node): Status {
         const status = root.tick(tree);
-        if (tree.__interrupted) {
-            return false;
-        } else if (status === "running") {
+        if (!tree.__interrupted && status === "running") {
             root.error(`condition tree must not return 'running'`);
             root.abort(tree);
-            return false;
-        } else {
-            return status === "success";
         }
+        return status;
     }
 
     /**
@@ -586,6 +628,13 @@ export abstract class Node {
      * The state of the node is cleared after this call.
      */
     onAbort(tree: Tree<Context, unknown>): void {}
+
+    /**
+     * Called when the tree is cleared, releases what the node keeps for the tree beyond a run,
+     * like the subtree instances or the caches in private vars. The running nodes have been
+     * aborted before this call, and the blackboard is cleared after it.
+     */
+    onClear(tree: Tree<Context, unknown>): void {}
 
     static get descriptor(): NodeDef {
         throw new Error(`descriptor not found in '${this.name}'`);

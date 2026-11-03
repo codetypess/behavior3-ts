@@ -117,6 +117,8 @@ export class FindEnemy extends Node {
 
 上面的 FindEnemy 执行成功后，黑板上的 `target` 变量就是找到的敌人列表，后面的节点可以把 `target` 作为输入。
 
+黑板有作用域：`Scope` 节点和条件树里的写入只留在自己的作用域里，读取时可以读到外层的变量；要写回外层，列在 `Scope` 的 output 里，成功时导出。tick 之外访问 `tree.blackboard` 拿到的就是整棵树的根黑板。详见[作用域黑板设计](docs/scope-design.md)。
+
 ### 状态
 
 | 状态 | 含义 |
@@ -171,6 +173,7 @@ export class FindEnemy extends Node {
 - Repeat 重复执行子节点
 - RetryUntilFailure 重试子节点，直到返回失败
 - RetryUntilSuccess 重试子节点，直到返回成功
+- Scope 隔离作用域：子节点的写入只留在作用域内，output 列出的变量在成功时写回外层
 - Timeout 限定时间内执行子节点，超时则失败
 
 ### 条件节点
@@ -193,6 +196,7 @@ export class FindEnemy extends Node {
 - Now 获取当前时间
 - Push 向数组中添加元素
 - RandomIndex 随机返回数组的一个元素及其索引
+- RunTree 在独立的实例中执行另一棵行为树，input 传参，成功时用 output 导出结果
 - SetField 设置对象的字段值
 - Wait 等待一段时间
 - WaitForEvent 等待事件触发
@@ -209,6 +213,8 @@ export class FindEnemy extends Node {
 
 - [设计文档](docs/design.md)：执行模型、状态与错误、条件与打断、参数语义、内置节点、自定义节点
 - [打断与抢占机制说明](docs/abort-mechanism.md)：逐帧例子和使用建议
+- [作用域黑板设计](docs/scope-design.md)：`Scope` 节点和条件树的变量隔离
+- [RunTree 设计](docs/run-tree-design.md)：执行另一棵行为树
 
 ## 开发
 

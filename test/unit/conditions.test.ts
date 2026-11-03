@@ -415,3 +415,304 @@ describe("Case", () => {
         assert.deepEqual(ctx.takeLog(), ["tick:x", "tick:y"]);
     });
 });
+
+describe("condition scope", () => {
+    const read = (id: string, key: string, status?: string) =>
+        n("Read", id, { args: { key, status } });
+    const letv = (id: string, key: string, value: unknown) =>
+        n("Let", id, { args: { value }, output: [key] });
+    const check = (id: string, value: string) => n("Check", id, { args: { value } });
+    const seq = (id: string, ...children: NodeSpec[]) => n("Sequence", id, { children });
+    const scope = (id: string, child: NodeSpec, output: string[] = []) =>
+        n("Scope", id, { output, children: [child] });
+
+    it("drops the writes of the condition tree", () => {
+        const ctx = new TestContext();
+        const guarded = ctx.createTree(
+            seq(
+                "main",
+                probe("a", {
+                    conditions: [
+                        cond(
+                            seq(
+                                "c",
+                                letv("l", "x", 1),
+                                n("Write", "w", { args: { key: "y", value: 2 } }),
+                                check("k", "x == 1"),
+                            ),
+                        ),
+                    ],
+                }),
+                read("r", "x"),
+            ),
+        );
+        assert.equal(guarded.tick(), "success");
+        assert.deepEqual(ctx.takeLog(), ["tick:a", "read:r=undefined"]);
+        assert.deepEqual(Object.keys(guarded.blackboard.values), []);
+    });
+
+    it("reads the variables of the tree", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(probe("a", { conditions: [cond(check("k", "hp > 0"))] }));
+        tree.blackboard.set("hp", 1);
+        assert.equal(tree.tick(), "success");
+        tree.blackboard.set("hp", 0);
+        assert.equal(tree.tick(), "failure");
+    });
+
+    it("starts every evaluation with a fresh scope", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            probe("a", { conditions: [cond(seq("c", read("r", "x"), letv("l", "x", 1)), "self")] }),
+        );
+        tree.blackboard.set("a", "running");
+        tree.tick();
+        tree.tick();
+        assert.deepEqual(ctx.takeLog(), [
+            "read:r=undefined",
+            "tick:a",
+            "read:r=undefined",
+            "tick:a",
+        ]);
+    });
+
+    it("exports the output of a Scope root when the condition is true", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            seq(
+                "main",
+                read("a", "target"),
+                n("Sequence", "guarded", {
+                    conditions: [
+                        cond(
+                            scope(
+                                "s",
+                                seq(
+                                    "c",
+                                    letv("l", "target", 5),
+                                    letv("t", "tmp", 1),
+                                    check("k", "target == 5"),
+                                ),
+                                ["target"],
+                            ),
+                        ),
+                    ],
+                    children: [read("r", "target")],
+                }),
+            ),
+        );
+        assert.equal(tree.tick(), "success");
+        assert.deepEqual(ctx.takeLog(), ["read:a=undefined", "read:r=5"]);
+        assert.equal(tree.blackboard.get("target"), 5);
+        assert.equal(tree.blackboard.get("tmp"), undefined);
+    });
+
+    it("doesn't export the output of a Scope root when the condition is false", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            probe("a", {
+                conditions: [
+                    cond(
+                        scope("s", seq("c", letv("l", "target", 5), check("k", "target == 6")), [
+                            "target",
+                        ]),
+                    ),
+                ],
+            }),
+        );
+        tree.blackboard.set("target", 1);
+        assert.equal(tree.tick(), "failure");
+        assert.equal(tree.blackboard.get("target"), 1);
+    });
+
+    it("doesn't export the output of a Scope root on error", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            probe("a", {
+                conditions: [
+                    cond(
+                        scope("s", seq("c", letv("l", "target", 5), check("k", "missing > 0")), [
+                            "target",
+                        ]),
+                    ),
+                ],
+            }),
+        );
+        assert.equal(tree.tick(), "failure");
+        assert.equal(tree.blackboard.get("target"), undefined);
+    });
+
+    it("drops the output of a Scope below the root", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            probe("a", {
+                conditions: [
+                    cond(seq("c", scope("s", letv("l", "t", 1), ["t"]), check("k", "t == 1"))),
+                ],
+            }),
+        );
+        assert.equal(tree.tick(), "success");
+        assert.equal(tree.blackboard.get("t"), undefined);
+    });
+
+    it("exports into the scope where the condition is evaluated", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            scope(
+                "outer",
+                seq(
+                    "main",
+                    n("Sequence", "guarded", {
+                        conditions: [cond(scope("s", letv("l", "t", 1), ["t"]))],
+                        children: [read("r", "t")],
+                    }),
+                    read("r2", "t"),
+                ),
+            ),
+        );
+        tree.tick();
+        assert.deepEqual(ctx.takeLog(), ["read:r=1", "read:r2=1"]);
+        assert.equal(tree.blackboard.get("t"), undefined);
+    });
+
+    it("exports the output of a Scope root outside a Scope node with the condition", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            n("Scope", "guarded", {
+                conditions: [cond(scope("s", letv("l", "t", 1), ["t"]))],
+                children: [read("r", "t")],
+            }),
+        );
+        tree.tick();
+        // the condition of a Scope node runs outside it, the export lands in the outer scope
+        assert.deepEqual(ctx.takeLog(), ["read:r=1"]);
+        assert.equal(tree.blackboard.get("t"), 1);
+    });
+
+    it("refreshes the export of a self condition every tick", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            probe("a", {
+                conditions: [
+                    cond(
+                        scope(
+                            "s",
+                            n("Calculate", "calc", { args: { value: "hp * 2" }, output: ["d"] }),
+                            ["d"],
+                        ),
+                        "self",
+                    ),
+                ],
+            }),
+        );
+        tree.blackboard.set("a", "running");
+        tree.blackboard.set("hp", 1);
+        tree.tick();
+        assert.equal(tree.blackboard.get("d"), 2);
+        tree.blackboard.set("hp", 2);
+        tree.tick();
+        assert.equal(tree.blackboard.get("d"), 4);
+    });
+
+    it("aborts a running condition tree in its scope", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            probe("a", {
+                conditions: [cond(seq("c", letv("l", "x", 1), read("r", "x", "running")))],
+            }),
+        );
+        const { error } = captureConsole(() => assert.equal(tree.tick(), "failure"));
+        assert.match(error[0], /condition tree must not return 'running'/);
+        assert.deepEqual(ctx.takeLog(), ["read:r=1", "abort:r=1"]);
+        assert.equal(tree.blackboard.get("x"), undefined);
+    });
+
+    it("aborts a running condition tree with a Scope root in the scope", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            probe("a", {
+                conditions: [
+                    cond(scope("s", seq("c", letv("l", "x", 1), read("r", "x", "running")), ["x"])),
+                ],
+            }),
+        );
+        const { error } = captureConsole(() => assert.equal(tree.tick(), "failure"));
+        assert.match(error[0], /condition tree must not return 'running'/);
+        assert.deepEqual(ctx.takeLog(), ["read:r=1", "abort:r=1"]);
+        assert.equal(tree.blackboard.get("x"), undefined);
+    });
+
+    it("checks preemption in the scope of the preemptive parent", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            n("PrioritySelector", "sel", {
+                children: [
+                    probe("flee", { conditions: [cond(check("k", "x == 1"), "lower")] }),
+                    scope("s", seq("in", letv("l", "x", 1), probe("p"))),
+                ],
+            }),
+        );
+        tree.blackboard.set("p", "running");
+        tree.tick();
+        tree.tick();
+        // x of the running scope is not visible to the preemption check
+        assert.deepEqual(ctx.takeLog(), ["tick:p", "tick:p"]);
+    });
+
+    it("evaluates a self condition inside a Scope in the scope", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            scope(
+                "s",
+                seq(
+                    "in",
+                    letv("l", "x", 1),
+                    probe("p", { conditions: [cond(check("k", "x == 1"), "self")] }),
+                ),
+            ),
+        );
+        tree.blackboard.set("p", "running");
+        assert.equal(tree.tick(), "running");
+        assert.equal(tree.tick(), "running");
+        assert.deepEqual(ctx.takeLog(), ["tick:p", "tick:p"]);
+    });
+
+    it("keeps the state of Once in a condition tree", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            probe("a", { conditions: [cond(n("Once", "once", { children: [probe("c")] }))] }),
+        );
+        assert.equal(tree.tick(), "success");
+        assert.equal(tree.tick(), "failure");
+        assert.deepEqual(ctx.takeLog(), ["tick:c", "tick:a"]);
+    });
+
+    it("runs Listen in a condition tree in the scope of that evaluation", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            probe("a", {
+                conditions: [
+                    cond(
+                        seq(
+                            "c",
+                            letv("l", "y", 1),
+                            n("Once", "once", {
+                                children: [
+                                    n("Listen", "listen", {
+                                        args: { event: "hit" },
+                                        children: [read("r", "y")],
+                                    }),
+                                ],
+                            }),
+                        ),
+                    ),
+                ],
+            }),
+        );
+        tree.tick();
+        ctx.takeLog();
+        ctx.dispatch("hit");
+        assert.deepEqual(ctx.takeLog(), ["read:r=1"]);
+        assert.equal(tree.blackboard.get("y"), undefined);
+    });
+});

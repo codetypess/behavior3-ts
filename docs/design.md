@@ -328,15 +328,15 @@ function canRun(cfg: NodeData, defs: Record<string, NodeDef>): boolean {
 | `error` | 条件为 false（4.3 节） |
 | 抛异常 | 和普通节点一样，派发 `TreeEvent.EXCEPTION` 并中断整棵树（3.4 节） |
 
-**副作用靠约定**
+**条件树的作用域**
 
-`status` 看不出节点有没有副作用。有些节点不会返回 running，但不适合放进条件树：
+条件树在一个隐式的作用域里执行（[scope-design.md](scope-design.md) 第 4 节）：能读到外层的变量，写黑板的节点（Let、Calculate、Now 等）的写入只留在这次求值里，求值结束就丢掉。所以先取数据再判断（比如 `GetHp` 再 `Cmp`）是正常写法，不会影响主树。
 
-- 写黑板或修改对象的 Action：Let、SetField、Push、Calculate、Now 等；
-- 注册回调或定时器：Delay、Listen；
-- 有持久状态：Once（执行一次就会被"用掉"）。
+- 要把条件树里算出来的变量交给主树，用 `Scope` 当条件树的根节点，在它的 output 里声明，条件为 true 时导出（scope-design.md 第 7 节）。
+- Once 的状态是节点的私有变量，始终在根黑板，放在条件树里也只执行一次。
+- Delay、Listen 的回调在那次求值的作用域里执行（闭包语义）。
 
-这一类不做强制限制，约定**条件树里只放判断逻辑**。编辑器不对 `type` 为 Action 或声明了 `output` 的节点报错或警告：先取数据再判断（比如 `GetHp` 再 `Cmp`）是正常写法，按类型拦会误伤。
+隔离的只是变量绑定。修改对象内容的节点（SetField、Push）和宿主的副作用不做限制，约定**条件树里只放判断逻辑**。编辑器不对 `type` 为 Action 或声明了 `output` 的节点报错或警告。
 
 ### 4.5 抢占的实现
 
@@ -468,10 +468,13 @@ class RandomPick extends Node {
   - Listen 每次执行都会注册一次监听，通常要包在 `Once` 下面使用。
   - **注册属于整棵树，不属于分支**：它们执行完就结束了，不会处于 running，所以中止、抢占、`interrupt()` 都不影响已注册的监听和定时器，只有 `tree.clear()` 会移除。比如战斗分支里注册的受击监听，分支被抢占后仍然有效。
   - 需要跟着分支走的等待，用 `WaitForEvent`：它一直 running，被中止时注销监听。
+  - 回调在注册时所在的作用域里执行，即使那个 `Scope` 已经结束（闭包语义，[scope-design.md](scope-design.md) 第 8 节）。
+- **Scope**：子节点在独立的作用域中执行，能读外层变量，写入只留在作用域里；output 列出的变量只在成功时写回外层，变量名内外相同。作为条件树的根节点时，条件为 true 才导出。详见 [scope-design.md](scope-design.md)。
 
 **行为节点和条件节点**
 
 - **WaitForEvent**：用状态加 `onAbort` 移除监听。
+- **RunTree**：在独立的 `Tree` 实例中执行另一棵树，子树看不到调用方的变量。input 在开始执行时按值传给子树，output 只在成功时从子树导出到调用方的当前作用域。同一个单位上，同一个节点对同一个路径复用一个实例，`clear` 时一起清掉。树还没加载时返回 running，`timeout` 只限制加载；子树的异常转成 error。详见 [run-tree-design.md](run-tree-design.md)。
 - **Check、Calculate**：表达式支持算术、比较、逻辑、位运算、三元表达式、多层属性访问（`a.b.c`）、下标（`arr[i + 1]`）和字符串。只写一个变量名（比如 Check 的 `isDead`）时返回变量的值。引用不存在的变量时返回 error，判断变量是否存在用 IsNull/NotNull。表达式在加载时编译，编译不过时抛异常；`context.registerCode` 可以为表达式注册预先生成的函数，跳过解析。
 - 数据不对时返回 error 的情况见 3.3 节。
 
@@ -498,7 +501,9 @@ export class MyNode extends Node {
 }
 ```
 
-- 只实现 `onTick` 和 `onAbort`。重写 `tick` 或 `abort` 时加载抛异常。
+- 只实现 `onTick`、`onAbort` 和 `onClear`。重写 `tick` 或 `abort` 时加载抛异常。
+- `onClear` 在 `tree.clear()` 时对每个节点（包括条件树里的）调用一次：在 running 的节点 `onAbort` 之后、清空黑板之前，用来释放节点为这棵树保留的东西（比如私有变量里缓存的子树实例）。
+- `onTick` 里的 `tree.blackboard` 是当前作用域，在 `Scope` 或条件树里是它的覆盖层（[scope-design.md](scope-design.md) 第 10 节）。
 - 跨帧的状态用 `tree.setState`，不要存在节点实例上：节点实例被所有单位共享。
 - 返回 running 时启动了需要清理的东西（移动、监听、定时器），在 `onAbort` 里清理。
 - **组合节点和装饰节点收到子节点的 `"error"` 时，要返回 `"error"`**（ErrorToFailure 这类专门处理 error 的节点除外）。框架不会替节点传递 error。
@@ -511,6 +516,7 @@ export class MyNode extends Node {
 ## 8. 黑板与 Context
 
 - **黑板**：`get`、`set`（设成 `undefined` 或 `null` 时删除）、`eval(code)`。私有变量和临时变量的说明见 2.2 节。
+  - `tree.blackboard` 是当前作用域：tick 之外是根黑板；`Scope` 和条件树会 fork 一个覆盖层，读取沿原型链读到外层，写入只留在覆盖层，覆盖层里设成 `undefined` 会遮住外层的变量。私有变量和临时变量始终在根黑板。详见 [scope-design.md](scope-design.md)。
 - **Context**：所有树共享，提供节点注册、树的加载和缓存（`loadTree` 由使用方实现）、时间（`time`、`update(dt)`）、定时器（`delay`）、事件（`on`、`off`、`offAll`、`dispatch`）、表达式编译（`compileCode`、`registerCode`）。
 - 每个节点都要声明 `group`。`supportGroupTypes` 决定 Context 构造时注册哪些用 `registerNode` 注册的节点：Context 支持节点的某一个 group 才会注册。默认是 `["Core"]`，内置节点都属于 `Core` 分组；重写 `supportGroupTypes` 时要带上 `Core`，否则内置节点不会注册。`context.registerNode` 直接注册的节点不受 `supportGroupTypes` 限制。
 
@@ -528,6 +534,7 @@ export class MyNode extends Node {
   - id 树内唯一（包括条件树里的节点，编号规则见 4.2 节）。
 - **提示**：选中一个条件时，高亮它能影响的范围。`self` 高亮自己的子树，`lower` 高亮右侧兄弟节点的子树。
 - **`.b3-setting`**：导出 `preemptive`。`status` 本来就会导出，条件树的检查直接使用它。
+- **`Scope` 和 `RunTree`**：都是普通节点，通过 `.b3-setting` 读取，不需要特殊支持。可选：`Scope` 导出的变量在子树里没有任何节点输出时给出警告。
 - **文档版本**：树文件的 `version` 是编辑器的文档格式版本，运行时不检查。旧版编辑器打开带 `conditions` 的文件时给出提示。
 
 ## 10. 性能
@@ -538,7 +545,7 @@ export class MyNode extends Node {
 
 ## 11. 测试
 
-- `npm test` 运行 `test/unit` 下的单元测试（node:test），覆盖执行模型、状态接口、每个内置节点、中止与中断、error 的传递（`error.test.ts`）、异常（包括异步回调和嵌套回调）、条件与抢占、表达式求值、黑板、Context 的定时器和事件、节点注册，以及多个节点组合的场景。
+- `npm test` 运行 `test/unit` 下的单元测试（node:test），覆盖执行模型、状态接口、每个内置节点、中止与中断、error 的传递（`error.test.ts`）、异常（包括异步回调和嵌套回调）、条件与抢占、表达式求值、黑板、作用域（`scope.test.ts`，条件树的作用域在 `conditions.test.ts`）、RunTree 和 `onClear`（`run-tree.test.ts`）、Context 的定时器和事件、节点注册，以及多个节点组合的场景。
 - `npm run bench` 运行基准测试（第 10 节）。
 - `npm start` 运行 `test/main.ts`，用 `example/*.json` 跑一遍，并重新生成 `example/node-config.b3-setting`。
 

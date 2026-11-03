@@ -1,5 +1,6 @@
 import {
     AbortMode,
+    Blackboard,
     Context,
     Node,
     NodeData,
@@ -198,6 +199,112 @@ export class PrioritySelector extends Node {
     }
 }
 
+/**
+ * Logs `read:<id>=<value>` of blackboard key `args.key` and returns `args.status` or `success`,
+ * logs `abort:<id>=<value>` when aborted.
+ */
+export class Read extends Node {
+    declare args: { readonly key: string; readonly status?: Status };
+
+    override onTick(tree: Tree<TestContext, unknown>): Status {
+        tree.context.log.push(`read:${this.id}=${String(tree.blackboard.get(this.args.key))}`);
+        return this.args.status ?? "success";
+    }
+
+    override onAbort(tree: Tree<TestContext, unknown>): void {
+        tree.context.log.push(`abort:${this.id}=${String(tree.blackboard.get(this.args.key))}`);
+    }
+
+    static override get descriptor(): NodeDef {
+        return { name: "Read", type: "Action", group: ["Test"], desc: "log a variable", args: [] };
+    }
+}
+
+/** Logs `own:<id>=<bool>`: whether the current scope owns blackboard key `args.key`. */
+export class Own extends Node {
+    declare args: { readonly key: string };
+
+    override onTick(tree: Tree<TestContext, unknown>): Status {
+        tree.context.log.push(`own:${this.id}=${tree.blackboard.hasOwn(this.args.key)}`);
+        return "success";
+    }
+
+    static override get descriptor(): NodeDef {
+        return {
+            name: "Own",
+            type: "Action",
+            group: ["Test"],
+            desc: "log the ownership",
+            args: [],
+        };
+    }
+}
+
+/** Sets blackboard key `args.key` to `args.value` with `tree.blackboard.set`, not the output. */
+export class Write extends Node {
+    declare args: { readonly key: string; readonly value?: unknown };
+
+    override onTick(tree: Tree<TestContext, unknown>): Status {
+        tree.blackboard.set(this.args.key, this.args.value);
+        return "success";
+    }
+
+    static override get descriptor(): NodeDef {
+        return { name: "Write", type: "Action", group: ["Test"], desc: "set a variable", args: [] };
+    }
+}
+
+/** Sets its temp var `k` to 1 and returns `args.status` or `success`. */
+export class TempWrite extends Node {
+    declare args: { readonly status?: Status };
+
+    override onTick(tree: Tree<TestContext, unknown>): Status {
+        tree.blackboard.set(Blackboard.makeTempVar(this, "k"), 1);
+        return this.args.status ?? "success";
+    }
+
+    static override get descriptor(): NodeDef {
+        return {
+            name: "TempWrite",
+            type: "Action",
+            group: ["Test"],
+            desc: "set a temp var",
+            args: [],
+        };
+    }
+}
+
+/**
+ * Logs `clear:<id>` in `onClear`, with `=<value>` of blackboard key `args.key` if given,
+ * throws in `onClear` if `args.throw`. Returns `args.status` or `success`.
+ */
+export class ClearSpy extends Node {
+    declare args: { readonly key?: string; readonly throw?: boolean; readonly status?: Status };
+
+    override onTick(tree: Tree<TestContext, unknown>): Status {
+        tree.context.log.push(`tick:${this.id}`);
+        return this.args.status ?? "success";
+    }
+
+    override onAbort(tree: Tree<TestContext, unknown>): void {
+        tree.context.log.push(`abort:${this.id}`);
+    }
+
+    override onClear(tree: Tree<TestContext, unknown>): void {
+        const { key } = this.args;
+        tree.context.log.push(
+            key ? `clear:${this.id}=${String(tree.blackboard.get(key))}` : `clear:${this.id}`,
+        );
+        if (this.args.throw) {
+            throw new Error("clear boom");
+        }
+    }
+
+    static override get descriptor(): NodeDef {
+        return { name: "ClearSpy", type: "Action", group: ["Test"], desc: "log onClear", args: [] };
+    }
+}
+
 let pathId = 0;
 
 export class TestContext extends Context {
@@ -217,9 +324,47 @@ export class TestContext extends Context {
         this.registerNode(Emit);
         this.registerNode(ArgsSpy);
         this.registerNode(PrioritySelector);
+        this.registerNode(Read);
+        this.registerNode(Own);
+        this.registerNode(Write);
+        this.registerNode(TempWrite);
+        this.registerNode(ClearSpy);
     }
 
+    /** The paths loaded asynchronously, see `deferLoad`. */
+    private _deferred: Set<string> = new Set();
+    private _pending: Map<string, (() => void)[]> = new Map();
+
     override loadTree(path: string): Promise<Node> {
+        if (this._deferred.has(path)) {
+            return new Promise((resolve) => {
+                const pending = this._pending.get(path) ?? [];
+                pending.push(() => resolve(this._load(path)));
+                this._pending.set(path, pending);
+            });
+        }
+        return Promise.resolve(this._load(path));
+    }
+
+    /** Defines the tree of the path, loaded by `loadTree`. */
+    defineTree(path: string, root: NodeSpec) {
+        this._sources.set(path, root);
+    }
+
+    /** The path is not loaded until `finishLoad`. */
+    deferLoad(path: string) {
+        this._deferred.add(path);
+    }
+
+    /** Loads the deferred path. */
+    finishLoad(path: string) {
+        this._deferred.delete(path);
+        this._load(path);
+        this._pending.get(path)?.forEach((resolve) => resolve());
+        this._pending.delete(path);
+    }
+
+    private _load(path: string): Node {
         let root = this.trees[path];
         if (!root) {
             const data = {
@@ -231,7 +376,7 @@ export class TestContext extends Context {
             root = this._createTree(data);
             this.trees[path] = root;
         }
-        return Promise.resolve(root);
+        return root;
     }
 
     createTree(root: NodeSpec): Tree<TestContext, unknown> {

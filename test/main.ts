@@ -112,6 +112,8 @@ testTree("test-listen", (i, tree) => {
 });
 testTree("test-switch-case");
 testTree("test-race");
+testTree("test-scope");
+testTree("test-run-tree");
 console.log("====================test api end======================");
 
 console.log("====================test conditions=============================");

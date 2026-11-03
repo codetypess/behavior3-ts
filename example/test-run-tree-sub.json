@@ -1,0 +1,65 @@
+{
+  "custom": {
+  },
+  "desc": "run by test-run-tree: reads the input hp, exports damage",
+  "export": true,
+  "group": [
+    "Core"
+  ],
+  "name": "test-run-tree-sub",
+  "overrides": {
+  },
+  "prefix": "",
+  "root": {
+    "children": [
+      {
+        "id": "2",
+        "input": [
+          "secret"
+        ],
+        "name": "IsNull",
+        "uuid": "e57bVnSAs8"
+      },
+      {
+        "args": {
+          "value": "hp * 2"
+        },
+        "id": "3",
+        "name": "Calculate",
+        "output": [
+          "damage"
+        ],
+        "uuid": "qxkUuVq6nS"
+      },
+      {
+        "args": {
+          "value": 1
+        },
+        "id": "4",
+        "name": "Let",
+        "output": [
+          "tmp"
+        ],
+        "uuid": "yKMNtnmdOA"
+      },
+      {
+        "args": {
+          "time": 1
+        },
+        "id": "5",
+        "name": "Wait",
+        "uuid": "fRURCAVxdO"
+      }
+    ],
+    "id": "1",
+    "name": "Sequence",
+    "uuid": "qHH4Q3cF9y"
+  },
+  "variables": {
+    "imports": [
+    ],
+    "locals": [
+    ]
+  },
+  "version": "2.7.0"
+}

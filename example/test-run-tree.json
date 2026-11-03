@@ -1,0 +1,99 @@
+{
+  "custom": {
+  },
+  "desc": "RunTree runs another tree in an isolated instance",
+  "export": true,
+  "group": [
+    "Core"
+  ],
+  "name": "test-run-tree",
+  "overrides": {
+  },
+  "prefix": "",
+  "root": {
+    "children": [
+      {
+        "args": {
+          "level": "info",
+          "message": "-------------> RunTree"
+        },
+        "id": "2",
+        "name": "Log",
+        "uuid": "dSgohuiNVU"
+      },
+      {
+        "args": {
+          "value": 21
+        },
+        "id": "3",
+        "name": "Let",
+        "output": [
+          "hp"
+        ],
+        "uuid": "nYA4yqbcTj"
+      },
+      {
+        "args": {
+          "value": "main"
+        },
+        "id": "4",
+        "name": "Let",
+        "output": [
+          "secret"
+        ],
+        "uuid": "D6vIAQ7oyy"
+      },
+      {
+        "args": {
+          "path": "./example/test-run-tree-sub.json",
+          "timeout": 10
+        },
+        "id": "5",
+        "input": [
+          "",
+          "hp"
+        ],
+        "name": "RunTree",
+        "output": [
+          "damage"
+        ],
+        "uuid": "IPRiQipYV0"
+      },
+      {
+        "args": {
+          "value": "damage == 42"
+        },
+        "id": "6",
+        "name": "Check",
+        "uuid": "ohVowIKQLq"
+      },
+      {
+        "id": "7",
+        "input": [
+          "tmp"
+        ],
+        "name": "IsNull",
+        "uuid": "4UdFFcTdGU"
+      },
+      {
+        "args": {
+          "level": "info",
+          "message": "<------------- RunTree"
+        },
+        "id": "8",
+        "name": "Log",
+        "uuid": "MSiRlhSpuC"
+      }
+    ],
+    "id": "1",
+    "name": "Sequence",
+    "uuid": "of4BMOG2Jx"
+  },
+  "variables": {
+    "imports": [
+    ],
+    "locals": [
+    ]
+  },
+  "version": "2.7.0"
+}
