@@ -72,6 +72,11 @@ export class Tree<C extends Context, Owner> {
     private _states: unknown[] = [];
     private _tickException: boolean = false;
     private _callback?: { interrupt: boolean };
+    /**
+     * How many executions are on the stack: `tick`, `__tickInCallback` and the callbacks from
+     * `bindCallback`. A `clear` while executing waits until it is back to 0.
+     */
+    private _executing: number = 0;
     /** `clear` is called while executing, the tree is cleared when the execution exits. */
     private _pendingClear: boolean = false;
     /** `clear` is running, a `clear` from its listeners is ignored. */
@@ -148,6 +153,7 @@ export class Tree<C extends Context, Owner> {
                 return undefined;
             }
             const outer = this.__swapScope(scope);
+            this._executing++;
             try {
                 const result = fn(...args) as ReturnType<F>;
                 if (isThenable(result)) {
@@ -159,6 +165,7 @@ export class Tree<C extends Context, Owner> {
                 return result;
             } finally {
                 this._scope = outer;
+                this._exitExecution();
             }
         };
     }
@@ -188,14 +195,16 @@ export class Tree<C extends Context, Owner> {
      * running nodes), calls `onClear` of every node, then clears the states, the blackboard and
      * the listeners.
      *
-     * Called while the tree is executing (in `tick` or a callback ticking the nodes), it stops the
-     * execution and clears the tree when the execution exits, still in the same call stack: the
-     * nodes on the stack must not go on with the cleared states.
+     * Called while the tree is executing (in `tick`, a callback ticking the nodes or a callback
+     * from `bindCallback`), it stops the execution and clears the tree when the outermost one
+     * exits, still in the same call stack: the nodes on the stack must not go on with the cleared
+     * states, and the rest of a callback (like `Delay` restoring its cached variables) runs
+     * before the clear.
      */
     clear() {
         if (this._clearing) {
             return;
-        } else if (this._ticking || this._callback) {
+        } else if (this._executing > 0) {
             this._pendingClear = true;
             this.__interrupted = true;
             if (this._callback) {
@@ -203,8 +212,14 @@ export class Tree<C extends Context, Owner> {
             }
             return;
         }
+        this._doClear();
+    }
+
+    /** Clears the tree from the root blackboard, the whole tree is cleared in it. */
+    private _doClear() {
         this._pendingClear = false;
         this._clearing = true;
+        const outer = this.__swapScope(this._rootBlackboard);
         try {
             // force run clear
             const interrupted = this.__interrupted;
@@ -221,13 +236,20 @@ export class Tree<C extends Context, Owner> {
             this.__interrupted = false;
             this._status = "success";
             this._states.length = 0;
-            this._scope = this._rootBlackboard;
             this._rootBlackboard.clear();
             this.context.offAll(this);
             // after CLEANED and INTERRUPTED, whose listeners still run
             this._clearCount++;
         } finally {
+            this._scope = outer;
             this._clearing = false;
+        }
+    }
+
+    /** Leaves an execution, clears the tree if `clear` was called in the outermost one. */
+    private _exitExecution() {
+        if (--this._executing === 0 && this._pendingClear) {
+            this._doClear();
         }
     }
 
@@ -259,26 +281,29 @@ export class Tree<C extends Context, Owner> {
         this.__interrupted = false;
 
         const outerScope = this.__swapScope(scope);
+        this._executing++;
         try {
-            node.tick(this);
-            this.__abortAll(node);
-        } finally {
-            this._scope = outerScope;
-        }
-
-        this._callback = outer;
-        this.__runningNode = runningNode;
-        this.__interrupted = interrupted || callback.interrupt;
-        if (callback.interrupt) {
-            if (outer) {
-                outer.interrupt = true;
-            } else if (this._ticking) {
-                // the tick handles it when it exits
-            } else if (this._pendingClear) {
-                this.clear();
-            } else {
-                this._doInterrupt();
+            try {
+                node.tick(this);
+                this.__abortAll(node);
+            } finally {
+                this._scope = outerScope;
             }
+
+            this._callback = outer;
+            this.__runningNode = runningNode;
+            this.__interrupted = interrupted || callback.interrupt;
+            if (callback.interrupt) {
+                if (outer) {
+                    outer.interrupt = true;
+                } else if (this._ticking || this._pendingClear) {
+                    // the tick handles it, or the clear when the outermost execution exits
+                } else {
+                    this._doInterrupt();
+                }
+            }
+        } finally {
+            this._exitExecution();
         }
     }
 
@@ -377,49 +402,52 @@ export class Tree<C extends Context, Owner> {
         this._tickException = false;
         // the tree is ticked from the root blackboard, even if ticked in a bound callback
         const outerScope = this.__swapScope(this._rootBlackboard);
+        this._executing++;
+        let cleared = false;
+        try {
+            if (!this.isRunning(root)) {
+                context.dispatch(TreeEvent.BEFORE_TICKED, this);
+            }
 
-        if (!this.isRunning(root)) {
-            context.dispatch(TreeEvent.BEFORE_TICKED, this);
+            const status: Status = root.tick(this);
+
+            if (status === "success") {
+                this.__runningNode = undefined;
+                this._status = "success";
+                context.dispatch(TreeEvent.AFTER_TICKED, this);
+                context.dispatch(TreeEvent.TICKED_SUCCESS, this);
+            } else if (status === "failure") {
+                this._status = "failure";
+                this.__runningNode = undefined;
+                context.dispatch(TreeEvent.AFTER_TICKED, this);
+                context.dispatch(TreeEvent.TICKED_FAILURE, this);
+            } else if (status === "error") {
+                // finished like `failure`, the error is logged by the node returning it
+                this._status = "error";
+                this.__runningNode = undefined;
+                context.dispatch(TreeEvent.AFTER_TICKED, this);
+            } else {
+                this._status = "running";
+            }
+
+            if (this._pendingClear) {
+                // cleared when the outermost execution exits
+            } else if (this.__interrupted) {
+                this._doInterrupt();
+            } else if (this.debug) {
+                this._checkMissingAbort(root);
+            }
+
+            this._tickCount++;
+        } finally {
+            // stopped by a clear, done below or by the outer execution (a bound callback)
+            cleared = this._pendingClear;
+            this._scope = outerScope;
+            this._ticking = false;
+            this._exitExecution();
         }
 
-        const status: Status = root.tick(this);
-
-        if (status === "success") {
-            this.__runningNode = undefined;
-            this._status = "success";
-            context.dispatch(TreeEvent.AFTER_TICKED, this);
-            context.dispatch(TreeEvent.TICKED_SUCCESS, this);
-        } else if (status === "failure") {
-            this._status = "failure";
-            this.__runningNode = undefined;
-            context.dispatch(TreeEvent.AFTER_TICKED, this);
-            context.dispatch(TreeEvent.TICKED_FAILURE, this);
-        } else if (status === "error") {
-            // finished like `failure`, the error is logged by the node returning it
-            this._status = "error";
-            this.__runningNode = undefined;
-            context.dispatch(TreeEvent.AFTER_TICKED, this);
-        } else {
-            this._status = "running";
-        }
-
-        if (this._pendingClear) {
-            // cleared below, after the tick exits
-        } else if (this.__interrupted) {
-            this._doInterrupt();
-        } else if (this.debug) {
-            this._checkMissingAbort(root);
-        }
-
-        this._tickCount++;
-        this._scope = outerScope;
-        this._ticking = false;
-
-        if (this._pendingClear) {
-            this.clear();
-            return "interrupted";
-        }
-        return this._status;
+        return cleared ? "interrupted" : this._status;
     }
 
     private _doInterrupt() {

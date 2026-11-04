@@ -134,6 +134,7 @@ export class RunTree extends Node {
             group: ["Core"],
             children: 0,
             status: ["success", "failure", "running"],
+            deferred: true,
             desc: "执行另一棵行为树",
             input: ["树路径?", "输入变量..."],
             output: ["输出变量..."],
@@ -148,6 +149,7 @@ export class RunTree extends Node {
                 + 输出变量是这一次执行的结果：每次开始执行前会清掉子树里的输出变量，这次没写的不会写回，调用方的变量保持不变；要跨多次执行累计的值，用别的变量名保存，结束前再赋给输出变量
                 + 树还没加载时返回 \`running\`；填了 \`timeout\` 时，超时还没加载完返回 \`error\`
                 + 子树抛异常时返回 \`error\`，不中断调用方
+                + 不能放在条件树里，加载时报错：运行的树到运行时才加载，加载时检查不了；要复用条件，在编辑器里用子树
                 + 同一个单位上，同一个节点对同一个路径复用同一个子树实例，\`clear\` 时一起清掉
             `,
         };

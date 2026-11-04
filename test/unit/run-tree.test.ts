@@ -213,30 +213,26 @@ describe("RunTree data", () => {
         assert.equal(tree.blackboard.get("damage"), 6);
     });
 
-    it("exports to the caller from a condition tree with a Scope root", () => {
-        const { ctx, tree } = setup(letv("l", "target", 3), (path) =>
-            n("Sequence", "guarded", {
-                conditions: [
-                    cond(
-                        n("Scope", "s", {
-                            output: ["target"],
-                            children: [runTree("rt", path, { output: ["target"] })],
-                        }),
-                    ),
-                ],
-                children: [read("r", "target")],
-            }),
+    it("is not allowed in a condition tree", () => {
+        const ctx = new TestContext();
+        ctx.defineTree(
+            "sub",
+            n("Listen", "listen", { args: { event: "hit" }, children: [probe("cb")] }),
         );
-        assert.equal(tree.tick(), "success");
-        assert.deepEqual(ctx.takeLog(), ["read:r=3"]);
-    });
-
-    it("drops the output in a condition tree without a Scope root", () => {
-        const { tree } = setup(letv("l", "target", 3), (path) =>
-            probe("a", { conditions: [cond(runTree("rt", path, { output: ["target"] }))] }),
+        assert.throws(
+            () => ctx.createTree(probe("a", { conditions: [cond(runTree("rt", "sub"))] })),
+            /RunTree#rt: 'RunTree' is deferred, not allowed in a condition tree/,
         );
-        assert.equal(tree.tick(), "success");
-        assert.equal(tree.blackboard.get("target"), undefined);
+        assert.throws(
+            () =>
+                ctx.createTree(
+                    probe("a", {
+                        conditions: [cond(n("Scope", "s", { children: [runTree("rt", "sub")] }))],
+                    }),
+                ),
+            /'RunTree' is deferred, not allowed in a condition tree/,
+        );
+        assert.equal(ctx.listenerCount("hit"), 0);
     });
 });
 

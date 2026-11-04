@@ -55,6 +55,7 @@ static override get descriptor(): NodeDef {
         group: ["Core"],
         children: 0,
         status: ["success", "failure", "running"],
+        deferred: true,
         desc: "执行另一棵行为树",
         input: ["树路径?", "输入变量..."],
         output: ["输出变量..."],
@@ -68,6 +69,7 @@ static override get descriptor(): NodeDef {
             + 子树成功时，把输出变量从子树写回调用方，变量名相同；失败和 \`error\` 时不写回
             + 输出变量是这一次执行的结果：每次开始执行前会清掉子树里的输出变量，这次没写的不会写回，调用方的变量保持不变；要跨多次执行累计的值，用别的变量名保存，结束前再赋给输出变量
             + 树还没加载时返回 \`running\`；填了 \`timeout\` 时，超时还没加载完返回 \`error\`
+            + 不能放在条件树里，加载时报错：运行的树到运行时才加载，加载时检查不了；要复用条件，在编辑器里用子树
             + 同一个单位上，同一个节点对同一个路径复用同一个子树实例
         `,
     };
@@ -248,7 +250,7 @@ override onAbort(tree: Tree<Context, unknown>) {
 
 - 截止时间从**这一次开始执行**算起，按 `tree.context.time` 计算，和 `Timeout` 一样。
 - 没填 `timeout` 而加载失败了（`loadTree` 的 Promise 被 reject），会一直 running。这是写树的人的选择。
-- 条件树不允许 running，条件树里的 `RunTree` 要求树已经加载好；没加载好时按条件树的规则报错、当作 false。
+- `RunTree` 声明了 `deferred`，不能放进条件树，加载时报错（第 7 节）。
 
 ## 6. 和主树的生命周期同步
 
@@ -268,7 +270,7 @@ override onAbort(tree: Tree<Context, unknown>) {
 - `RunTree` 的 input 从调用方的**当前作用域**读，output 写到调用方的**当前作用域**，都由框架完成，和普通节点一样。
 - 套在 `Scope` 里时，output 写进 `Scope` 的覆盖层，`Scope` 成功时再按自己的 output 导出。
 - 子树内部照常使用作用域机制（`Scope`、条件树的隐式作用域），它的根黑板就是子树实例自己的黑板。
-- 放在条件树里时，output 写进条件的隐式作用域，求值结束就丢掉；要导出，条件树的根节点要用 `Scope`（scope-design.md 第 7 节）。
+- **不能放进条件树**：`RunTree` 运行的树到运行时才加载，那棵树里的节点没有和条件树一起检查，可能含有 `Listen`、`Delay` 这类每次求值都会多注册一次回调的节点（design.md 4.4 节）。所以 `RunTree` 声明了 `deferred`，放进条件树（包括根节点是 `Scope` 的条件树）时加载报错。要复用条件逻辑，在编辑器里用子树，导出时会内联进来，和条件树一起检查；条件里按路径动态运行另一棵树没有必要支持。
 
 ## 8. 注意事项
 

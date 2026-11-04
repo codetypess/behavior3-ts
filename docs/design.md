@@ -319,7 +319,7 @@ function canRun(cfg: NodeData, defs: Record<string, NodeDef>): boolean {
 
 自定义节点没声明 `status` 时，编辑器不检查，由运行时的返回值检查保证。所以**自定义的条件节点应该声明 `status`**，编辑器才能提前拦住。
 
-**推迟执行的节点不能放进条件树**：NodeDef 声明了 `deferred` 的节点（`Listen`、`Delay`）注册的回调在节点返回之后才执行，回调属于整棵树，条件可能被反复求值，每次都会多注册一次。这一条运行时在**加载时**检查：条件树里（包括嵌套在条件树里的条件树）出现这种节点就抛异常，被禁用的节点不检查。编辑器同样根据这个标记校验。
+**推迟到运行时的节点不能放进条件树**：NodeDef 声明了 `deferred` 的节点，工作推迟到运行时，加载时检查不了。有两种：注册的回调在节点返回之后才执行（`Listen`、`Delay`），回调属于整棵树，条件可能被反复求值，每次都会多注册一次；或者运行的树到运行时才加载（`RunTree`），那棵树里的节点没有和这棵树一起检查，可能含有前一种节点。要复用条件逻辑，在编辑器里用子树，导出时会内联进来，和条件树一起检查。这一条运行时在**加载时**检查：条件树里（包括嵌套在条件树里的条件树）出现这种节点就抛异常，被禁用的节点不检查。编辑器同样根据这个标记校验。
 
 **运行时：检查返回值**
 
@@ -477,7 +477,7 @@ class RandomPick extends Node {
 **行为节点和条件节点**
 
 - **WaitForEvent**：用状态加 `onAbort` 移除监听。
-- **RunTree**：在独立的 `Tree` 实例中执行另一棵树，子树看不到调用方的变量。input 在开始执行时按值传给子树，output 只在成功时从子树导出到调用方的当前作用域。同一个单位上，同一个节点对同一个路径复用一个实例，`clear` 时一起清掉。树还没加载时返回 running，`timeout` 只限制加载；子树的异常转成 error。详见 [run-tree-design.md](run-tree-design.md)。
+- **RunTree**：在独立的 `Tree` 实例中执行另一棵树，子树看不到调用方的变量。input 在开始执行时按值传给子树，output 只在成功时从子树导出到调用方的当前作用域。同一个单位上，同一个节点对同一个路径复用一个实例，`clear` 时一起清掉。树还没加载时返回 running，`timeout` 只限制加载；子树的异常转成 error。声明了 `deferred`，不能放进条件树（4.4 节）。详见 [run-tree-design.md](run-tree-design.md)。
 - **Check、Calculate**：表达式支持算术、比较、逻辑、位运算、三元表达式、多层属性访问（`a.b.c`）、下标（`arr[i + 1]`）和字符串。只写一个变量名（比如 Check 的 `isDead`）时返回变量的值。引用不存在的变量时返回 error，判断变量是否存在用 IsNull/NotNull。表达式在加载时编译，编译不过时抛异常；`context.registerCode` 可以为表达式注册预先生成的函数，跳过解析。
 - 数据不对时返回 error 的情况见 3.3 节。
 
@@ -506,9 +506,9 @@ export class MyNode extends Node {
 
 - 只实现 `onTick`、`onAbort` 和 `onClear`。重写 `tick` 或 `abort` 时加载抛异常。
 - `onClear` 在 `tree.clear()` 时对每个节点（包括条件树里的）调用一次：在 running 的节点 `onAbort` 之后、清空黑板之前，用来释放节点为这棵树保留的东西（比如私有变量里缓存的子树实例）。
-- `tree.clear()` 可以在执行中调用（比如节点把单位打死，宿主销毁单位）：它只标记停止，执行栈一路返回 `running` 退出，栈上的节点不会拿着已清空的状态继续执行；等 tick 或最外层的回调退出后，在同一个调用栈里按 `CLEANED` → `INTERRUPTED` → `onAbort` → `onClear` → 清空状态、黑板和监听的顺序完成清理。树空闲时在回调里调用，同样会停下这个回调。`CLEANED` 的监听里再调用 `clear` 会被忽略。
+- `tree.clear()` 可以在执行中调用（比如节点把单位打死，宿主销毁单位）：它只标记停止，执行栈一路返回 `running` 退出，栈上的节点不会拿着已清空的状态继续执行。`tick`、`__tickInCallback` 和 `bindCallback` 绑定的回调都算执行，等最外层的那个退出后（绑定的回调剩下的代码也执行完，比如 `Delay` 恢复暂存变量），在同一个调用栈里从根黑板按 `CLEANED` → `INTERRUPTED` → `onAbort` → `onClear` → 清空状态、黑板和监听的顺序完成清理。树空闲时在回调里调用，同样会停下这个回调。`CLEANED` 的监听里再调用 `clear` 会被忽略。
 - `onTick` 里的 `tree.blackboard` 是当前作用域，在 `Scope` 或条件树里是它的覆盖层（[scope-design.md](scope-design.md) 第 10 节）。
-- 节点注册的回调在节点返回之后才执行、属于整棵树时（像 `Listen`、`Delay`），在 NodeDef 里声明 `deferred: true`，放进条件树时加载报错。返回 `running` 等待的节点（像 `Wait`、`WaitForEvent`）不算：它们的状态由框架管理，被中止时会清理。
+- 节点注册的回调在节点返回之后才执行、属于整棵树时（像 `Listen`、`Delay`），或者运行的树到运行时才加载时（像 `RunTree`），在 NodeDef 里声明 `deferred: true`，放进条件树时加载报错。返回 `running` 等待的节点（像 `Wait`、`WaitForEvent`）不算：它们的状态由框架管理，被中止时会清理。
 - 注册监听或定时器时，回调用 `tree.bindCallback(fn)` 包一层，触发时回到注册时的作用域；不包的回调在 tick 之外执行时用的是根黑板，放在 `Scope` 里会写到外面。
 - `bindCallback` 只绑定同步执行的那一段：回调可以在任意时刻触发，但触发后要同步执行完。`fn` 是 async 函数时编译报错，运行时返回 Promise 会抛异常，因为 `await` 之后的代码已经不在绑定的作用域里了。异步任务在外面完成，完成时再调用绑定好的同步回调：`task.then(tree.bindCallback((result) => { ... }))`。
 - 树被 `clear()` 之后，之前绑定的回调触发时什么都不做，返回 `undefined`。`offAll` 能移除 context 上的监听和定时器，Promise 这类移除不了的回调靠这条规则，不会在清理过的树上执行。

@@ -614,6 +614,79 @@ describe("clear while executing", () => {
         ]);
     });
 
+    it("lets a Delay callback restore its cached variables before the clear", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            n("Delay", "delay", { args: { delay: 1, cacheVars: ["x"] }, children: [clearNow("c")] }),
+        );
+        tree.blackboard.set("x", 1);
+        assert.equal(tree.tick(), "success");
+        tree.blackboard.set("x", 9);
+        ctx.update(1);
+        assert.deepEqual(ctx.takeLog(), ["clearNow:c"]);
+        assert.deepEqual(Object.keys(tree.blackboard.values), []);
+    });
+
+    it("clears after the rest of a bound callback, from the root blackboard", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            n("Sequence", "root", {
+                children: [
+                    n("Scope", "s", {
+                        children: [
+                            n("Sequence", "init", {
+                                children: [
+                                    n("Let", "l", { args: { value: 1 }, output: ["x"] }),
+                                    n("Listen", "listen", { args: { event: "hit" }, children: [clearNow("c")] }),
+                                ],
+                            }),
+                        ],
+                    }),
+                    n("ClearSpy", "main", { args: { key: "x", status: "running" } }),
+                ],
+            }),
+        );
+        tree.blackboard.set("x", 9);
+        assert.equal(tree.tick(), "running");
+        ctx.takeLog();
+        ctx.dispatch("hit");
+        assert.deepEqual(ctx.takeLog(), ["clearNow:c", "abort:main", "clear:main=9"]);
+        assert.equal(tree.blackboard, tree.__rootBlackboard);
+    });
+
+    it("waits for the outermost bound callback, clears once", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(probe("p", { args: { status: "running" } }));
+        tree.tick();
+        ctx.takeLog();
+        ctx.on(TreeEvent.CLEANED, tree, () => ctx.log.push("CLEANED"), tree);
+        const inner = tree.bindCallback(() => {
+            tree.clear();
+            ctx.log.push("inner done");
+        });
+        const outer = tree.bindCallback(() => {
+            inner();
+            tree.clear();
+            ctx.log.push("outer done");
+            // still executing: the nodes are stopped, the tree is not cleared yet
+            return tree.tick();
+        });
+        assert.equal(outer(), "interrupted");
+        assert.deepEqual(ctx.takeLog(), ["inner done", "outer done", "CLEANED", "abort:p"]);
+        assert.equal(tree.status, "success");
+    });
+
+    it("resets the tick when a listener throws out of it", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(probe("p"));
+        ctx.on(TreeEvent.AFTER_TICKED, tree, () => {
+            throw new Error("boom");
+        }, tree);
+        assert.throws(() => tree.tick(), /boom/);
+        assert.equal(tree.ticking, false);
+        assert.equal(tree.blackboard, tree.__rootBlackboard);
+    });
+
     it("ignores a clear from a CLEANED listener", () => {
         const ctx = new TestContext();
         const tree = ctx.createTree(

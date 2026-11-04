@@ -134,13 +134,20 @@ export interface NodeDef<GroupType extends string = string> {
      */
     preemptive?: boolean;
     /**
-     * Whether the node defers its work: it registers a callback (a listener, a timer) which runs
-     * later, after the node has returned, like `Listen` and `Delay`. The callback belongs to the
-     * tree, it is not undone when the branch is aborted or interrupted, only by `tree.clear()`.
+     * Whether the node defers its work to the runtime, which can't be checked when the tree is
+     * loaded:
+     * + it registers a callback (a listener, a timer) which runs later, after the node has
+     *   returned, like `Listen` and `Delay`. The callback belongs to the tree, it is not undone
+     *   when the branch is aborted or interrupted, only by `tree.clear()`;
+     * + or it runs a tree loaded at runtime, like `RunTree`, whose nodes are not checked with
+     *   this tree.
+     *
      * Not a node returning `running` to wait (like `Wait`), whose state is managed by the tree.
      *
      * A deferred node is not allowed in a condition tree, checked when the tree is loaded: a
-     * condition tree may be evaluated again and again, every evaluation would register one more.
+     * condition tree may be evaluated again and again, every evaluation would register one more
+     * callback, and a tree run by path may contain such nodes. To reuse a condition, use a
+     * subtree in the editor, which is inlined into the tree.
      */
     deferred?: boolean;
 }
