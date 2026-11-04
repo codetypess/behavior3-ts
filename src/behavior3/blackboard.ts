@@ -81,6 +81,16 @@ export class Blackboard {
         return !!this._values && hasOwn.call(this._values, k);
     }
 
+    /**
+     * Removes the variable from this scope: an overlay reads the outer variable again, unlike
+     * `set(k, undefined)` which shadows it. In the root blackboard it is the same as deleting.
+     */
+    unset(k: string) {
+        if (this._values) {
+            delete this._values[k];
+        }
+    }
+
     /** Creates an overlay of this scope. */
     fork() {
         return new Blackboard(this._tree, this);

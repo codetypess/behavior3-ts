@@ -94,6 +94,23 @@ describe("Blackboard overlay", () => {
         assert.equal(root.hasOwn(privateVar), false);
     });
 
+    it("reads the outer variable again after unset", () => {
+        const root = makeRoot();
+        root.set("hp", 100);
+        const inner = root.fork();
+        inner.unset("hp");
+        assert.equal(inner.hasOwn("hp"), false);
+        inner.set("hp", 50);
+        inner.unset("hp");
+        assert.equal(inner.hasOwn("hp"), false);
+        assert.equal(inner.get("hp"), 100);
+        root.set("hp", 7);
+        assert.equal(inner.get("hp"), 7);
+        root.unset("hp");
+        assert.equal(root.hasOwn("hp"), false);
+        assert.equal(inner.get("hp"), undefined);
+    });
+
     it("evaluates expressions with the outer variables", () => {
         const root = makeRoot();
         root.set("hp", 10);
@@ -630,5 +647,166 @@ describe("tree.bindCallback", () => {
         tree.tick();
         // bound in the root blackboard, the emitter's scope doesn't leak into the callback
         assert.deepEqual(ctx.takeLog(), ["cb:b=100", "read:r=1"]);
+    });
+});
+
+describe("scope when interrupted", () => {
+    // a condition tree with a running node left behind when the condition is interrupted
+    const condTree = (stop: NodeSpec) =>
+        probe("p", {
+            conditions: [
+                cond(
+                    seq(
+                        "c",
+                        letv("l", "x", 1),
+                        n("Parallel", "par", {
+                            children: [read("r", "x", "running"), stop, write("w", "x", 2)],
+                        }),
+                    ),
+                ),
+            ],
+        });
+
+    it("aborts the condition tree in its scope when interrupted", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(condTree(n("Interrupt", "i")));
+        tree.blackboard.set("x", 9);
+        tree.tick();
+        assert.equal(tree.status, "interrupted");
+        assert.deepEqual(ctx.takeLog(), ["read:r=1", "abort:r=1"]);
+        assert.equal(tree.blackboard.get("x"), 9);
+    });
+
+    it("aborts the condition tree in its scope when a node throws", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(condTree(n("Throw", "t")));
+        tree.blackboard.set("x", 9);
+        captureConsole(() => tree.tick());
+        assert.equal(tree.status, "exception");
+        assert.deepEqual(ctx.takeLog(), ["read:r=1", "abort:r=1"]);
+    });
+
+    it("aborts the condition tree in its scope when interrupted in a callback", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            n("Parallel", "main", {
+                children: [
+                    n("Listen", "listen", { args: { event: "hit" }, children: [condTree(n("Interrupt", "i"))] }),
+                    probe("run", { args: { status: "running" } }),
+                ],
+            }),
+        );
+        tree.blackboard.set("x", 9);
+        tree.tick();
+        ctx.dispatch("hit");
+        assert.equal(tree.status, "interrupted");
+        assert.deepEqual(ctx.takeLog(), ["tick:run", "read:r=1", "abort:r=1", "abort:run"]);
+    });
+
+    it("aborts the whole tree from the root blackboard when a callback interrupts it", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            seq(
+                "main",
+                scope(
+                    "s",
+                    seq(
+                        "in",
+                        letv("l", "x", 1),
+                        n("Listen", "listen", { args: { event: "hit" }, children: [n("Interrupt", "i")] }),
+                    ),
+                ),
+                read("r", "x", "running"),
+            ),
+        );
+        tree.blackboard.set("x", 9);
+        tree.tick();
+        ctx.dispatch("hit");
+        assert.equal(tree.status, "interrupted");
+        assert.deepEqual(ctx.takeLog(), ["read:r=9", "abort:r=9"]);
+        assert.equal(tree.blackboard, tree.__rootBlackboard);
+    });
+
+    it("aborts from the root blackboard when a bound callback interrupts directly", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(read("r", "x", "running"));
+        tree.blackboard.set("x", 9);
+        tree.tick();
+        const inner = tree.blackboard.fork();
+        inner.set("x", 1);
+        const bound = tree.__withScope(inner, () =>
+            tree.bindCallback(() => {
+                tree.interrupt();
+                return tree.blackboard;
+            }),
+        );
+        // the bound scope is kept for the rest of the callback
+        assert.equal(bound(), inner);
+        assert.deepEqual(ctx.takeLog(), ["read:r=9", "abort:r=9"]);
+        assert.equal(tree.blackboard, tree.__rootBlackboard);
+    });
+
+    it("ticks from the root blackboard when ticked in a bound callback", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(read("r", "x"));
+        tree.blackboard.set("x", 9);
+        const inner = tree.blackboard.fork();
+        inner.set("x", 1);
+        const bound = tree.__withScope(inner, () =>
+            tree.bindCallback(() => {
+                tree.tick();
+                return tree.blackboard;
+            }),
+        );
+        assert.equal(bound(), inner);
+        assert.deepEqual(ctx.takeLog(), ["read:r=9"]);
+    });
+});
+
+describe("Delay cacheVars in a scope", () => {
+    it("keeps reading the outer variable after restoring an inherited one", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            scope(
+                "s",
+                seq(
+                    "in",
+                    n("Delay", "delay", { args: { delay: 1, cacheVars: ["x"] }, children: [read("d", "x")] }),
+                    n("Listen", "listen", { args: { event: "hit" }, children: [read("l", "x")] }),
+                ),
+            ),
+        );
+        tree.blackboard.set("x", 1);
+        tree.tick();
+        tree.blackboard.set("x", 2);
+        ctx.update(1);
+        tree.blackboard.set("x", 3);
+        ctx.dispatch("hit");
+        assert.deepEqual(ctx.takeLog(), ["read:d=1", "read:l=3"]);
+    });
+
+    it("restores the variable of the scope", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            scope(
+                "s",
+                seq(
+                    "in",
+                    letv("l", "x", 1),
+                    n("Delay", "delay", { args: { delay: 1, cacheVars: ["x"] }, children: [read("d", "x")] }),
+                    n("Listen", "listen", {
+                        args: { event: "hit" },
+                        children: [seq("cb", write("w", "x", 2), n("Listen", "l2", { args: { event: "hit2" }, children: [read("r", "x")] }))],
+                    }),
+                ),
+            ),
+        );
+        tree.tick();
+        ctx.dispatch("hit");
+        ctx.update(1);
+        tree.blackboard.set("x", 3);
+        ctx.dispatch("hit2");
+        // the scope's own x (2) is restored, it still shadows the outer x
+        assert.deepEqual(ctx.takeLog(), ["read:d=1", "read:r=2"]);
     });
 });

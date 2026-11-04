@@ -194,7 +194,7 @@ export class Tree<C extends Context, Owner> {
         const outerScope = this.__swapScope(scope);
         try {
             node.tick(this);
-            this._abortAll(node);
+            this.__abortAll(node);
         } finally {
             this._scope = outerScope;
         }
@@ -304,6 +304,8 @@ export class Tree<C extends Context, Owner> {
 
         this._ticking = true;
         this._tickException = false;
+        // the tree is ticked from the root blackboard, even if ticked in a bound callback
+        const outerScope = this.__swapScope(this._rootBlackboard);
 
         if (!this.isRunning(root)) {
             context.dispatch(TreeEvent.BEFORE_TICKED, this);
@@ -337,6 +339,7 @@ export class Tree<C extends Context, Owner> {
         }
 
         this._tickCount++;
+        this._scope = outerScope;
         this._ticking = false;
 
         return this._status;
@@ -346,8 +349,15 @@ export class Tree<C extends Context, Owner> {
         const values = this._rootBlackboard.values;
         this._status = this._tickException ? "exception" : "interrupted";
         this._tickException = false;
-        if (this.root) {
-            this._abortAll(this.root);
+        // the whole tree is aborted from the root blackboard, even if interrupted in a bound
+        // callback, whose scope is kept for the rest of the callback
+        const outer = this.__swapScope(this._rootBlackboard);
+        try {
+            if (this.root) {
+                this.__abortAll(this.root);
+            }
+        } finally {
+            this._scope = outer;
         }
         this._states.length = 0;
         for (const key in values) {
@@ -355,23 +365,23 @@ export class Tree<C extends Context, Owner> {
                 delete values[key];
             }
         }
-        this._scope = this._rootBlackboard;
         this.__interrupted = false;
     }
 
     /**
-     * Calls `onAbort` of every running node, the running path may be broken when interrupted.
+     * @private Calls `onAbort` of every running node in the current scope, the running path may be
+     * broken when interrupted.
      */
-    private _abortAll(node: Node) {
+    __abortAll(node: Node) {
         for (const condition of node.conditions) {
-            this._abortAll(condition.root);
+            this.__abortAll(condition.root);
         }
         // the children of a running Scope are aborted in its overlay
         const scope = node.__isScope ? this.getState<Blackboard>(node) : undefined;
         const outer = scope ? this.__swapScope(scope) : undefined;
         try {
             for (const child of node.children) {
-                this._abortAll(child);
+                this.__abortAll(child);
             }
         } finally {
             if (outer) {

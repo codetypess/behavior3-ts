@@ -21,10 +21,19 @@ export class Delay extends Node {
             delay,
             // the callback runs in the scope where it is registered, even if the scope has ended
             tree.bindCallback(() => {
+                // a variable inherited from an outer scope is unset rather than written back,
+                // otherwise it would become a variable of this scope and hide the outer one
+                const owned = keys.map((key) => blackboard.hasOwn(key));
                 const cacheOldArgs: unknown[] = keys.map((key) => blackboard.get(key));
                 keys.forEach((key, i) => blackboard.set(key, cacheArgs[i]));
                 tree.__tickInCallback(this.children[0]);
-                keys.forEach((key, i) => blackboard.set(key, cacheOldArgs[i]));
+                keys.forEach((key, i) => {
+                    if (owned[i]) {
+                        blackboard.set(key, cacheOldArgs[i]);
+                    } else {
+                        blackboard.unset(key);
+                    }
+                });
             }),
             tree
         );

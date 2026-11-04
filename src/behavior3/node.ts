@@ -601,10 +601,16 @@ export abstract class Node {
         return !tree.__interrupted && status === "success";
     }
 
-    /** Ticks the condition tree, a running condition tree is aborted in its scope. */
+    /**
+     * Ticks the condition tree, a running condition tree is aborted in its scope. When interrupted,
+     * the running nodes are aborted now: the implicit scope is dropped after the evaluation, the
+     * interrupt would abort them in the outer scope.
+     */
     private static _tickCondition(tree: Tree<Context, unknown>, root: Node): Status {
         const status = root.tick(tree);
-        if (!tree.__interrupted && status === "running") {
+        if (tree.__interrupted) {
+            tree.__abortAll(root);
+        } else if (status === "running") {
             root.error(`condition tree must not return 'running'`);
             root.abort(tree);
         }
