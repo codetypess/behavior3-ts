@@ -133,6 +133,16 @@ export interface NodeDef<GroupType extends string = string> {
      * A node declaring this must call `_checkPreempt` in `onTick`.
      */
     preemptive?: boolean;
+    /**
+     * Whether the node defers its work: it registers a callback (a listener, a timer) which runs
+     * later, after the node has returned, like `Listen` and `Delay`. The callback belongs to the
+     * tree, it is not undone when the branch is aborted or interrupted, only by `tree.clear()`.
+     * Not a node returning `running` to wait (like `Wait`), whose state is managed by the tree.
+     *
+     * A deferred node is not allowed in a condition tree, checked when the tree is loaded: a
+     * condition tree may be evaluated again and again, every evaluation would register one more.
+     */
+    deferred?: boolean;
 }
 
 /**
@@ -235,6 +245,7 @@ export abstract class Node {
                 this.throw(`invalid abort mode '${abort}'`);
             }
             const condition: Condition = { abort, root: Node.create(context, conditionCfg.root) };
+            Node._checkConditionTree(context, condition.root);
             this._conditions.push(condition);
             if (abort === "self" || abort === "both") {
                 this._selfConditions.push(condition);
@@ -696,6 +707,20 @@ export abstract class Node {
 
     static get descriptor(): NodeDef {
         throw new Error(`descriptor not found in '${this.name}'`);
+    }
+
+    /**
+     * Throws if a node of the condition tree is `deferred`. The condition trees of
+     * the nodes inside are checked when those nodes are created.
+     */
+    private static _checkConditionTree(context: Context, node: Node) {
+        const descriptor = context.nodeDefs[node.name] as NodeDef | undefined;
+        if (descriptor?.deferred) {
+            node.throw(`'${node.name}' is deferred, not allowed in a condition tree`);
+        }
+        for (const child of node._children) {
+            Node._checkConditionTree(context, child);
+        }
     }
 
     static create(context: Context, cfg: NodeData) {

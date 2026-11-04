@@ -47,6 +47,7 @@ export class Delay extends Node {
             group: ["Core"],
             children: 1,
             status: ["success"],
+            deferred: true,
             desc: "延时执行子节点",
             input: ["延时时间?"],
             args: [
@@ -67,6 +68,7 @@ export class Delay extends Node {
                 + 如果子节点返回 \`running\`，会被中止
                 + 子节点返回 \`error\` 或抛异常时只打印日志，不影响行为树正在运行的分支
                 + 回调在注册时所在的作用域中执行：放在 \`Scope\` 或条件树里时，回调里写的变量只留在那个作用域里，\`Scope\` 结束后也不会写回外层；要修改外层变量，把它放在 \`Scope\` 外面
+                + 不能放在条件树里，加载时报错：条件可能被反复求值，每次都会多注册一次
                 + 定时器属于整棵树，所在分支被中止或打断后仍会触发，只有清理行为树时才会移除`,
         };
     }

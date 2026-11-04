@@ -687,32 +687,63 @@ describe("condition scope", () => {
         assert.deepEqual(ctx.takeLog(), ["tick:c", "tick:a"]);
     });
 
-    it("runs Listen in a condition tree in the scope of that evaluation", () => {
+    it("doesn't allow Listen in a condition tree", () => {
+        const ctx = new TestContext();
+        const listen = n("Listen", "listen", { args: { event: "hit" }, children: [probe("r")] });
+        assert.throws(
+            () =>
+                ctx.createTree(
+                    probe("a", {
+                        conditions: [cond(seq("c", n("Once", "once", { children: [listen] })))],
+                    }),
+                ),
+            /Listen#listen: 'Listen' is deferred, not allowed in a condition tree/,
+        );
+    });
+
+    it("doesn't allow Delay in a condition tree", () => {
+        const ctx = new TestContext();
+        const delay = n("Delay", "delay", { args: { delay: 1 }, children: [probe("r")] });
+        assert.throws(
+            () => ctx.createTree(probe("a", { conditions: [cond(delay)] })),
+            /Delay#delay: 'Delay' is deferred, not allowed in a condition tree/,
+        );
+    });
+
+    it("checks the condition trees nested in a condition tree", () => {
+        const ctx = new TestContext();
+        const listen = n("Listen", "listen", { args: { event: "hit" }, children: [probe("r")] });
+        assert.throws(
+            () =>
+                ctx.createTree(
+                    probe("a", { conditions: [cond(probe("b", { conditions: [cond(listen)] }))] }),
+                ),
+            /is deferred, not allowed in a condition tree/,
+        );
+    });
+
+    it("ignores a disabled node in a condition tree", () => {
+        const ctx = new TestContext();
+        const listen = n("Listen", "listen", {
+            args: { event: "hit" },
+            disabled: true,
+            children: [probe("r")],
+        });
+        const tree = ctx.createTree(
+            probe("a", { conditions: [cond(seq("c", probe("b"), listen))] }),
+        );
+        assert.equal(tree.tick(), "success");
+    });
+
+    it("allows Listen and Delay outside the condition trees", () => {
         const ctx = new TestContext();
         const tree = ctx.createTree(
-            probe("a", {
-                conditions: [
-                    cond(
-                        seq(
-                            "c",
-                            letv("l", "y", 1),
-                            n("Once", "once", {
-                                children: [
-                                    n("Listen", "listen", {
-                                        args: { event: "hit" },
-                                        children: [read("r", "y")],
-                                    }),
-                                ],
-                            }),
-                        ),
-                    ),
-                ],
-            }),
+            seq(
+                "main",
+                n("Listen", "listen", { args: { event: "hit" }, children: [probe("r")] }),
+                n("Delay", "delay", { args: { delay: 1 }, children: [probe("d")] }),
+            ),
         );
-        tree.tick();
-        ctx.takeLog();
-        ctx.dispatch("hit");
-        assert.deepEqual(ctx.takeLog(), ["read:r=1"]);
-        assert.equal(tree.blackboard.get("y"), undefined);
+        assert.equal(tree.tick(), "success");
     });
 });
