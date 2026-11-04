@@ -86,13 +86,22 @@ export class Tree<C extends Context, Owner> {
     /** The tick count when the node is ticked last time, only recorded in debug mode. */
     private _ticked: number[] = [];
     private _tickCount: number = 0;
+    private _loadError?: Error;
 
     constructor(context: C, owner: Owner, path: string) {
         this.context = context;
         this.path = path;
         this._rootBlackboard = this._scope = new Blackboard(this);
-        this.context.loadTree(this.path);
         this._owner = owner;
+        // an error thrown synchronously (like a config error found when creating the nodes) goes
+        // to the caller; a rejected load is recorded, the tree stays failed
+        Promise.resolve(this.context.loadTree(this.path)).catch((e: unknown) => {
+            const error = e instanceof Error ? e : new Error(String(e));
+            this._loadError = error;
+            console.error(
+                `behavior3: load tree '${this.path}' failed: ${error.stack ?? error.message}`,
+            );
+        });
     }
 
     get owner() {
@@ -174,8 +183,17 @@ export class Tree<C extends Context, Owner> {
         return (this._root ||= this.context.trees[this.path]);
     }
 
+    /** Whether the tree is loaded. */
     get ready() {
         return !!this.root;
+    }
+
+    /**
+     * The error of a failed load, `undefined` while loading or once loaded. A failed tree stays
+     * failed, `tick` returns `error`; retry in the `loadTree` of the context if needed.
+     */
+    get loadError(): Error | undefined {
+        return this.root ? undefined : this._loadError;
     }
 
     get status() {
@@ -386,7 +404,8 @@ export class Tree<C extends Context, Owner> {
         const { context, root } = this;
 
         if (!root) {
-            return "failure";
+            // `failure` while loading, `error` if the load failed
+            return this._loadError ? "error" : "failure";
         }
 
         if (this.debug) {

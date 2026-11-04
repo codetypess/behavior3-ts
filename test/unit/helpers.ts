@@ -378,13 +378,17 @@ export class TestContext extends Context {
 
     /** The paths loaded asynchronously, see `deferLoad`. */
     private _deferred: Set<string> = new Set();
-    private _pending: Map<string, (() => void)[]> = new Map();
+    private _pending: Map<string, { resolve: () => void; reject: (e: Error) => void }[]> =
+        new Map();
+    /** The paths passed to `loadTree`, in order. */
+    loads: string[] = [];
 
     override loadTree(path: string): Promise<Node> {
+        this.loads.push(path);
         if (this._deferred.has(path)) {
-            return new Promise((resolve) => {
+            return new Promise((resolve, reject) => {
                 const pending = this._pending.get(path) ?? [];
-                pending.push(() => resolve(this._load(path)));
+                pending.push({ resolve: () => resolve(this._load(path)), reject });
                 this._pending.set(path, pending);
             });
         }
@@ -405,7 +409,13 @@ export class TestContext extends Context {
     finishLoad(path: string) {
         this._deferred.delete(path);
         this._load(path);
-        this._pending.get(path)?.forEach((resolve) => resolve());
+        this._pending.get(path)?.forEach((p) => p.resolve());
+        this._pending.delete(path);
+    }
+
+    /** Fails the pending loads of the deferred path, the path stays deferred. */
+    failLoad(path: string, error: Error) {
+        this._pending.get(path)?.forEach((p) => p.reject(error));
         this._pending.delete(path);
     }
 

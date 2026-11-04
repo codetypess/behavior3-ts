@@ -655,3 +655,94 @@ describe("Node.onClear", () => {
         assert.deepEqual(ctx.takeLog(), ["clear:a", "clear:a"]);
     });
 });
+
+describe("load failure", () => {
+    const settle = () => new Promise((resolve) => setImmediate(resolve));
+
+    /** Runs `fn`, waits for the rejected loads to be handled, returns the console errors. */
+    const loadErrors = async (fn: () => void) => {
+        const errors: string[] = [];
+        const old = console.error;
+        console.error = (...args: unknown[]) => errors.push(args.map(String).join(" "));
+        try {
+            fn();
+            await settle();
+        } finally {
+            console.error = old;
+        }
+        // only the messages of behavior3, the runtime may print its own warnings meanwhile
+        return errors.filter((e) => e.startsWith("behavior3:"));
+    };
+
+    it("records the error of a failed load, the tree returns error", async () => {
+        const ctx = new TestContext();
+        ctx.defineTree("main", probe("a"));
+        ctx.deferLoad("main");
+        const tree = new Tree(ctx, {}, "main");
+        assert.equal(tree.tick(), "failure");
+        assert.equal(tree.loadError, undefined);
+        const errors = await loadErrors(() => ctx.failLoad("main", new Error("not found")));
+        assert.equal(errors.length, 1);
+        assert.match(errors[0], /load tree 'main' failed: Error: not found/);
+        assert.equal(tree.ready, false);
+        assert.equal((tree.loadError as Error | undefined)?.message, "not found");
+        assert.equal(tree.tick(), "error");
+        assert.equal(tree.tick(), "error");
+    });
+
+    it("records a rejection which is not an Error", async () => {
+        const ctx = new TestContext();
+        ctx.loadTree = () => Promise.reject("gone");
+        const errors: string[] = [];
+        const tree = new Tree(ctx, {}, "main");
+        await loadErrors(() => {}).then((e) => errors.push(...e));
+        assert.equal(tree.loadError?.message, "gone");
+        assert.match(errors[0], /load tree 'main' failed/);
+    });
+
+    it("still throws a synchronous error to the caller", () => {
+        const ctx = new TestContext();
+        ctx.loadTree = () => {
+            throw new Error("bad config");
+        };
+        assert.throws(() => new Tree(ctx, {}, "main"), /bad config/);
+    });
+
+    it("returns error from RunTree without waiting for the timeout", async () => {
+        const ctx = new TestContext();
+        ctx.defineTree("sub", probe("a"));
+        ctx.deferLoad("sub");
+        const tree = ctx.createTree(runTree("rt", "sub", { timeout: 100 }));
+        assert.equal(tree.tick(), "running");
+        await loadErrors(() => ctx.failLoad("sub", new Error("not found")));
+        const { result, warn } = captureConsole(() => tree.tick());
+        assert.equal(result, "error");
+        assert.match(warn[0], /load tree 'sub' failed/);
+    });
+
+    it("keeps the failed subtree until the caller is cleared", async () => {
+        const ctx = new TestContext();
+        ctx.defineTree("sub", probe("a"));
+        ctx.deferLoad("sub");
+        const tree = ctx.createTree(runTree("rt", "sub"));
+        tree.tick();
+        await loadErrors(() => ctx.failLoad("sub", new Error("not found")));
+        captureConsole(() => {
+            assert.equal(tree.tick(), "error");
+            assert.equal(tree.tick(), "error");
+        });
+        assert.deepEqual(
+            ctx.loads.filter((p) => p === "sub"),
+            ["sub"],
+        );
+        // a new instance loads the tree again
+        tree.clear();
+        ctx.finishLoad("sub");
+        assert.equal(tree.tick(), "success");
+        assert.deepEqual(
+            ctx.loads.filter((p) => p === "sub"),
+            ["sub", "sub"],
+        );
+        assert.deepEqual(ctx.takeLog(), ["tick:a"]);
+    });
+});

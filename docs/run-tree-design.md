@@ -115,7 +115,7 @@ override onClear(tree: Tree<Context, unknown>) {
 }
 ```
 
-- `new Tree` 时会调用 `loadTree`，加载在创建实例时就开始了。
+- `new Tree` 时会调用 `loadTree`，加载在创建实例时就开始了。`loadTree` 同步抛出的异常（比如创建节点时发现配置错误）直接抛给调用方；返回的 Promise 被 reject 时，`Tree` 打印一次错误，记在 `tree.loadError` 上，之后 `tick()` 返回 `error`（还在加载时返回 `failure`）。
 - 缓存放在节点自己的私有变量里，`Tree` 不需要知道 `RunTree` 的存在。主树 `clear()` 时通过 `onClear` 通知节点清掉子树实例（4.1 节），私有变量随后随根黑板一起清掉。
 
 ### 4.1 Node.onClear
@@ -247,9 +247,11 @@ override onAbort(tree: Tree<Context, unknown>) {
 | 加载中，没填 `timeout` | 一直返回 running，直到加载完。没填表示写树的人保证一定能加载成功 |
 | 加载中，填了 `timeout`，没到时间 | running |
 | 加载中，填了 `timeout`，到时间还没加载完 | warn，返回 error |
+| 加载失败（`loadTree` 的 Promise 被 reject） | warn，立即返回 error，不等 `timeout` |
 
 - 截止时间从**这一次开始执行**算起，按 `tree.context.time` 计算，和 `Timeout` 一样。
-- 没填 `timeout` 而加载失败了（`loadTree` 的 Promise 被 reject），会一直 running。这是写树的人的选择。
+- `timeout` 只限制**还没加载完**的情况。加载失败由 `Tree` 记下（`tree.loadError`），`RunTree` 看到就返回 error。
+- **失败的子树实例保持失败，直到主树 `clear()`**：不会反复调用 `loadTree`，路径确实不存在时不会每次执行都重新加载、刷屏。主树 `clear()` 时实例被丢掉，之后再执行会新建实例、重新加载。需要重试（比如网络抖动），在 Context 的 `loadTree` 里实现：只有宿主知道失败的原因、该不该重试、隔多久重试。
 - `RunTree` 声明了 `deferred`，不能放进条件树，加载时报错（第 7 节）。
 
 ## 6. 和主树的生命周期同步

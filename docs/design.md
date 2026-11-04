@@ -477,7 +477,7 @@ class RandomPick extends Node {
 **行为节点和条件节点**
 
 - **WaitForEvent**：用状态加 `onAbort` 移除监听。
-- **RunTree**：在独立的 `Tree` 实例中执行另一棵树，子树看不到调用方的变量。input 在开始执行时按值传给子树，output 只在成功时从子树导出到调用方的当前作用域。同一个单位上，同一个节点对同一个路径复用一个实例，`clear` 时一起清掉。树还没加载时返回 running，`timeout` 只限制加载；子树的异常转成 error。声明了 `deferred`，不能放进条件树（4.4 节）。详见 [run-tree-design.md](run-tree-design.md)。
+- **RunTree**：在独立的 `Tree` 实例中执行另一棵树，子树看不到调用方的变量。input 在开始执行时按值传给子树，output 只在成功时从子树导出到调用方的当前作用域。同一个单位上，同一个节点对同一个路径复用一个实例，`clear` 时一起清掉。树还没加载时返回 running，`timeout` 只限制加载，加载失败时返回 error；子树的异常转成 error。声明了 `deferred`，不能放进条件树（4.4 节）。详见 [run-tree-design.md](run-tree-design.md)。
 - **Check、Calculate**：表达式支持算术、比较、逻辑、位运算、三元表达式、多层属性访问（`a.b.c`）、下标（`arr[i + 1]`）和字符串。只写一个变量名（比如 Check 的 `isDead`）时返回变量的值。引用不存在的变量时返回 error，判断变量是否存在用 IsNull/NotNull。表达式在加载时编译，编译不过时抛异常；`context.registerCode` 可以为表达式注册预先生成的函数，跳过解析。
 - 数据不对时返回 error 的情况见 3.3 节。
 
@@ -526,7 +526,7 @@ export class MyNode extends Node {
 
 - **黑板**：`get`、`set`（设成 `undefined` 或 `null` 时删除）、`eval(code)`。私有变量和临时变量的说明见 2.2 节。
   - `tree.blackboard` 是当前作用域：tick 之外是根黑板；`Scope` 和条件树会 fork 一个覆盖层，读取沿原型链读到外层，写入只留在覆盖层，覆盖层里设成 `undefined` 会遮住外层的变量。私有变量和临时变量始终在根黑板。详见 [scope-design.md](scope-design.md)。
-- **Context**：所有树共享，提供节点注册、树的加载和缓存（`loadTree` 由使用方实现）、时间（`time`、`update(dt)`）、定时器（`delay`）、事件（`on`、`off`、`offAll`、`dispatch`）、表达式编译（`compileCode`、`registerCode`）。
+- **Context**：所有树共享，提供节点注册、树的加载和缓存（`loadTree` 由使用方实现；Promise 被 reject 时，`Tree` 记下 `loadError`，`tick()` 返回 `error`，需要重试在 `loadTree` 里实现）、时间（`time`、`update(dt)`）、定时器（`delay`）、事件（`on`、`off`、`offAll`、`dispatch`）、表达式编译（`compileCode`、`registerCode`）。
 - 每个节点都要声明 `group`。`supportGroupTypes` 决定 Context 构造时注册哪些用 `registerNode` 注册的节点：Context 支持节点的某一个 group 才会注册。默认是 `["Core"]`，内置节点都属于 `Core` 分组；重写 `supportGroupTypes` 时要带上 `Core`，否则内置节点不会注册。`context.registerNode` 直接注册的节点不受 `supportGroupTypes` 限制。
 
 ## 9. 编辑器

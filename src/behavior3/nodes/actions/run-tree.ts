@@ -50,7 +50,11 @@ export class RunTree extends Node {
 
         const { subtree } = state;
         if (!subtree.ready) {
-            if (state.expired !== undefined && tree.context.time >= state.expired) {
+            if (subtree.loadError) {
+                // stays failed until the caller is cleared, retrying is up to `loadTree`
+                this.warn(`load tree '${subtree.path}' failed`);
+                return "error";
+            } else if (state.expired !== undefined && tree.context.time >= state.expired) {
                 this.warn(`load tree '${subtree.path}' timeout`);
                 return "error";
             }
@@ -148,6 +152,7 @@ export class RunTree extends Node {
                 + 子树成功时，把输出变量从子树写回调用方，变量名相同；失败和 \`error\` 时不写回
                 + 输出变量是这一次执行的结果：每次开始执行前会清掉子树里的输出变量，这次没写的不会写回，调用方的变量保持不变；要跨多次执行累计的值，用别的变量名保存，结束前再赋给输出变量
                 + 树还没加载时返回 \`running\`；填了 \`timeout\` 时，超时还没加载完返回 \`error\`
+                + 树加载失败时返回 \`error\`，直到清理行为树前都不会重新加载；需要重试的话，在 Context 的 \`loadTree\` 里实现
                 + 子树抛异常时返回 \`error\`，不中断调用方
                 + 不能放在条件树里，加载时报错：运行的树到运行时才加载，加载时检查不了；要复用条件，在编辑器里用子树
                 + 同一个单位上，同一个节点对同一个路径复用同一个子树实例，\`clear\` 时一起清掉
