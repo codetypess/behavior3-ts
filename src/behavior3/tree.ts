@@ -32,6 +32,19 @@ export type TreeStatus = Status | "interrupted" | "exception";
 
 let treeId = 0;
 
+/**
+ * Rejects a callback of `bindCallback` which may return a promise, the key is shown in the
+ * compile error. `never` (a callback which only throws) is accepted.
+ */
+type SyncCallback<R> = [Extract<R, PromiseLike<unknown>>] extends [never]
+    ? unknown
+    : { "bindCallback: the callback must be synchronous, not async": never };
+
+const isThenable = (value: unknown): value is PromiseLike<unknown> =>
+    !!value &&
+    (typeof value === "object" || typeof value === "function") &&
+    typeof (value as PromiseLike<unknown>).then === "function";
+
 /** The state of a running node which has not set its own state. */
 const RUNNING = {};
 
@@ -59,6 +72,12 @@ export class Tree<C extends Context, Owner> {
     private _states: unknown[] = [];
     private _tickException: boolean = false;
     private _callback?: { interrupt: boolean };
+    /** `clear` is called while executing, the tree is cleared when the execution exits. */
+    private _pendingClear: boolean = false;
+    /** `clear` is running, a `clear` from its listeners is ignored. */
+    private _clearing: boolean = false;
+    /** How many times the tree is cleared, a callback bound before a clear is skipped. */
+    private _clearCount: number = 0;
     /** The tick count when the node is ticked last time, only recorded in debug mode. */
     private _ticked: number[] = [];
     private _tickCount: number = 0;
@@ -110,13 +129,34 @@ export class Tree<C extends Context, Owner> {
      * a timer. The returned function runs `fn` in the scope where it was bound, even if that
      * `Scope` or condition tree has ended (like a closure): `tree.blackboard` is the bound scope,
      * and the children ticked by `__tickInCallback` run in it.
+     *
+     * `fn` must be synchronous: the scope is bound while `fn` runs, the code after an `await`
+     * would run in whatever scope is current then. An async `fn` is a compile error, and throws
+     * when called. For an async task, bind the synchronous callback called when it completes:
+     * `task.then(tree.bindCallback((result) => { ... }))`.
+     *
+     * The returned function does nothing and returns `undefined` once the tree is cleared, a
+     * callback the tree can't remove (like a promise) doesn't run on the cleared tree.
      */
-    bindCallback<A extends unknown[], R>(fn: (...args: A) => R): (...args: A) => R {
+    bindCallback<F extends (...args: never[]) => unknown>(
+        fn: F & SyncCallback<ReturnType<F>>,
+    ): (...args: Parameters<F>) => ReturnType<F> | undefined {
         const scope = this._scope;
-        return (...args: A) => {
+        const cleared = this._clearCount;
+        return (...args: Parameters<F>) => {
+            if (this._clearCount !== cleared) {
+                return undefined;
+            }
             const outer = this.__swapScope(scope);
             try {
-                return fn(...args);
+                const result = fn(...args) as ReturnType<F>;
+                if (isThenable(result)) {
+                    throw new Error(
+                        `tree '${this.path}': the callback of bindCallback must be synchronous, ` +
+                            `the code after 'await' would run out of the bound scope`,
+                    );
+                }
+                return result;
             } finally {
                 this._scope = outer;
             }
@@ -143,25 +183,52 @@ export class Tree<C extends Context, Owner> {
         return this.__runningNode;
     }
 
+    /**
+     * Clears the tree: dispatches `CLEANED`, interrupts the tree (`INTERRUPTED`, `onAbort` of the
+     * running nodes), calls `onClear` of every node, then clears the states, the blackboard and
+     * the listeners.
+     *
+     * Called while the tree is executing (in `tick` or a callback ticking the nodes), it stops the
+     * execution and clears the tree when the execution exits, still in the same call stack: the
+     * nodes on the stack must not go on with the cleared states.
+     */
     clear() {
-        // force run clear
-        const interrupted = this.__interrupted;
-        this.__interrupted = false;
-        this.context.dispatch(TreeEvent.CLEANED, this);
-        this.__interrupted = interrupted;
-
-        this.interrupt();
-        if (this.root) {
-            // after the running nodes are aborted, before the private vars are cleared
-            this._clearAll(this.root);
+        if (this._clearing) {
+            return;
+        } else if (this._ticking || this._callback) {
+            this._pendingClear = true;
+            this.__interrupted = true;
+            if (this._callback) {
+                this._callback.interrupt = true;
+            }
+            return;
         }
-        this.debug = false;
-        this.__interrupted = false;
-        this._status = "success";
-        this._states.length = 0;
-        this._scope = this._rootBlackboard;
-        this._rootBlackboard.clear();
-        this.context.offAll(this);
+        this._pendingClear = false;
+        this._clearing = true;
+        try {
+            // force run clear
+            const interrupted = this.__interrupted;
+            this.__interrupted = false;
+            this.context.dispatch(TreeEvent.CLEANED, this);
+            this.__interrupted = interrupted;
+
+            this.interrupt();
+            if (this.root) {
+                // after the running nodes are aborted, before the private vars are cleared
+                this._clearAll(this.root);
+            }
+            this.debug = false;
+            this.__interrupted = false;
+            this._status = "success";
+            this._states.length = 0;
+            this._scope = this._rootBlackboard;
+            this._rootBlackboard.clear();
+            this.context.offAll(this);
+            // after CLEANED and INTERRUPTED, whose listeners still run
+            this._clearCount++;
+        } finally {
+            this._clearing = false;
+        }
     }
 
     interrupt() {
@@ -205,7 +272,11 @@ export class Tree<C extends Context, Owner> {
         if (callback.interrupt) {
             if (outer) {
                 outer.interrupt = true;
-            } else if (!this._ticking) {
+            } else if (this._ticking) {
+                // the tick handles it when it exits
+            } else if (this._pendingClear) {
+                this.clear();
+            } else {
                 this._doInterrupt();
             }
         }
@@ -332,7 +403,9 @@ export class Tree<C extends Context, Owner> {
             this._status = "running";
         }
 
-        if (this.__interrupted) {
+        if (this._pendingClear) {
+            // cleared below, after the tick exits
+        } else if (this.__interrupted) {
             this._doInterrupt();
         } else if (this.debug) {
             this._checkMissingAbort(root);
@@ -342,6 +415,10 @@ export class Tree<C extends Context, Owner> {
         this._scope = outerScope;
         this._ticking = false;
 
+        if (this._pendingClear) {
+            this.clear();
+            return "interrupted";
+        }
         return this._status;
     }
 

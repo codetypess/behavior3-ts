@@ -496,3 +496,132 @@ describe("missing abort check", () => {
         assert.deepEqual(missing(warn), []);
     });
 });
+
+describe("clear while executing", () => {
+    const spy = (id: string, status?: Status) =>
+        n("ClearSpy", id, { args: status ? { status } : {} });
+    const clearNow = (id: string) => n("ClearNow", id);
+    const logEvents = (ctx: TestContext, tree: Tree<TestContext, unknown>) => {
+        ctx.on(TreeEvent.CLEANED, tree, () => ctx.log.push("CLEANED"), tree);
+        ctx.on(TreeEvent.INTERRUPTED, tree, () => ctx.log.push("INTERRUPTED"), tree);
+    };
+
+    it("aborts the running nodes before onClear when cleared in a tick", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            n("Parallel", "root", { children: [spy("active", "running"), clearNow("c")] }),
+        );
+        logEvents(ctx, tree);
+        assert.equal(tree.tick(), "interrupted");
+        assert.deepEqual(ctx.takeLog(), [
+            "tick:active",
+            "clearNow:c",
+            "CLEANED",
+            "INTERRUPTED",
+            "abort:active",
+            "clear:active",
+        ]);
+        assert.equal(tree.status, "success");
+        assert.equal(tree.isRunning(tree.root!), false);
+        assert.equal(ctx.listenerCount(TreeEvent.CLEANED), 0);
+    });
+
+    it("doesn't run the rest of the tick", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(n("Sequence", "root", { children: [clearNow("c"), spy("after")] }));
+        tree.tick();
+        assert.deepEqual(ctx.takeLog(), ["clearNow:c", "clear:after"]);
+    });
+
+    it("clears the variables after the tick exits", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            n("Sequence", "root", {
+                children: [clearNow("c"), n("Let", "l", { args: { value: 1 }, output: ["x"] })],
+            }),
+        );
+        tree.blackboard.set("y", 1);
+        tree.tick();
+        assert.deepEqual(Object.keys(tree.blackboard.values), []);
+    });
+
+    it("clears a running tree in a callback after the callback exits", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            n("Parallel", "root", {
+                children: [
+                    n("Listen", "listen", {
+                        args: { event: "hit" },
+                        children: [n("Sequence", "cb", { children: [clearNow("c"), spy("after")] })],
+                    }),
+                    spy("active", "running"),
+                ],
+            }),
+        );
+        tree.tick();
+        ctx.takeLog();
+        logEvents(ctx, tree);
+        ctx.dispatch("hit");
+        assert.deepEqual(ctx.takeLog(), [
+            "clearNow:c",
+            "CLEANED",
+            "INTERRUPTED",
+            "abort:active",
+            "clear:after",
+            "clear:active",
+        ]);
+        assert.equal(tree.status, "success");
+        assert.equal(ctx.listenerCount("hit"), 0);
+    });
+
+    it("stops the rest of a callback of an idle tree", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            n("Listen", "listen", {
+                args: { event: "hit" },
+                children: [
+                    n("Parallel", "cb", { children: [spy("active", "running"), clearNow("c"), spy("after")] }),
+                ],
+            }),
+        );
+        tree.tick();
+        ctx.dispatch("hit");
+        assert.deepEqual(ctx.takeLog(), [
+            "tick:active",
+            "clearNow:c",
+            "abort:active",
+            "clear:active",
+            "clear:after",
+        ]);
+        assert.equal(ctx.listenerCount("hit"), 0);
+    });
+
+    it("clears a subtree cleared in its own tick, the caller goes on", () => {
+        const ctx = new TestContext();
+        ctx.defineTree("sub", n("Parallel", "sub-root", { children: [spy("sub-active", "running"), clearNow("c")] }));
+        const tree = ctx.createTree(
+            n("Selector", "root", {
+                children: [n("RunTree", "call", { args: { path: "sub" } }), probe("fallback")],
+            }),
+        );
+        assert.equal(tree.tick(), "success");
+        assert.deepEqual(ctx.takeLog(), [
+            "tick:sub-active",
+            "clearNow:c",
+            "abort:sub-active",
+            "clear:sub-active",
+            "tick:fallback",
+        ]);
+    });
+
+    it("ignores a clear from a CLEANED listener", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            n("Listen", "listen", { args: { event: TreeEvent.CLEANED }, children: [clearNow("c")] }),
+        );
+        tree.tick();
+        tree.clear();
+        assert.deepEqual(ctx.takeLog(), ["clearNow:c"]);
+        assert.equal(ctx.listenerCount(TreeEvent.CLEANED), 0);
+    });
+});

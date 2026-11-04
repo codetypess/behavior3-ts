@@ -200,6 +200,8 @@ export abstract class Node {
     private _conditions: Condition[] = [];
     private _selfConditions: Condition[] = [];
     private _preemptors: number[] | undefined;
+    /** How many calls of `tick` are on the stack, more than one when the node is re-entered. */
+    private _depth: number = 0;
 
     constructor(context: Context, cfg: NodeData) {
         this._context = context;
@@ -330,6 +332,56 @@ export abstract class Node {
      * just evaluated the conditions of the node.
      */
     tick(tree: Tree<Context, unknown>, conditionsChecked: boolean = false): Status {
+        if (this._depth > 0) {
+            return this._reenter(tree, conditionsChecked);
+        }
+        // no try/finally on the hot path: `_tick` catches the exceptions of `onTick`, and a count
+        // left behind by another exception only takes the slower path of `_reenter`
+        this._depth = 1;
+        const status = this._tick(tree, conditionsChecked);
+        this._depth = 0;
+        return status;
+    }
+
+    /**
+     * Ticks the node while it is still on the stack: the nodes are shared by the trees of the
+     * same path, a recursive `RunTree` or another tree ticked synchronously re-enters them. The
+     * input, output and json args of the outer call are saved and restored in place after this
+     * call, the outer `onTick` may hold them.
+     */
+    private _reenter(tree: Tree<Context, unknown>, conditionsChecked: boolean): Status {
+        const input = this.input as unknown[];
+        const output = this.output as unknown[];
+        const savedInput = input.slice();
+        const savedOutput = output.slice();
+        const jsonArgs = this._jsonArgs;
+        let savedArgs: ObjectType | undefined;
+        if (jsonArgs) {
+            savedArgs = {};
+            for (const k in jsonArgs) {
+                savedArgs[k] = (this.args as ObjectType)[k];
+            }
+        }
+        this._depth++;
+        try {
+            return this._tick(tree, conditionsChecked);
+        } finally {
+            this._depth--;
+            input.length = savedInput.length;
+            for (let i = 0; i < savedInput.length; i++) {
+                input[i] = savedInput[i];
+            }
+            output.length = savedOutput.length;
+            for (let i = 0; i < savedOutput.length; i++) {
+                output[i] = savedOutput[i];
+            }
+            if (savedArgs) {
+                Object.assign(this.args as ObjectType, savedArgs);
+            }
+        }
+    }
+
+    private _tick(tree: Tree<Context, unknown>, conditionsChecked: boolean): Status {
         const { blackboard } = tree;
         const { _cfg: cfg, input, output, args } = this;
 

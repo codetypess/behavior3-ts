@@ -116,6 +116,19 @@ export class Interrupt extends Node {
     }
 }
 
+/** Clears the tree in onTick, logging `clearNow:<id>`. */
+export class ClearNow extends Node {
+    override onTick(tree: Tree<TestContext, unknown>): Status {
+        tree.context.log.push(`clearNow:${this.id}`);
+        tree.clear();
+        return "success";
+    }
+
+    static override get descriptor(): NodeDef {
+        return { name: "ClearNow", type: "Action", group: ["Test"], desc: "clear the tree" };
+    }
+}
+
 /** Dispatches `args.event` synchronously in onTick. */
 export class Emit extends Node {
     declare args: { readonly event: string };
@@ -352,6 +365,7 @@ export class TestContext extends Context {
         this.registerNode(Throw);
         this.registerNode(Interrupt);
         this.registerNode(Emit);
+        this.registerNode(ClearNow);
         this.registerNode(ArgsSpy);
         this.registerNode(PrioritySelector);
         this.registerNode(Read);

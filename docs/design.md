@@ -4,7 +4,7 @@
 
 ## 1. 概述
 
-- **树和单位分开**：同一个树文件只创建一份 Node 实例，存在 `context.trees[path]` 里，所有单位共享。每个单位有自己的 `Tree`，运行状态和黑板都存在 Tree 上。
+- **树和单位分开**：同一个树文件只创建一份 Node 实例，存在 `context.trees[path]` 里，所有单位共享。每个单位有自己的 `Tree`，运行状态和黑板都存在 Tree 上。节点身上只有 `input`、`output` 和 `json` 参数是一次调用的数据，节点在执行中被重入时（递归 `RunTree`、同步 tick 同一路径的另一棵树），`Node.tick` 保存外层调用的这些数据，内层结束后原地恢复。
 - **每帧从根节点执行**：每次 `tree.tick()` 都从根节点出发，沿着 running 的路径往下执行。执行路径上的每个节点每帧都会被执行到，所以挂在祖先节点上的条件每帧都能重新判断。
 - **条件与打断**：节点上可以挂条件，参考 UE（Unreal Engine）行为树的装饰器打断（Observer Aborts），按 `none` / `self` / `lower` / `both` 四种模式，在节点运行期间打断自己，或者让高优先级的分支抢占正在运行的低优先级分支（第 4 节）。
 - **四种节点状态**：`success`、`failure`、`running`、`error`。`error` 表示数据不可信，和代码 bug 引起的异常分开处理（第 3 节）。
@@ -84,7 +84,7 @@ onAbort(tree): void      // 节点自己清理：停止移动、移除监听和�
 | `success` / `failure` | 根节点返回的结果 |
 | `running` | 根节点还在运行 |
 | `error` | 根节点返回 `error`：error 一直传到根节点都没有被处理（3.1 节） |
-| `interrupted` | 这一帧调用了 `tree.interrupt()` |
+| `interrupted` | 这一帧调用了 `tree.interrupt()`；在 tick 中调用 `tree.clear()` 时，这次 `tick()` 也返回它，清理之后 `status` 是 `success` |
 | `exception` | 这一帧有节点抛了异常，整棵树被中断（3.4 节）；和 `interrupted` 同时发生时以它为准 |
 
 `TreeEvent`（通过 `context.on(event, tree, callback, tag)` 监听）：
@@ -96,7 +96,7 @@ onAbort(tree): void      // 节点自己清理：停止移动、移除监听和�
 | `TICKED_SUCCESS` / `TICKED_FAILURE` | 根节点返回 `success` / `failure` |
 | `INTERRUPTED` | 树被中断 |
 | `EXCEPTION` | 节点抛异常，参数是 `(error: Error, node: Node)` |
-| `CLEANED` | 调用 `tree.clear()` |
+| `CLEANED` | 调用 `tree.clear()`；在执行中调用时，等执行退出后才派发 |
 
 ## 3. error 与异常
 
@@ -504,9 +504,13 @@ export class MyNode extends Node {
 
 - 只实现 `onTick`、`onAbort` 和 `onClear`。重写 `tick` 或 `abort` 时加载抛异常。
 - `onClear` 在 `tree.clear()` 时对每个节点（包括条件树里的）调用一次：在 running 的节点 `onAbort` 之后、清空黑板之前，用来释放节点为这棵树保留的东西（比如私有变量里缓存的子树实例）。
+- `tree.clear()` 可以在执行中调用（比如节点把单位打死，宿主销毁单位）：它只标记停止，执行栈一路返回 `running` 退出，栈上的节点不会拿着已清空的状态继续执行；等 tick 或最外层的回调退出后，在同一个调用栈里按 `CLEANED` → `INTERRUPTED` → `onAbort` → `onClear` → 清空状态、黑板和监听的顺序完成清理。树空闲时在回调里调用，同样会停下这个回调。`CLEANED` 的监听里再调用 `clear` 会被忽略。
 - `onTick` 里的 `tree.blackboard` 是当前作用域，在 `Scope` 或条件树里是它的覆盖层（[scope-design.md](scope-design.md) 第 10 节）。
 - 注册监听或定时器时，回调用 `tree.bindCallback(fn)` 包一层，触发时回到注册时的作用域；不包的回调在 tick 之外执行时用的是根黑板，放在 `Scope` 里会写到外面。
+- `bindCallback` 只绑定同步执行的那一段：回调可以在任意时刻触发，但触发后要同步执行完。`fn` 是 async 函数时编译报错，运行时返回 Promise 会抛异常，因为 `await` 之后的代码已经不在绑定的作用域里了。异步任务在外面完成，完成时再调用绑定好的同步回调：`task.then(tree.bindCallback((result) => { ... }))`。
+- 树被 `clear()` 之后，之前绑定的回调触发时什么都不做，返回 `undefined`。`offAll` 能移除 context 上的监听和定时器，Promise 这类移除不了的回调靠这条规则，不会在清理过的树上执行。
 - 跨帧的状态用 `tree.setState`，不要存在节点实例上：节点实例被所有单位共享。
+- 一次调用里的临时数据用局部变量，不要存在节点实例的字段上。节点可能在执行中被重入：递归的 `RunTree`，或者执行中同步 tick 了同一路径的另一棵树（宿主同步派发事件、直接调用 `tick`）。框架在重入时保存并恢复 `input`、`output` 和 `json` 参数，节点自己的字段保护不了。
 - 返回 running 时启动了需要清理的东西（移动、监听、定时器），在 `onAbort` 里清理。
 - **组合节点和装饰节点收到子节点的 `"error"` 时，要返回 `"error"`**（ErrorToFailure 这类专门处理 error 的节点除外）。框架不会替节点传递 error。
 - 数据不可信时返回 `"error"` 并打印 warning；代码 bug 用 `this.throw(msg)` 或直接抛异常。

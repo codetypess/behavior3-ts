@@ -323,6 +323,8 @@ override get __isScope(): boolean {
 - 回调节点在 `onTick` 里注册回调时，用 `tree.bindCallback(fn)` 包一层：它记下当前作用域，回调触发时切回这个作用域执行 `fn`，结束后切回原来的。
 - 回调里 `tree.blackboard` 就是绑定的作用域，`Listen._processOutput` 自然写到这一层；`__tickInCallback(node)` 默认在当前作用域里 tick，也就是绑定的作用域。
 - 宿主的自定义节点注册监听或定时器时，同样用 `bindCallback` 包一层，不需要接触 `__` 开头的内部方法。没有包的回调在触发时的当前作用域里执行：tick 之外是根黑板，在 tick 中同步派发时是派发者所在的作用域。
+- **只绑定同步执行段**：`bindCallback` 在 `fn` 执行期间切换作用域，`fn` 里 `await` 之后的代码在之后的微任务里执行，那时作用域早已切回，读写会落到根黑板。运行环境（浏览器、游戏引擎）没有 AsyncLocalStorage 这类机制，没法让作用域跟着 `await` 走，所以直接禁止：`fn` 的返回值可能是 Promise 时编译报错（`SyncCallback` 类型），运行时返回 thenable 抛异常。异步任务在外面完成，完成时调用绑定好的同步回调。
+- **清理后不再执行**：`bindCallback` 记下绑定时 `tree.clear()` 的次数，触发时树已经被清理过就直接返回 `undefined`。计数在 `clear` 的最后加一，`CLEANED`、`INTERRUPTED` 的监听在清理过程中照常执行。
 
 ```ts
 override onTick(tree: Tree<Context, unknown>): Status {

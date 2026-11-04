@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { Blackboard, SKIP } from "../../src/behavior3";
+import { Blackboard, SKIP, TreeEvent } from "../../src/behavior3";
 import { captureConsole, cond, n, NodeSpec, probe, TestContext } from "./helpers";
 
 const read = (id: string, key: string, status?: string) => n("Read", id, { args: { key, status } });
@@ -631,6 +631,80 @@ describe("tree.bindCallback", () => {
             tree.bindCallback((a: number, b: number) => a + b + tree.blackboard.get<number>("base")!),
         );
         assert.equal(add(1, 2), 13);
+    });
+
+    it("rejects an async callback at compile time", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(probe("p"));
+        // @ts-expect-error an async callback loses the scope after await
+        tree.bindCallback(async () => 1);
+        // @ts-expect-error a callback which may return a promise
+        tree.bindCallback((x: boolean) => (x ? 1 : Promise.resolve(1)));
+        // a callback which only throws, or returns nothing, is fine
+        tree.bindCallback(() => {
+            throw new Error("boom");
+        });
+        tree.bindCallback(() => {});
+    });
+
+    it("throws when the callback returns a promise, and restores the scope", async () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(probe("p"));
+        const inner = tree.blackboard.fork();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const fn: any = async () => {};
+        const bound = tree.__withScope(inner, () => tree.bindCallback(fn as () => void));
+        assert.throws(() => bound(), /must be synchronous/);
+        assert.equal(tree.blackboard, tree.__rootBlackboard);
+        const thenable = { then: () => {} };
+        const bound2 = tree.bindCallback(() => thenable as unknown as void);
+        assert.throws(() => bound2(), /must be synchronous/);
+    });
+
+    it("binds the synchronous callback of an async task", async () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(probe("p"));
+        tree.blackboard.set("x", 9);
+        const inner = tree.blackboard.fork();
+        inner.set("x", 1);
+        const done = tree.__withScope(inner, () =>
+            tree.bindCallback((v: number) => `${v}:${tree.blackboard.get("x")}`),
+        );
+        assert.equal(await Promise.resolve(5).then(done), "5:1");
+    });
+
+    it("skips the callback once the tree is cleared", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(probe("p"));
+        let calls = 0;
+        const bound = tree.bindCallback(() => ++calls);
+        assert.equal(bound(), 1);
+        tree.clear();
+        assert.equal(bound(), undefined);
+        assert.equal(calls, 1);
+        // bound after the clear, runs
+        const after = tree.bindCallback(() => ++calls);
+        assert.equal(after(), 2);
+    });
+
+    it("runs the CLEANED and INTERRUPTED listeners during the clear", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            n("Parallel", "root", {
+                children: [
+                    n("Listen", "l1", { args: { event: TreeEvent.CLEANED }, children: [probe("cleaned")] }),
+                    n("Listen", "l2", {
+                        args: { event: TreeEvent.INTERRUPTED },
+                        children: [probe("interrupted")],
+                    }),
+                    probe("run", { args: { status: "running" } }),
+                ],
+            }),
+        );
+        tree.tick();
+        ctx.takeLog();
+        tree.clear();
+        assert.deepEqual(ctx.takeLog(), ["tick:cleaned", "tick:interrupted", "abort:run"]);
     });
 
     it("runs a callback dispatched during a tick in the bound scope", () => {
