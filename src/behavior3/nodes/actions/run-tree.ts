@@ -4,8 +4,17 @@ import { ERROR, Node, NodeData, NodeDef, SKIP, Status } from "../../node";
 import { registerNode } from "../../register-node";
 import { Tree } from "../../tree";
 
+/** The instance of the runs not keeping it (`keep: false`), at most one per node. */
+type LastInstance = {
+    subtree: Tree<Context, unknown>;
+    /** Started a run not cleared yet. */
+    dirty: boolean;
+};
+
 type RunTreeState = {
     subtree: Tree<Context, unknown>;
+    /** The instance is not kept after the run (`keep: false`). */
+    last?: LastInstance;
     /** The deadline of loading, only when waiting for the tree with `timeout`. */
     expired?: number;
     /** Whether the subtree has started, the input is passed on start. */
@@ -21,13 +30,19 @@ export class RunTree extends Node {
     declare args: {
         readonly path?: string;
         readonly timeout?: number;
+        /** Whether the instance keeps its state between runs, `true` by default. */
+        readonly keep?: boolean;
     };
 
+    /** The kept instances, by path. */
     private readonly _subtreesKey: string;
+    /** The instance reused by the runs not keeping it (`keep: false`), at most one. */
+    private readonly _lastKey: string;
 
     constructor(context: Context, cfg: NodeData) {
         super(context, cfg);
         this._subtreesKey = Blackboard.makePrivateVar(this, "SUBTREES");
+        this._lastKey = Blackboard.makePrivateVar(this, "LAST");
     }
 
     override onTick(tree: Tree<Context, unknown>): Status {
@@ -40,9 +55,11 @@ export class RunTree extends Node {
                 this.warn(`invalid tree path: ${path}`);
                 return "error";
             }
-            const timeout = this.args.timeout;
+            const { timeout } = this.args;
+            const last = this.args.keep === false ? this._last(tree, path) : undefined;
             state = {
-                subtree: this._subtree(tree, path),
+                subtree: last ? last.subtree : this._subtree(tree, path),
+                last,
                 expired: timeout === undefined ? undefined : tree.context.time + timeout,
                 started: false,
             };
@@ -78,6 +95,9 @@ export class RunTree extends Node {
                 blackboard.set(keys[i], input[i]);
             }
             state.started = true;
+            if (state.last) {
+                state.last.dirty = true;
+            }
         }
 
         subtree.debug = tree.debug;
@@ -95,6 +115,10 @@ export class RunTree extends Node {
             const value = status === "success" ? subtree.blackboard.get(keys[i]) : undefined;
             this.output[i] = value === undefined ? SKIP : value;
         }
+        if (state.last) {
+            // the run is over: its variables, listeners and timers are removed now
+            RunTree._clearLast(state.last);
+        }
 
         if (status === "exception") {
             this.warn(`tree '${subtree.path}' threw an exception`);
@@ -107,13 +131,31 @@ export class RunTree extends Node {
     }
 
     override onAbort(tree: Tree<Context, unknown>): void {
-        tree.getState<RunTreeState>(this)?.subtree.interrupt();
+        const state = tree.getState<RunTreeState>(this);
+        if (state?.last) {
+            // clear interrupts it first
+            RunTree._clearLast(state.last);
+        } else {
+            state?.subtree.interrupt();
+        }
     }
 
     override onClear(tree: Tree<Context, unknown>): void {
         tree.blackboard
             .get<Map<string, Tree<Context, unknown>>>(this._subtreesKey)
             ?.forEach((subtree) => subtree.clear());
+        // not cleared again if its run has been aborted just before
+        const last = tree.blackboard.get<LastInstance>(this._lastKey);
+        if (last) {
+            RunTree._clearLast(last);
+        }
+    }
+
+    private static _clearLast(last: LastInstance) {
+        if (last.dirty) {
+            last.dirty = false;
+            last.subtree.clear();
+        }
     }
 
     /** The subtree instance of the path, reused by this node of the tree. */
@@ -131,6 +173,22 @@ export class RunTree extends Node {
         return subtree;
     }
 
+    /**
+     * The instance of a run not keeping it: the one of the last run if it has the same path (it
+     * was cleared when that run ended), otherwise a new one replacing it.
+     */
+    private _last(tree: Tree<Context, unknown>, path: string): LastInstance {
+        let last = tree.blackboard.get<LastInstance>(this._lastKey);
+        if (last?.subtree.path !== path) {
+            if (last) {
+                RunTree._clearLast(last);
+            }
+            last = { subtree: new Tree(tree.context, tree.owner, path), dirty: false };
+            tree.blackboard.set(this._lastKey, last);
+        }
+        return last;
+    }
+
     static override get descriptor(): NodeDef {
         return {
             name: "RunTree",
@@ -145,6 +203,7 @@ export class RunTree extends Node {
             args: [
                 { name: "path", type: "string?", desc: "树路径", oneof: "树路径" },
                 { name: "timeout", type: "float?", desc: "加载超时时间" },
+                { name: "keep", type: "bool?", desc: "保留子树实例", default: true },
             ],
             doc: `
                 + 在独立的行为树实例中执行 \`树路径\` 指定的树，子树看不到调用方的变量
@@ -155,7 +214,8 @@ export class RunTree extends Node {
                 + 树加载失败时返回 \`error\`，直到清理行为树前都不会重新加载；需要重试的话，在 Context 的 \`loadTree\` 里实现
                 + 子树抛异常时返回 \`error\`，不中断调用方
                 + 不能放在条件树里，加载时报错：运行的树到运行时才加载，加载时检查不了；要复用条件，在编辑器里用子树
-                + 同一个单位上，同一个节点对同一个路径复用同一个子树实例，\`clear\` 时一起清掉
+                + \`保留子树实例\`（默认开启）：同一个单位上，同一个节点对同一个路径复用同一个子树实例，子树的变量、\`Once\`、侦听和定时器在多次执行之间保留，清理行为树时一起清掉；路径种类多时，每个路径都会留下一个实例
+                + 关闭 \`保留子树实例\`：每次执行都从干净的子树开始，像普通函数调用；这次执行结束（包括被中止）时清理子树，它注册的侦听和定时器随之移除。每个节点最多留一个实例，路径和上次相同时复用，不同时替换，适合路径种类多的情况；子树里依赖实例保留的节点（\`Once\`、\`Listen\`、\`Delay\`）在这种模式下只在这次执行期间有效
             `,
         };
     }

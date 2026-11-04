@@ -477,7 +477,7 @@ class RandomPick extends Node {
 **行为节点和条件节点**
 
 - **WaitForEvent**：用状态加 `onAbort` 移除监听。移除时用 `on` 返回的取消函数，只移除自己的那一个，不影响同一棵树在同一事件上的其他监听（`Listen`、其他 `WaitForEvent`）。
-- **RunTree**：在独立的 `Tree` 实例中执行另一棵树，子树看不到调用方的变量。input 在开始执行时按值传给子树，output 只在成功时从子树导出到调用方的当前作用域。同一个单位上，同一个节点对同一个路径复用一个实例，`clear` 时一起清掉。树还没加载时返回 running，`timeout` 只限制加载，加载失败时返回 error；子树的异常转成 error。声明了 `deferred`，不能放进条件树（4.4 节）。详见 [run-tree-design.md](run-tree-design.md)。
+- **RunTree**：在独立的 `Tree` 实例中执行另一棵树，子树看不到调用方的变量。input 在开始执行时按值传给子树，output 只在成功时从子树导出到调用方的当前作用域。同一个单位上，同一个节点对同一个路径复用一个实例，`clear` 时一起清掉；`keep` 设为 `false` 时每次执行都从干净的子树开始，执行结束就清理，每个节点最多留一个实例，适合路径种类多的情况。树还没加载时返回 running，`timeout` 只限制加载，加载失败时返回 error；子树的异常转成 error。声明了 `deferred`，不能放进条件树（4.4 节）。详见 [run-tree-design.md](run-tree-design.md)。
 - **Check、Calculate**：表达式支持算术、比较、逻辑、位运算、三元表达式、多层属性访问（`a.b.c`）、下标（`arr[i + 1]`）和字符串。只写一个变量名（比如 Check 的 `isDead`）时返回变量的值。引用不存在的变量时返回 error，判断变量是否存在用 IsNull/NotNull。表达式在加载时编译，编译不过时抛异常；`context.registerCode` 可以为表达式注册预先生成的函数，跳过解析。
 - 数据不对时返回 error 的情况见 3.3 节。
 

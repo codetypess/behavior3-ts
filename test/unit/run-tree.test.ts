@@ -746,3 +746,121 @@ describe("load failure", () => {
         assert.deepEqual(ctx.takeLog(), ["tick:a"]);
     });
 });
+
+describe("RunTree keep: false", () => {
+    const runOnce = (
+        id: string,
+        path: string,
+        opts: { input?: string[]; output?: string[] } = {},
+    ) =>
+        n("RunTree", id, {
+            args: { path, keep: false },
+            input: ["", ...(opts.input ?? [])],
+            output: opts.output ?? [],
+        });
+    const loadsOf = (ctx: TestContext, path: string) => ctx.loads.filter((p) => p === path).length;
+
+    it("starts every run from a clean subtree", () => {
+        const { ctx, tree } = setup(
+            seq(
+                "seq",
+                read("count", "count"),
+                letv("l", "count", 1),
+                n("Once", "once", { children: [probe("a")] }),
+            ),
+            (path) => runOnce("rt", path),
+        );
+        tree.tick();
+        tree.tick();
+        assert.deepEqual(ctx.takeLog(), [
+            "read:count=undefined",
+            "tick:a",
+            "read:count=undefined",
+            "tick:a",
+        ]);
+    });
+
+    it("exports the output before clearing the subtree", () => {
+        const { tree } = setup(letv("l", "result", 7), (path) =>
+            runOnce("rt", path, { output: ["result"] }),
+        );
+        assert.equal(tree.tick(), "success");
+        assert.equal(tree.blackboard.get("result"), 7);
+    });
+
+    it("removes the listeners of the subtree when the run ends", () => {
+        const { ctx, tree } = setup(
+            n("Listen", "listen", { args: { event: "hit" }, children: [probe("cb")] }),
+            (path) => runOnce("rt", path),
+        );
+        tree.tick();
+        assert.equal(ctx.listenerCount("hit"), 0);
+        ctx.dispatch("hit");
+        assert.deepEqual(ctx.takeLog(), []);
+    });
+
+    it("keeps the instance while the run is running", () => {
+        const { ctx, tree } = setup(
+            seq("seq", letv("l", "x", 1), n("Wait", "w", { args: { time: 1 } }), read("r", "x")),
+            (path) => runOnce("rt", path),
+        );
+        assert.equal(tree.tick(), "running");
+        ctx.update(1);
+        assert.equal(tree.tick(), "success");
+        assert.deepEqual(ctx.takeLog(), ["read:r=1"]);
+    });
+
+    it("reuses the instance for the same path, replaces it for another", () => {
+        const ctx = new TestContext();
+        ctx.defineTree("a", probe("pa"));
+        ctx.defineTree("b", probe("pb"));
+        const tree = ctx.createTree(n("RunTree", "rt", { args: { keep: false }, input: ["path"] }));
+        for (const path of ["a", "a", "a", "b", "b", "a"]) {
+            tree.blackboard.set("path", path);
+            assert.equal(tree.tick(), "success");
+        }
+        assert.deepEqual(ctx.takeLog(), [
+            "tick:pa",
+            "tick:pa",
+            "tick:pa",
+            "tick:pb",
+            "tick:pb",
+            "tick:pa",
+        ]);
+        // a new instance loads the tree: a, then b, then a again
+        assert.equal(loadsOf(ctx, "a"), 2);
+        assert.equal(loadsOf(ctx, "b"), 1);
+    });
+
+    it("clears the subtree when the run is aborted", () => {
+        const { ctx, tree } = setup(n("ClearSpy", "sub", { args: { status: "running" } }), (path) =>
+            n("Timeout", "to", { args: { time: 1 }, children: [runOnce("rt", path)] }),
+        );
+        assert.equal(tree.tick(), "running");
+        ctx.update(1);
+        assert.equal(tree.tick(), "failure");
+        assert.deepEqual(ctx.takeLog(), ["tick:sub", "abort:sub", "clear:sub"]);
+    });
+
+    it("clears the instance with the caller", () => {
+        const { ctx, tree } = setup(n("ClearSpy", "sub", { args: { status: "running" } }), (path) =>
+            runOnce("rt", path),
+        );
+        tree.tick();
+        tree.clear();
+        assert.deepEqual(ctx.takeLog(), ["tick:sub", "abort:sub", "clear:sub"]);
+        // a new instance after the clear
+        tree.tick();
+        assert.equal(loadsOf(ctx, "sub"), 2);
+    });
+
+    it("keeps the instances by default", () => {
+        const { ctx, tree } = setup(
+            seq("seq", read("count", "count"), letv("l", "count", 1)),
+            (path) => runTree("rt", path),
+        );
+        tree.tick();
+        tree.tick();
+        assert.deepEqual(ctx.takeLog(), ["read:count=undefined", "read:count=1"]);
+    });
+});
