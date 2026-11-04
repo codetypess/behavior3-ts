@@ -66,6 +66,7 @@ static override get descriptor(): NodeDef {
             + 在独立的行为树实例中执行 \`树路径\` 指定的树，子树看不到调用方的变量
             + 开始执行时，把输入变量的值传给子树，变量名相同
             + 子树成功时，把输出变量从子树写回调用方，变量名相同；失败和 \`error\` 时不写回
+            + 输出变量是这一次执行的结果：每次开始执行前会清掉子树里的输出变量，这次没写的不会写回，调用方的变量保持不变；要跨多次执行累计的值，用别的变量名保存，结束前再赋给输出变量
             + 树还没加载时返回 \`running\`；填了 \`timeout\` 时，超时还没加载完返回 \`error\`
             + 同一个单位上，同一个节点对同一个路径复用同一个子树实例
         `,
@@ -81,6 +82,7 @@ static override get descriptor(): NodeDef {
 - 每个单位的每个 `RunTree` 节点、每个路径对应一个子树实例，缓存在 `RunTree` 自己的**私有变量**里（`Map<路径, Tree>`）。私有变量始终在根黑板（scope-design.md 第 2 节），放进 `Scope` 或条件树也一样，而且节点结束后不会被清掉。
 - 子树实例是一个持久的“子 AI”：黑板、私有变量在多次执行之间保留，`Once` 表示“这个实例只执行一次”；`Listen` 注册的监听一直有效，回调执行的就是这个实例。
 - 每次开始执行时，input 覆盖子树黑板里的同名变量。调用方的值是 `undefined` 时，删除子树里的这个变量，不留上一次的旧值。
+- 每次开始执行时，先清掉子树黑板里的 output 变量，再传 input（第 8 节）。
 - 缓存只在主树 `clear()` 时释放（第 6 节）。路径是动态的，路径种类多的话，每个单位都会缓存多个实例。
 
 ```ts
@@ -177,7 +179,12 @@ override onTick(tree: Tree<Context, unknown>): Status {
     }
 
     if (!state.started) {
-        // 开始执行：按值传参
+        // 开始执行：先清掉上一次留下的输出变量，再按值传参
+        for (const key of this.cfg.output) {
+            if (key) {
+                subtree.blackboard.unset(key);
+            }
+        }
         const keys = this.cfg.input;
         for (let i = 1; i < keys.length; i++) {
             subtree.blackboard.set(keys[i], this.input[i]);
@@ -268,6 +275,7 @@ override onAbort(tree: Tree<Context, unknown>) {
 - **递归**：treeA 里用 `RunTree` 执行 treeA，每一层都是不同的子树实例（缓存在上一层的实例上），本身没问题。无条件的递归会无限创建实例，由写树的人保证。
 - **按值传参**：input 只在开始执行时传一次。子树 running 期间，调用方的变量再变不会同步过去。
 - **导出不区分“没写过”和“清掉了”**：子树的黑板是根黑板，设成 `undefined` 就是删除，所以子树里没有的变量统一 `SKIP`，不会删除调用方的变量。
+- **output 是这一次执行的结果**：子树实例是复用的，如果不清理，这次执行没写的 output 变量还留着上一次的值，成功时会被导出，覆盖调用方在两次执行之间改过或清掉的值（比如调用方用完 `target` 就清掉，下次子树没找到目标，却又导出了上次的 `target`）。所以每次开始执行时，先清掉子树里的 output 变量：这次没写就不导出，调用方的变量保持不变，和主树里节点“没写就不动”一致。output 由调用方的 `RunTree` 声明，同一棵子树在不同地方可能导出不同的变量，所以由框架清理，不交给写子树的人。既是 input 又是 output 的变量先被清掉、再被 input 写入，结果不变。要跨多次执行累计的值（计数器等），用别的变量名保存，结束前再赋给 output 变量。
 - **性能**：每次 tick `RunTree` 都会执行一次完整的 `Tree.tick`，包括派发 `BEFORE_TICKED`、`AFTER_TICKED` 等事件。
 
 ## 9. 改动清单

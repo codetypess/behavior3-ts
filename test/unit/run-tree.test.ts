@@ -108,6 +108,59 @@ describe("RunTree data", () => {
         assert.equal(tree.blackboard.get("result"), 1);
     });
 
+    it("doesn't export the output left by the last run", () => {
+        const ctx = new TestContext();
+        // writes `target` only when `found` is passed in
+        ctx.defineTree(
+            "find",
+            n("Selector", "sel", {
+                children: [
+                    n("Sequence", "hit", {
+                        children: [
+                            n("Check", "c", { args: { value: "found" } }),
+                            letv("l", "target", "E"),
+                        ],
+                    }),
+                    probe("none"),
+                ],
+            }),
+        );
+        const tree = ctx.createTree(
+            runTree("rt", "find", { input: ["found"], output: ["target"] }),
+        );
+        tree.blackboard.set("found", true);
+        assert.equal(tree.tick(), "success");
+        assert.equal(tree.blackboard.get("target"), "E");
+        // the caller consumes the result, the next run finds nothing
+        tree.blackboard.set("target", undefined);
+        tree.blackboard.set("found", false);
+        assert.equal(tree.tick(), "success");
+        assert.equal(tree.blackboard.get("target"), undefined);
+    });
+
+    it("passes an input which is also an output", () => {
+        const { tree } = setup(
+            n("Calculate", "inc", { args: { value: "n + 1" }, output: ["n"] }),
+            (path) => runTree("rt", path, { input: ["n"], output: ["n"] }),
+        );
+        tree.blackboard.set("n", 1);
+        tree.tick();
+        assert.equal(tree.blackboard.get("n"), 2);
+        tree.tick();
+        assert.equal(tree.blackboard.get("n"), 3);
+    });
+
+    it("keeps the output written across the ticks of a run", () => {
+        const { ctx, tree } = setup(
+            seq("seq", letv("l", "result", 7), n("Wait", "w", { args: { time: 1 } })),
+            (path) => runTree("rt", path, { output: ["result"] }),
+        );
+        assert.equal(tree.tick(), "running");
+        ctx.update(1);
+        assert.equal(tree.tick(), "success");
+        assert.equal(tree.blackboard.get("result"), 7);
+    });
+
     it("passes the input by value on start", () => {
         const { ctx, tree } = setup(seq("seq", probe("p"), read("hp", "hp")), (path) =>
             runTree("rt", path, { input: ["hp", "p"] }),

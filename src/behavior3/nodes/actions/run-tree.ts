@@ -59,11 +59,19 @@ export class RunTree extends Node {
         }
 
         if (!state.started) {
+            const { blackboard } = subtree;
+            // the output is the result of this run: the value left by the last run is removed,
+            // otherwise a run not writing it would export the stale value over the caller's one
+            for (const key of this.cfg.output) {
+                if (key) {
+                    blackboard.unset(key);
+                }
+            }
             // passed by value on start, `undefined` deletes the value left by the last run
             const keys = this.cfg.input;
             const input = this.input;
             for (let i = 1; i < keys.length; i++) {
-                subtree.blackboard.set(keys[i], input[i]);
+                blackboard.set(keys[i], input[i]);
             }
             state.started = true;
         }
@@ -137,6 +145,7 @@ export class RunTree extends Node {
                 + 在独立的行为树实例中执行 \`树路径\` 指定的树，子树看不到调用方的变量
                 + 开始执行时，把输入变量的值传给子树，变量名相同
                 + 子树成功时，把输出变量从子树写回调用方，变量名相同；失败和 \`error\` 时不写回
+                + 输出变量是这一次执行的结果：每次开始执行前会清掉子树里的输出变量，这次没写的不会写回，调用方的变量保持不变；要跨多次执行累计的值，用别的变量名保存，结束前再赋给输出变量
                 + 树还没加载时返回 \`running\`；填了 \`timeout\` 时，超时还没加载完返回 \`error\`
                 + 子树抛异常时返回 \`error\`，不中断调用方
                 + 同一个单位上，同一个节点对同一个路径复用同一个子树实例，\`clear\` 时一起清掉
