@@ -148,6 +148,116 @@ describe("context events", () => {
     });
 });
 
+describe("context event cancel", () => {
+    it("removes only the listener it is returned for", () => {
+        const ctx = new TestContext();
+        const target = {};
+        const log: string[] = [];
+        const cancelA = ctx.on("e", target, () => log.push("a"), "tree");
+        ctx.on("e", target, () => log.push("b"), "tree");
+        ctx.on("e", () => log.push("c"), "tree");
+        cancelA();
+        ctx.dispatch("e", target);
+        ctx.dispatch("e");
+        assert.deepEqual(log, ["b", "c"]);
+        assert.equal(ctx.listenerCount("e"), 2);
+    });
+
+    it("does nothing when called again", () => {
+        const ctx = new TestContext();
+        const cancel = ctx.on("e", () => {}, "x");
+        cancel();
+        cancel();
+        assert.equal(ctx.listenerCount("e"), 0);
+    });
+
+    it("does nothing after off or offAll", () => {
+        const ctx = new TestContext();
+        const cancel = ctx.on("e", () => {}, "x");
+        ctx.offAll("x");
+        const log: string[] = [];
+        ctx.on("e", () => log.push("new"), "x");
+        cancel();
+        ctx.dispatch("e");
+        assert.deepEqual(log, ["new"]);
+    });
+
+    it("lets the other listeners run when cancelled during the dispatch", () => {
+        const ctx = new TestContext();
+        const log: string[] = [];
+        let cancelB = () => {};
+        ctx.on("e", () => {
+            log.push("a");
+            cancelB();
+        }, "x");
+        cancelB = ctx.on("e", () => log.push("b"), "x");
+        const cancelC = ctx.on("e", () => {
+            log.push("c");
+            cancelC();
+        }, "x");
+        ctx.dispatch("e");
+        ctx.dispatch("e");
+        // b is removed by a before its turn, c removes itself
+        assert.deepEqual(log, ["a", "c", "a"]);
+    });
+});
+
+describe("WaitForEvent listener", () => {
+    it("doesn't remove an independent Listen when aborted", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            n("Sequence", "root", {
+                children: [
+                    n("Listen", "listen", { args: { event: "go" }, children: [probe("cb")] }),
+                    n("Timeout", "to", {
+                        args: { time: 1 },
+                        children: [n("WaitForEvent", "w", { args: { event: "go" } })],
+                    }),
+                ],
+            }),
+        );
+        tree.tick();
+        ctx.update(1);
+        assert.equal(tree.tick(), "failure");
+        ctx.dispatch("go");
+        assert.deepEqual(ctx.takeLog(), ["tick:cb"]);
+        assert.equal(ctx.listenerCount("go"), 1);
+    });
+
+    it("lets two WaitForEvent wait for the same event", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            n("Parallel", "root", {
+                children: [
+                    n("WaitForEvent", "a", { args: { event: "go" } }),
+                    n("WaitForEvent", "b", { args: { event: "go" } }),
+                ],
+            }),
+        );
+        assert.equal(tree.tick(), "running");
+        ctx.dispatch("go");
+        assert.equal(tree.tick(), "success");
+        assert.equal(ctx.listenerCount("go"), 0);
+    });
+
+    it("keeps the Listen when the event arrives", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            n("Sequence", "root", {
+                children: [
+                    n("Listen", "listen", { args: { event: "go" }, children: [probe("cb")] }),
+                    n("WaitForEvent", "w", { args: { event: "go" } }),
+                ],
+            }),
+        );
+        tree.tick();
+        ctx.dispatch("go");
+        assert.equal(tree.tick(), "success");
+        ctx.dispatch("go");
+        assert.deepEqual(ctx.takeLog(), ["tick:cb", "tick:cb"]);
+    });
+});
+
 describe("node registration", () => {
     it("registers the builtin nodes", () => {
         const ctx = new TestContext();

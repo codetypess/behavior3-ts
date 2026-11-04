@@ -476,7 +476,7 @@ class RandomPick extends Node {
 
 **行为节点和条件节点**
 
-- **WaitForEvent**：用状态加 `onAbort` 移除监听。
+- **WaitForEvent**：用状态加 `onAbort` 移除监听。移除时用 `on` 返回的取消函数，只移除自己的那一个，不影响同一棵树在同一事件上的其他监听（`Listen`、其他 `WaitForEvent`）。
 - **RunTree**：在独立的 `Tree` 实例中执行另一棵树，子树看不到调用方的变量。input 在开始执行时按值传给子树，output 只在成功时从子树导出到调用方的当前作用域。同一个单位上，同一个节点对同一个路径复用一个实例，`clear` 时一起清掉。树还没加载时返回 running，`timeout` 只限制加载，加载失败时返回 error；子树的异常转成 error。声明了 `deferred`，不能放进条件树（4.4 节）。详见 [run-tree-design.md](run-tree-design.md)。
 - **Check、Calculate**：表达式支持算术、比较、逻辑、位运算、三元表达式、多层属性访问（`a.b.c`）、下标（`arr[i + 1]`）和字符串。只写一个变量名（比如 Check 的 `isDead`）时返回变量的值。引用不存在的变量时返回 error，判断变量是否存在用 IsNull/NotNull。表达式在加载时编译，编译不过时抛异常；`context.registerCode` 可以为表达式注册预先生成的函数，跳过解析。
 - 数据不对时返回 error 的情况见 3.3 节。
@@ -514,7 +514,7 @@ export class MyNode extends Node {
 - 树被 `clear()` 之后，之前绑定的回调触发时什么都不做，返回 `undefined`。`offAll` 能移除 context 上的监听和定时器，Promise 这类移除不了的回调靠这条规则，不会在清理过的树上执行。
 - 跨帧的状态用 `tree.setState`，不要存在节点实例上：节点实例被所有单位共享。
 - 一次调用里的临时数据用局部变量，不要存在节点实例的字段上。节点可能在执行中被重入：递归的 `RunTree`，或者执行中同步 tick 了同一路径的另一棵树（宿主同步派发事件、直接调用 `tick`）。框架在重入时保存并恢复 `input`、`output` 和 `json` 参数，节点自己的字段保护不了。
-- 返回 running 时启动了需要清理的东西（移动、监听、定时器），在 `onAbort` 里清理。
+- 返回 running 时启动了需要清理的东西（移动、监听、定时器），在 `onAbort` 里清理。监听用 `context.on` 返回的取消函数移除，它只移除这一个；`off(event, tree)` 会移除整棵树在这个事件上的所有监听，只适合整体清理。
 - **组合节点和装饰节点收到子节点的 `"error"` 时，要返回 `"error"`**（ErrorToFailure 这类专门处理 error 的节点除外）。框架不会替节点传递 error。
 - 数据不可信时返回 `"error"` 并打印 warning；代码 bug 用 `this.throw(msg)` 或直接抛异常。
 - `_checkOneof` 返回 `ERROR` 时，返回 `"error"`。
@@ -526,7 +526,7 @@ export class MyNode extends Node {
 
 - **黑板**：`get`、`set`（设成 `undefined` 或 `null` 时删除）、`eval(code)`。私有变量和临时变量的说明见 2.2 节。
   - `tree.blackboard` 是当前作用域：tick 之外是根黑板；`Scope` 和条件树会 fork 一个覆盖层，读取沿原型链读到外层，写入只留在覆盖层，覆盖层里设成 `undefined` 会遮住外层的变量。私有变量和临时变量始终在根黑板。详见 [scope-design.md](scope-design.md)。
-- **Context**：所有树共享，提供节点注册、树的加载和缓存（`loadTree` 由使用方实现；Promise 被 reject 时，`Tree` 记下 `loadError`，`tick()` 返回 `error`，需要重试在 `loadTree` 里实现）、时间（`time`、`update(dt)`）、定时器（`delay`）、事件（`on`、`off`、`offAll`、`dispatch`）、表达式编译（`compileCode`、`registerCode`）。
+- **Context**：所有树共享，提供节点注册、树的加载和缓存（`loadTree` 由使用方实现；Promise 被 reject 时，`Tree` 记下 `loadError`，`tick()` 返回 `error`，需要重试在 `loadTree` 里实现）、时间（`time`、`update(dt)`）、定时器（`delay`）、事件（`on`、`off`、`offAll`、`dispatch`；`on` 返回取消函数，只移除这一个监听，`off`、`offAll` 按标签批量移除）、表达式编译（`compileCode`、`registerCode`）。
 - 每个节点都要声明 `group`。`supportGroupTypes` 决定 Context 构造时注册哪些用 `registerNode` 注册的节点：Context 支持节点的某一个 group 才会注册。默认是 `["Core"]`，内置节点都属于 `Core` 分组；重写 `supportGroupTypes` 时要带上 `Core`，否则内置节点不会注册。`context.registerNode` 直接注册的节点不受 `supportGroupTypes` 限制。
 
 ## 9. 编辑器

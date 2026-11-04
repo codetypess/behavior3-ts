@@ -3,7 +3,12 @@ import { Node, NodeDef, Status } from "../../node";
 import { registerNode } from "../../register-node";
 import { Tree } from "../../tree";
 
-type WaitState = { triggered: boolean; expired: number };
+type WaitState = {
+    triggered: boolean;
+    expired: number;
+    /** Removes the listener of this node only, not the other listeners of the tree. */
+    cancel: () => void;
+};
 
 @registerNode
 export class WaitForEvent extends Node {
@@ -16,15 +21,14 @@ export class WaitForEvent extends Node {
         const state = tree.getState<WaitState>(this);
 
         if (state === undefined) {
-            const newState: WaitState = { triggered: false, expired: time + 5 };
-            const event = this.args.event;
-            tree.context.on(
-                event,
+            const newState: WaitState = { triggered: false, expired: time + 5, cancel: () => {} };
+            newState.cancel = tree.context.on(
+                this.args.event,
                 () => {
                     newState.triggered = true;
-                    tree.context.off(event, tree);
+                    newState.cancel();
                 },
-                tree
+                tree,
             );
             tree.setState(this, newState);
         } else if (state.triggered) {
@@ -38,10 +42,7 @@ export class WaitForEvent extends Node {
     }
 
     override onAbort(tree: Tree<Context, unknown>): void {
-        const state = tree.getState<WaitState>(this);
-        if (state && !state.triggered) {
-            tree.context.off(this.args.event, tree);
-        }
+        tree.getState<WaitState>(this)?.cancel();
     }
 
     static override get descriptor(): NodeDef {

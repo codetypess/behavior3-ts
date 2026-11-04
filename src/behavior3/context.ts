@@ -91,8 +91,9 @@ export abstract class Context {
      * @param event The event name to listen for
      * @param callback The function to call when the event occurs
      * @param tag The tag used to identify which listeners to remove
+     * @returns A function removing this listener only, see the other overload
      */
-    on(event: string, callback: Callback, tag: TagType): void;
+    on(event: string, callback: Callback, tag: TagType): () => void;
 
     /**
      * Registers a listener for an event on a specific target.
@@ -101,15 +102,19 @@ export abstract class Context {
      * @param target The target object to listen for the event on
      * @param callback The function to call when the event occurs
      * @param tag The tag used to identify which listeners to remove
+     * @returns A function removing this listener only: `off` and `offAll` remove all the
+     * listeners of a tag, like all the listeners of a tree. Calling it again does nothing. A
+     * callback is registered once per event and target, registering it again replaces the tag
+     * and both functions remove it.
      */
-    on(event: string, target: EventTarget, callback: Callback, tag: TagType): void;
+    on(event: string, target: EventTarget, callback: Callback, tag: TagType): () => void;
 
     on(
         event: string,
         callbackOrTarget: EventTarget | Callback,
         tagOrCallback: Callback,
         tag?: TagType,
-    ) {
+    ): () => void {
         let target: EventTarget;
         let callback: Callback;
         if (typeof callbackOrTarget === "function") {
@@ -132,6 +137,14 @@ export abstract class Context {
             listeners.set(target, targetListeners);
         }
         targetListeners.set(callback, tag);
+
+        return () => {
+            // looked up again, the maps may have been removed and created since
+            const current = this._listeners.get(event)?.get(target);
+            if (current?.delete(callback) && current.size === 0) {
+                this._listeners.get(event)!.delete(target);
+            }
+        };
     }
 
     /**
