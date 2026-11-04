@@ -2,6 +2,7 @@ export * from "./blackboard";
 export * from "./context";
 export * from "./evaluator";
 export * from "./node";
+export * from "./priority-queue";
 export * from "./register-node";
 export * from "./tree";
 

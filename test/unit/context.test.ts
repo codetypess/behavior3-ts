@@ -107,6 +107,153 @@ describe("context timers", () => {
     });
 });
 
+describe("context timer heap", () => {
+    it("runs the timers expiring at the same time in the order they are scheduled", () => {
+        const ctx = new TestContext();
+        const log: string[] = [];
+        for (const name of ["a", "b", "c", "d", "e"]) {
+            ctx.delay(1, () => log.push(name), "t");
+        }
+        ctx.delay(0.5, () => log.push("first"), "t");
+        ctx.update(1);
+        assert.deepEqual(log, ["first", "a", "b", "c", "d", "e"]);
+    });
+
+    it("replaces the timer of the same callback, keeping the new order", () => {
+        const ctx = new TestContext();
+        const log: string[] = [];
+        const a = () => log.push("a");
+        ctx.delay(1, a, "t");
+        ctx.delay(1, () => log.push("b"), "t");
+        // scheduled again: now after b
+        ctx.delay(1, a, "t");
+        ctx.update(1);
+        assert.deepEqual(log, ["b", "a"]);
+    });
+
+    it("cancels one timer with the returned function", () => {
+        const ctx = new TestContext();
+        const log: string[] = [];
+        const cancelA = ctx.delay(1, () => log.push("a"), "t");
+        ctx.delay(1, () => log.push("b"), "t");
+        cancelA();
+        cancelA();
+        ctx.update(1);
+        assert.deepEqual(log, ["b"]);
+    });
+
+    it("does nothing when cancelled after running or being replaced", () => {
+        const ctx = new TestContext();
+        let count = 0;
+        const callback = () => count++;
+        const cancelOld = ctx.delay(1, callback, "t");
+        ctx.delay(2, callback, "t");
+        cancelOld();
+        ctx.update(2);
+        assert.equal(count, 1);
+        const cancel = ctx.delay(1, callback, "t");
+        ctx.update(1);
+        cancel();
+        assert.equal(count, 2);
+    });
+
+    it("runs a timer scheduled by a timer in the same update if it has expired", () => {
+        const ctx = new TestContext();
+        const log: string[] = [];
+        ctx.delay(1, () => {
+            log.push("a");
+            ctx.delay(0, () => log.push("now"), "t");
+            ctx.delay(1, () => log.push("later"), "t");
+        }, "t");
+        ctx.delay(1, () => log.push("b"), "t");
+        ctx.update(1);
+        assert.deepEqual(log, ["a", "b", "now"]);
+        ctx.update(1);
+        assert.deepEqual(log, ["a", "b", "now", "later"]);
+    });
+
+    it("lets a timer reschedule its own callback", () => {
+        const ctx = new TestContext();
+        let count = 0;
+        const tick = () => {
+            count++;
+            ctx.delay(1, tick, "t");
+        };
+        ctx.delay(1, tick, "t");
+        ctx.update(1);
+        ctx.update(1);
+        ctx.update(1);
+        assert.equal(count, 3);
+    });
+
+    it("matches a simple sorted list on random operations", () => {
+        // the reference: the timers of the old implementation, a list sorted on insertion
+        type Ref = { name: number; callback: () => void; tag: string; expired: number };
+        let seed = 42;
+        const random = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+        const ctx = new TestContext();
+        const ref: Ref[] = [];
+        let refTime = 0;
+        const fired: number[] = [];
+        const refFired: number[] = [];
+        const callbacks: (() => void)[] = [];
+        const cancels: (() => void)[] = [];
+        for (let i = 0; i < 40; i++) {
+            const name = i;
+            callbacks.push(() => fired.push(name));
+        }
+        const refUpdate = (dt: number) => {
+            refTime += dt;
+            while (ref.length > 0 && ref[0].expired <= refTime) {
+                refFired.push(ref.shift()!.name);
+            }
+        };
+        for (let step = 0; step < 5000; step++) {
+            const op = random();
+            const name = Math.floor(random() * callbacks.length);
+            const tag = `tag${Math.floor(random() * 5)}`;
+            if (op < 0.5) {
+                const time = Math.floor(random() * 6) / 2;
+                cancels[name] = ctx.delay(time, callbacks[name], tag);
+                const old = ref.findIndex((v) => v.name === name);
+                if (old >= 0) {
+                    ref.splice(old, 1);
+                }
+                const expired = refTime + time;
+                const at = ref.findIndex((v) => v.expired > expired);
+                const entry = { name, callback: callbacks[name], tag, expired };
+                if (at >= 0) {
+                    ref.splice(at, 0, entry);
+                } else {
+                    ref.push(entry);
+                }
+            } else if (op < 0.65) {
+                cancels[name]?.();
+                // the function of a replaced timer does nothing: only the current one
+                const at = ref.findIndex((v) => v.name === name);
+                if (at >= 0 && cancels[name]) {
+                    ref.splice(at, 1);
+                }
+            } else if (op < 0.7) {
+                ctx.offAll(tag);
+                for (let i = ref.length - 1; i >= 0; i--) {
+                    if (ref[i].tag === tag) {
+                        ref.splice(i, 1);
+                    }
+                }
+            } else {
+                const dt = Math.floor(random() * 3) / 2;
+                ctx.update(dt);
+                refUpdate(dt);
+            }
+        }
+        ctx.update(100);
+        refUpdate(100);
+        assert.ok(fired.length > 1000);
+        assert.deepEqual(fired, refFired);
+    });
+});
+
 describe("context events", () => {
     it("dispatches to the listeners of the target", () => {
         const ctx = new TestContext();
@@ -199,6 +346,61 @@ describe("context event cancel", () => {
         ctx.dispatch("e");
         // b is removed by a before its turn, c removes itself
         assert.deepEqual(log, ["a", "c", "a"]);
+    });
+});
+
+describe("context tag index", () => {
+    it("moves a listener registered again to its new tag", () => {
+        const ctx = new TestContext();
+        const log: string[] = [];
+        const callback = () => log.push("a");
+        const cancelOld = ctx.on("e", callback, "x");
+        ctx.on("e", callback, "y");
+        ctx.offAll("x");
+        cancelOld();
+        ctx.dispatch("e");
+        assert.deepEqual(log, ["a"]);
+        ctx.offAll("y");
+        ctx.dispatch("e");
+        assert.deepEqual(log, ["a"]);
+        assert.equal(ctx.listenerCount("e"), 0);
+    });
+
+    it("off removes the listeners of the tag on that event only", () => {
+        const ctx = new TestContext();
+        const log: string[] = [];
+        ctx.on("e1", () => log.push("e1"), "x");
+        ctx.on("e2", () => log.push("e2"), "x");
+        ctx.delay(1, () => log.push("timer"), "x");
+        ctx.off("e1", "x");
+        ctx.dispatch("e1");
+        ctx.dispatch("e2");
+        ctx.update(1);
+        assert.deepEqual(log, ["e2", "timer"]);
+    });
+
+    it("offAll during a dispatch lets the remaining listeners of other tags run", () => {
+        const ctx = new TestContext();
+        const log: string[] = [];
+        ctx.on("e", () => {
+            log.push("a");
+            ctx.offAll("x");
+        }, "y");
+        ctx.on("e", () => log.push("x1"), "x");
+        ctx.on("e", () => log.push("b"), "y");
+        ctx.dispatch("e");
+        assert.deepEqual(log, ["a", "b"]);
+    });
+
+    it("forgets a tag once it has nothing left", () => {
+        const ctx = new TestContext();
+        const tag = {};
+        const cancel = ctx.on("e", () => {}, tag);
+        ctx.delay(1, () => {}, tag);
+        cancel();
+        ctx.update(1);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        assert.equal((ctx as any)._subscriptions.has(tag), false);
     });
 });
 

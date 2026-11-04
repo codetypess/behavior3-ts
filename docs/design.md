@@ -526,7 +526,7 @@ export class MyNode extends Node {
 
 - **黑板**：`get`、`set`（设成 `undefined` 或 `null` 时删除）、`eval(code)`。私有变量和临时变量的说明见 2.2 节。
   - `tree.blackboard` 是当前作用域：tick 之外是根黑板；`Scope` 和条件树会 fork 一个覆盖层，读取沿原型链读到外层，写入只留在覆盖层，覆盖层里设成 `undefined` 会遮住外层的变量。私有变量和临时变量始终在根黑板。详见 [scope-design.md](scope-design.md)。
-- **Context**：所有树共享，提供节点注册、树的加载和缓存（`loadTree` 由使用方实现；Promise 被 reject 时，`Tree` 记下 `loadError`，`tick()` 返回 `error`，需要重试在 `loadTree` 里实现）、时间（`time`、`update(dt)`）、定时器（`delay`）、事件（`on`、`off`、`offAll`、`dispatch`；`on` 返回取消函数，只移除这一个监听，`off`、`offAll` 按标签批量移除）、表达式编译（`compileCode`、`registerCode`）。
+- **Context**：所有树共享，提供节点注册、树的加载和缓存（`loadTree` 由使用方实现；Promise 被 reject 时，`Tree` 记下 `loadError`，`tick()` 返回 `error`，需要重试在 `loadTree` 里实现）、时间（`time`、`update(dt)`）、定时器（`delay`）、事件（`on`、`off`、`offAll`、`dispatch`）、表达式编译（`compileCode`、`registerCode`）。`on` 和 `delay` 返回取消函数，只移除这一个监听或定时器；`off`、`offAll` 按标签批量移除。
 - 每个节点都要声明 `group`。`supportGroupTypes` 决定 Context 构造时注册哪些用 `registerNode` 注册的节点：Context 支持节点的某一个 group 才会注册。默认是 `["Core"]`，内置节点都属于 `Core` 分组；重写 `supportGroupTypes` 时要带上 `Core`，否则内置节点不会注册。`context.registerNode` 直接注册的节点不受 `supportGroupTypes` 限制。
 
 ## 9. 编辑器
@@ -551,7 +551,14 @@ export class MyNode extends Node {
 
 - 每帧执行 running 路径上的所有节点，调用次数等于树的深度。
 - `json` 以外的对象参数在构造时解析一次；状态用数组下标存储并保持紧凑；`Node.tick` 的热路径不创建闭包；没有子节点带 lower/both 时不做抢占检查。
-- 基准测试：`npm run bench`（`test/bench.ts`），1000 个实例各 tick 1000 次，不在 `npm test` 里，改运行时前后手动对比。两棵树：`deep` 是 8 层、running 路径上有 Parallel 和 Timeout、每帧求值 Check/Calculate 表达式；`preempt` 是带 self/both 条件、敌人周期性出现和离开的抢占场景。参考值（Apple M5，Node 26）：deep 约 1050 ns/tick，preempt 约 700 ns/tick。
+- Context 按标签索引监听和定时器，`offAll` 只遍历这个标签自己的；定时器放在通用的优先队列 `PriorityQueue`（二叉堆，`priority-queue.ts`，库里导出，宿主可以复用）里，按到期时间和注册顺序排序（同一时刻到期的按注册顺序执行），注册和取出是 O(log n)，取消只做标记，弹出时跳过，已取消的超过一半时整理一次。
+- 基准测试：`npm run bench`（`test/bench.ts`），不在 `npm test` 里，改运行时前后手动对比。每个场景 1000 个单位共享一棵树（和游戏里一样只有一份节点图），各 tick 1000 次，输出耗时、GC 次数和耗时、堆用量的变化：
+  - `deep`：8 层、running 路径上有 Parallel 和 Timeout，只测沿 running 路径往下走（进入 running 后组合节点直接接着执行 running 的子节点，表达式不再求值）；
+  - `preempt`：带 self/both 条件、敌人周期性出现和离开的抢占场景；
+  - `eval`：每帧从头执行完，每帧求值 Check/Calculate 表达式；
+  - `scope`、`runtree`、`callback`：每帧进入 `Scope`、通过 `RunTree` 执行小子树、派发事件触发 `Listen` 的回调；
+  - `context`：1000／4000／16000 个单位各自注册监听和定时器，测注册并触发定时器、逐个 `offAll` 清理的耗时。
+  - 参考值（Apple M5，Node 26）：deep 约 810 ns/tick（没有 GC），preempt 约 590，eval 约 980，scope 约 580，runtree、callback 约 320；context 16000 个单位注册并触发约 15 ms，清理约 12 ms。
 
 ## 11. 测试
 

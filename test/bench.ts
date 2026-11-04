@@ -222,4 +222,41 @@ await run("callback", {
     update: (_tick, unit) => unit.tree.context.dispatch("hit", unit),
     steps: 1,
 });
+
+/**
+ * Context with many units: every unit registers listeners and timers with its own tag. Times
+ * registering the timers and firing them, and clearing the units one by one with `offAll`.
+ */
+const runContext = (units: number) => {
+    const register = (ctx: TestContext, tags: object[]) => {
+        tags.forEach((tag, i) => {
+            ctx.on(`event${i % 8}`, () => {}, tag);
+            ctx.on(`event${i % 8}`, tag, () => {}, tag);
+            ctx.delay(1 + (i % 100) / 10, () => {}, tag);
+            ctx.delay(20 + (i % 7), () => {}, tag);
+        });
+    };
+
+    let ctx = new TestContext();
+    let tags = Array.from({ length: units }, () => ({}));
+    let start = performance.now();
+    register(ctx, tags);
+    ctx.update(100);
+    const timers = performance.now() - start;
+
+    ctx = new TestContext();
+    tags = Array.from({ length: units }, () => ({}));
+    register(ctx, tags);
+    start = performance.now();
+    tags.forEach((tag) => ctx.offAll(tag));
+    const clear = performance.now() - start;
+
+    console.log(
+        `${"context".padEnd(10)} ${String(units).padStart(6)} units: ` +
+            `delay and fire ${timers.toFixed(1).padStart(7)} ms, clear ${clear.toFixed(1).padStart(7)} ms`,
+    );
+};
+for (const units of [1000, 4000, 16000]) {
+    runContext(units);
+}
 gc.disconnect();
