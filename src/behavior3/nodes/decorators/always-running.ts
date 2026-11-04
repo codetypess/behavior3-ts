@@ -17,10 +17,10 @@ export class AlwaysRunning extends Node {
             group: ["Core"],
             children: 1,
             status: ["running"],
-            desc: "始终返回运行中状态",
+            desc: "总是返回运行中",
             doc: `
                 + 只能有一个子节点，多个仅执行第一个
-                + 子节点返回 \`error\` 时返回 \`error\`，其它情况都返回 \`running\`
+                + 每次执行都执行子节点，子节点返回 \`error\` 时返回 \`error\`，其它情况都返回 \`running\`
             `,
         };
     }

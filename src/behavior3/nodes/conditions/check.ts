@@ -35,11 +35,11 @@ export class Check extends Node {
             group: ["Core"],
             children: 0,
             status: ["success", "failure"],
-            desc: "检查True或False",
-            args: [{ name: "value", type: "expr", desc: "值" }],
+            desc: "表达式为真时返回成功",
+            args: [{ name: "value", type: "expr", desc: "表达式" }],
             doc: `
-                + 做简单数值公式判定，返回 \`success\` 或 \`failure\`
-                + 求值出错时（比如引用不存在的变量），返回 \`error\`
+                + 用黑板变量计算 \`表达式\`，结果为真时返回 \`success\`，否则返回 \`failure\`
+                + 求值出错时（比如引用了不存在的变量），返回 \`error\`
             `,
         };
     }

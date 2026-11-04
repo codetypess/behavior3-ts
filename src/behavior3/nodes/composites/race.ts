@@ -53,11 +53,12 @@ export class Race extends Node {
             group: ["Core"],
             status: ["|success", "&failure", "|running"],
             children: -1,
-            desc: "竞争执行",
+            desc: "并行执行所有子节点，任一成功即成功",
             doc: `
-                + 并行执行所有子节点
-                + 当有子节点返回 \`success\` 时，立即返回 \`success\` 状态，并中断其他子节点
-                + 如果所有子节点返回 \`failure\` 则返回 \`failure\``,
+                + 每次执行时，依次执行所有还没失败的子节点
+                + 有子节点返回 \`success\` 时，立即返回 \`success\`，并中止其他还在运行的子节点
+                + 所有子节点都返回 \`failure\` 时，返回 \`failure\`
+                + 有子节点返回 \`error\` 时，立即返回 \`error\``,
         };
     }
 }

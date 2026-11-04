@@ -77,11 +77,12 @@ export class Switch extends Node {
             group: ["Core"],
             children: -1,
             status: ["|success", "|failure", "|running"],
-            desc: "分支执行",
+            desc: "执行第一个条件满足的 Case 分支",
             doc: `
-                + 按顺序测试 \`Case\` 节点的判断条件（第一个子节点）
-                + 若测试返回 \`success\` 则执行 \`Case\` 第二个子节点，并返回子节点的执行状态
-                + 若没有判断为 \`success\` 的 \`Case\` 节点，则返回 \`failure\`
+                + 子节点只能是 \`Case\`
+                + 按顺序执行每个 \`Case\` 的条件（第一个子节点），第一个返回 \`success\` 的 \`Case\`，执行它的分支（第二个子节点），返回分支的状态
+                + 没有条件返回 \`success\` 时，返回 \`failure\`
+                + 条件返回 \`error\` 时，立即返回 \`error\`
             `,
         };
     }
@@ -109,12 +110,10 @@ export class Case extends Node {
             group: ["Core"],
             children: 2,
             status: ["&success", "|failure", "|running"],
-            desc: "分支选择",
+            desc: "Switch 的一个分支",
             doc: `
-                + 必须有两个子节点
-                + 第一个子节点为判断条件
-                + 第二个子节点为判断为 \`success\` 时执行的节点
-                + 此节点只用来把判断条件和执行节点组织在一起，不会真正执行，而是交由 \`Switch\` 节点来执行
+                + 只能放在 \`Switch\` 下，必须有两个子节点：条件、分支
+                + 只用来把条件和分支组织在一起，本身不会执行，由 \`Switch\` 直接执行它的子节点
                 + 此节点上配置的条件（conditions）不会生效
             `,
         };

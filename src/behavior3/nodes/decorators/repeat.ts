@@ -30,7 +30,7 @@ export class Repeat extends Node {
             group: ["Core"],
             children: 1,
             status: ["success", "|running", "|failure"],
-            desc: "循环执行",
+            desc: "重复执行子节点指定次数",
             input: ["循环次数?"],
             args: [
                 {
@@ -42,8 +42,9 @@ export class Repeat extends Node {
             ],
             doc: `
                 + 只能有一个子节点，多个仅执行第一个
-                + 当子节点返回 \`failure\` 或 \`error\` 时，退出循环并返回该状态
-                + 执行完所有子节点后，返回 \`success\`
+                + 重复执行子节点 \`循环次数\` 次，都成功后返回 \`success\`；没有配置次数时一直循环
+                + 子节点返回 \`failure\` 或 \`error\` 时，退出循环并返回该状态
+                + 子节点返回 \`running\` 时返回 \`running\`，下次继续这一轮
             `,
         };
     }

@@ -49,13 +49,13 @@ export class Filter extends Node {
             group: ["Core"],
             children: 1,
             status: ["success", "failure", "|running"],
-            desc: "返回满足条件的元素",
-            input: ["输入数组"],
-            output: ["变量", "新数组"],
+            desc: "筛选出子节点返回成功的元素",
+            input: ["数组"],
+            output: ["当前元素", "新数组"],
             doc: `
                 + 只能有一个子节点，多个仅执行第一个
-                + 遍历输入数组，将当前元素写入\`变量\`，满足条件的元素放入新数组
-                + 只有当新数组不为空时，才返回 \`success\`
+                + 遍历 \`数组\`，把每个元素写入 \`当前元素\` 后执行子节点，子节点返回 \`success\` 的元素放入 \`新数组\`
+                + \`新数组\` 不为空时返回 \`success\`；为空，或者输入数组为空时，返回 \`failure\`
                 + 输入不是数组，或者子节点返回 \`error\` 时，返回 \`error\`
             `,
         };

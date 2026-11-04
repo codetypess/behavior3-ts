@@ -36,13 +36,12 @@ export class RandomIndex extends Node {
             group: ["Core"],
             children: 0,
             status: ["success", "failure"],
-            desc: "随机返回输入的其中一个!",
-            input: ["输入目标"],
-            output: ["随机目标", "索引?"],
+            desc: "从数组中随机取一个元素",
+            input: ["数组"],
+            output: ["随机元素", "索引?"],
             doc: `
-                + 合法元素不包括 \`undefined\` 和 \`null\`
-                + 在输入数组中，随机返回其中一个
-                + 当输入数组为空时，或者没有合法元素，返回 \`failure\`
+                + 从 \`数组\` 中随机取一个元素写入 \`随机元素\`，它的下标写入 \`索引\`，返回 \`success\`
+                + 数组为空，或者取到的元素为 \`undefined\` 或 \`null\` 时，返回 \`failure\`
                 + 输入不是数组时，返回 \`error\`
             `,
         };

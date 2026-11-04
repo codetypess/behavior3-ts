@@ -43,17 +43,17 @@ export class SetField extends Node {
             group: ["Core"],
             children: 0,
             status: ["success", "failure"],
-            desc: "设置对象字段值",
-            input: ["输入对象", "字段(field)?", "值(value)?"],
+            desc: "设置对象的字段值",
+            input: ["对象", "字段名?", "字段值?"],
             args: [
-                { name: "field", type: "string?", desc: "字段(field)", oneof: "字段(field)" },
-                { name: "value", type: "json?", desc: "值(value)", oneof: "值(value)" },
+                { name: "field", type: "string?", desc: "字段名", oneof: "字段名" },
+                { name: "value", type: "json?", desc: "字段值", oneof: "字段值" },
             ],
             doc: `
-                + 对输入对象设置 \`field\` 和 \`value\`
-                + 输入参数1必须为对象，否则返回 \`error\`
-                + 如果 \`field\` 不为 \`string\` 或 \`number\`，也返回 \`error\`
-                + 如果 \`value\` 为 \`undefined\` 或 \`null\`, 则删除 \`field\` 的值
+                + 设置 \`对象[字段名] = 字段值\`（直接修改原对象），返回 \`success\`
+                + \`字段名\` 和 \`字段值\` 都可以用参数或输入变量指定
+                + 字段值为 \`undefined\` 或 \`null\` 时，删除该字段
+                + 输入不是对象，或者字段名不是 \`string\` 或 \`number\` 时，返回 \`error\`
             `,
         };
     }

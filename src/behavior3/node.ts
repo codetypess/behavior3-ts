@@ -128,7 +128,7 @@ export interface NodeDef<GroupType extends string = string> {
     children?: -1 | 0 | 1 | 2 | 3;
     /**
      * Whether the composite node uses the order of its children as priority and checks
-     * `lower`/`both` conditions of the children on the left of the running child (preemption).
+     * `lower`/`both` conditions of the children above the running child (preemption).
      *
      * A node declaring this must call `_checkPreempt` in `onTick`.
      */
@@ -156,7 +156,7 @@ export interface NodeDef<GroupType extends string = string> {
  * When the conditions of a node are checked after entering it:
  * + `none`: only checked when entering the node.
  * + `self`: also checked every tick while the node is running, aborts the node if false.
- * + `lower`: also checked by the preemptive parent while a lower priority sibling (on the right) is running,
+ * + `lower`: also checked by the preemptive parent while a lower priority sibling (below it) is running,
  *   aborts the sibling and runs this node if true.
  * + `both`: `self` and `lower`.
  */
@@ -601,10 +601,10 @@ export abstract class Node {
     }
 
     /**
-     * Checks whether a child on the left of the running child can preempt it, only available
+     * Checks whether a child above the running child can preempt it, only available
      * for the node declared `preemptive` in its descriptor.
      *
-     * Checks the children with `lower`/`both` conditions from left to right, evaluating all
+     * Checks the children with `lower`/`both` conditions from top to bottom, evaluating all
      * of their conditions, the first one passed wins.
      *
      * @param tree The behavior tree instance

@@ -19,6 +19,9 @@ export class Now extends Node {
             status: ["success"],
             desc: "获取当前时间",
             output: ["当前时间"],
+            doc: `
+                + 把 \`context.time\` 写入 \`当前时间\`，返回 \`success\`
+            `,
         };
     }
 }

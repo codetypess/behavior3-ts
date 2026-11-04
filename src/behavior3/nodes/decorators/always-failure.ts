@@ -17,12 +17,12 @@ export class AlwaysFailure extends Node {
             group: ["Core"],
             children: 1,
             status: ["failure", "|running"],
-            desc: "始终返回失败",
+            desc: "子节点结束后总是返回失败",
             doc: `
                 + 只能有一个子节点，多个仅执行第一个
-                + 当子节点返回 \`running\` 时，返回 \`running\`
-                + 当子节点返回 \`error\` 时，返回 \`error\`：数据不可信，不能当成失败；要忽略 \`error\`，在子节点外面先包一层 \`ErrorToFailure\`
                 + 子节点返回 \`success\` 或 \`failure\` 时，都返回 \`failure\`
+                + 子节点返回 \`running\` 时，返回 \`running\`
+                + 子节点返回 \`error\` 时，返回 \`error\`：数据不可信，不能当成失败；要忽略 \`error\`，在子节点外面先包一层 \`ErrorToFailure\`
             `,
         };
     }

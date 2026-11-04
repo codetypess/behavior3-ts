@@ -26,12 +26,12 @@ export class Includes extends Node {
             group: ["Core"],
             children: 0,
             status: ["success", "failure"],
-            desc: "判断元素是否在数组中",
+            desc: "数组包含元素时返回成功",
             input: ["数组", "元素"],
             doc: `
-                + 若输入的数组不是数组，返回 \`error\`
-                + 若输入的元素不合法，返回 \`failure\`
-                + 只有数组包含元素时返回 \`success\`，否则返回 \`failure\`
+                + \`数组\` 包含 \`元素\`（按 \`===\` 比较）时返回 \`success\`，否则返回 \`failure\`
+                + \`元素\` 为 \`undefined\` 或 \`null\` 时，返回 \`failure\`
+                + \`数组\` 不是数组时，返回 \`error\`
             `,
         };
     }

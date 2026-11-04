@@ -24,11 +24,11 @@ export class Push extends Node {
             group: ["Core"],
             children: 0,
             status: ["success", "failure"],
-            desc: "向数组中添加元素",
+            desc: "向数组末尾添加元素",
             input: ["数组", "元素"],
             doc: `
-                + 当变量\`数组\`不是数组类型时返回 \`error\`
-                + 其余返回 \`success\`
+                + 把 \`元素\` 追加到 \`数组\` 末尾（直接修改原数组），返回 \`success\`
+                + \`数组\` 不是数组时，返回 \`error\`
             `,
         };
     }

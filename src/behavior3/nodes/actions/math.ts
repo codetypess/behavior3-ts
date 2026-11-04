@@ -240,19 +240,23 @@ export class MathNode extends Node {
             name: "Math",
             type: "Action",
             group: ["Core"],
-            desc: "执行数学运算",
+            desc: "数学运算，结果写入输出变量",
             doc: `
-                + 优先使用参数1、参数2，没有配置时依次使用输入
-                + 参数个数不对、最小值大于最大值、结果为 NaN 时，返回 \`error\`
+                + 按 \`运算类型\` 计算，结果写入 \`结果\`，返回 \`success\`
+                + 操作数：第一、二个优先用参数1、参数2，没有配置时依次取输入变量，其余输入变量追加在后面
+                + 一个操作数：绝对值、取整、四舍五入、符号、三角函数、平方根、自然对数
+                + 两个操作数：反正切2（y, x）、幂运算（底数, 指数）、随机整数和随机浮点数（最小值, 最大值）
+                + 任意个操作数：最小值、最大值、求和、平均值、乘积；随机数不需要操作数，返回 [0, 1) 的随机数
+                + 操作数个数不对、最小值大于最大值、结果为 NaN 时，返回 \`error\`
             `,
-            input: ["参数..."],
+            input: ["操作数..."],
             output: ["结果"],
             status: ["success", "failure"],
             args: [
                 {
                     name: "op",
                     type: "string",
-                    desc: "数学运算类型",
+                    desc: "运算类型",
                     options: [
                         {
                             source: [
@@ -289,12 +293,12 @@ export class MathNode extends Node {
                 {
                     name: "value1",
                     type: "float?",
-                    desc: "参数1（优先使用）",
+                    desc: "参数1（优先于输入）",
                 },
                 {
                     name: "value2",
                     type: "float?",
-                    desc: "参数2（优先使用）",
+                    desc: "参数2（优先于输入）",
                 },
             ],
         };

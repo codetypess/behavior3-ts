@@ -33,7 +33,7 @@ export class Timeout extends Node {
             group: ["Core"],
             children: 1,
             status: ["|success", "|running", "failure"],
-            desc: "超时",
+            desc: "限时执行子节点，超时返回失败",
             input: ["超时时间?"],
             args: [
                 {
@@ -44,11 +44,9 @@ export class Timeout extends Node {
                 },
             ],
             doc: `
-                + 在限定时间内执行子节点，超时则失败
                 + 只能有一个子节点，多个仅执行第一个
-                + 当子节点执行超时或返回 \`failure\` 时，返回 \`failure\`
-                + 当子节点返回 \`error\` 时，返回 \`error\`
-                + 其余情况返回子节点的执行状态
+                + 子节点运行超过 \`超时时间\` 时，中止子节点并返回 \`failure\`
+                + 没有超时前，返回子节点的状态
             `,
         };
     }

@@ -15,18 +15,24 @@ export type ObjectType = { [k: string]: unknown };
 export type EventTarget = object | string | number;
 export type TagType = unknown;
 
-/** A registered listener, indexed by its tag. */
+/**
+ * A registered listener, indexed by its tag. Once removed or replaced, its target, callback and
+ * tag are released: a cancel function kept by the caller doesn't keep them alive.
+ */
 type Listener = {
     readonly event: string;
-    readonly target: EventTarget;
-    readonly callback: Callback;
-    readonly tag: TagType;
+    target: EventTarget | undefined;
+    callback: Callback | undefined;
+    tag: TagType;
 };
 
-/** A scheduled timer, indexed by its tag and its callback. */
+/**
+ * A scheduled timer, indexed by its tag and its callback. Once run or cancelled, its callback and
+ * tag are released: it may stay in the heap until popped or compacted.
+ */
 type Timer = {
-    readonly callback: Callback;
-    readonly tag: TagType;
+    callback: Callback | undefined;
+    tag: TagType;
     readonly expired: number;
     /** The order of registration, the timers expiring at the same time run in this order. */
     readonly seq: number;
@@ -107,19 +113,21 @@ export abstract class Context {
         this._time += dt;
 
         const timers = this._timers;
-        for (
-            let timer = timers.peek();
-            timer && timer.expired <= this._time;
-            timer = timers.peek()
-        ) {
-            timers.pop();
+        for (let timer = timers.peek(); timer; timer = timers.peek()) {
             if (timer.done) {
+                // a cancelled timer is dropped once on top, expired or not
+                timers.pop();
                 this._cancelledTimers--;
-                continue;
+            } else if (timer.expired <= this._time) {
+                timers.pop();
+                const callback = timer.callback!;
+                this._finishTimer(timer);
+                callback();
+            } else {
+                break;
             }
-            this._finishTimer(timer);
-            timer.callback();
         }
+        this._compactTimers();
     }
 
     /**
@@ -176,6 +184,7 @@ export abstract class Context {
         const old = targetListeners.get(callback);
         if (old) {
             this._unindex(old);
+            Context._releaseListener(old);
         }
         const listener: Listener = { event, target, callback, tag };
         targetListeners.set(callback, listener);
@@ -250,25 +259,39 @@ export abstract class Context {
 
     /** Removes the listener if it is still registered, not replaced or removed. */
     private _removeListener(listener: Listener) {
-        const listeners = this._listeners.get(listener.event);
-        const targetListeners = listeners?.get(listener.target);
-        if (targetListeners?.get(listener.callback) !== listener) {
+        const { target, callback } = listener;
+        if (callback === undefined) {
+            // removed or replaced, released
             return;
         }
-        targetListeners.delete(listener.callback);
+        const listeners = this._listeners.get(listener.event);
+        const targetListeners = listeners?.get(target!);
+        if (targetListeners?.get(callback) !== listener) {
+            return;
+        }
+        targetListeners.delete(callback);
         if (targetListeners.size === 0) {
-            listeners!.delete(listener.target);
+            listeners!.delete(target!);
         }
         this._unindex(listener);
+        Context._releaseListener(listener);
     }
 
-    /** The timer has run or is cancelled. */
+    private static _releaseListener(listener: Listener) {
+        listener.target = undefined;
+        listener.callback = undefined;
+        listener.tag = undefined;
+    }
+
+    /** The timer has run or is cancelled, its callback and tag are released. */
     private _finishTimer(timer: Timer) {
         timer.done = true;
-        if (this._timerOf.get(timer.callback) === timer) {
-            this._timerOf.delete(timer.callback);
+        if (this._timerOf.get(timer.callback!) === timer) {
+            this._timerOf.delete(timer.callback!);
         }
         this._unindex(timer);
+        timer.callback = undefined;
+        timer.tag = undefined;
     }
 
     /** Cancels a pending timer, it stays in the heap until popped or compacted. */
@@ -278,6 +301,11 @@ export abstract class Context {
         }
         this._finishTimer(timer);
         this._cancelledTimers++;
+        this._compactTimers();
+    }
+
+    /** Removes the cancelled timers from the heap when they are more than half of it. */
+    private _compactTimers() {
         const timers = this._timers;
         if (this._cancelledTimers > 32 && this._cancelledTimers > timers.size >> 1) {
             timers.retain((v) => !v.done);

@@ -48,7 +48,7 @@ export class Delay extends Node {
             children: 1,
             status: ["success"],
             deferred: true,
-            desc: "延时执行子节点",
+            desc: "延时执行子节点，自身立即返回成功",
             input: ["延时时间?"],
             args: [
                 {
@@ -60,11 +60,12 @@ export class Delay extends Node {
                 {
                     name: "cacheVars",
                     type: "string[]?",
-                    desc: "暂存环境变量",
+                    desc: "暂存的变量",
                 },
             ],
             doc: `
-                + 当延时触发时，执行第一个子节点，多个仅执行第一个
+                + 注册一个定时器后立即返回 \`success\`，延时到了再执行第一个子节点，多个仅执行第一个
+                + \`暂存的变量\`：注册时记下这些变量的值，执行子节点时临时换回这些值，执行完再恢复
                 + 如果子节点返回 \`running\`，会被中止
                 + 子节点返回 \`error\` 或抛异常时只打印日志，不影响行为树正在运行的分支
                 + 回调在注册时所在的作用域中执行：放在 \`Scope\` 或条件树里时，回调里写的变量只留在那个作用域里，\`Scope\` 结束后也不会写回外层；要修改外层变量，把它放在 \`Scope\` 外面

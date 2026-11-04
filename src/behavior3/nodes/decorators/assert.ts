@@ -23,18 +23,18 @@ export class Assert extends Node {
             group: ["Core"],
             children: 1,
             status: ["success"],
-            desc: "断言",
+            desc: "断言子节点不会失败，失败时报错",
             args: [
                 {
                     name: "message",
                     type: "string",
-                    desc: "消息",
+                    desc: "失败时的提示",
                 },
             ],
             doc: `
                 + 只能有一个子节点，多个仅执行第一个
-                + 当子节点返回 \`failure\` 时，打印 message 并返回 \`error\`
-                + 其余情况返回子节点的执行状态
+                + 子节点返回 \`failure\` 时，打印 \`失败时的提示\` 并返回 \`error\`
+                + 其余情况返回子节点的状态
             `,
         };
     }

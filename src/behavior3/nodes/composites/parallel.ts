@@ -70,18 +70,18 @@ export class Parallel extends Node {
             group: ["Core"],
             status: ["|success", "|failure", "|running"],
             children: -1,
-            desc: "并行执行",
+            desc: "并行执行所有子节点，按成功数量决定结果",
             args: [
                 {
                     name: "successCount",
                     type: "int?",
-                    desc: "成功数量（达到即成功，默认全部）",
+                    desc: "成功数量（默认全部）",
                 },
             ],
             doc: `
-                + 每次执行时，执行所有还没结束的子节点
-                + 成功的子节点达到 \`successCount\`（默认全部子节点）时，立即返回 \`success\`
-                + 失败的子节点多到不可能达到 \`successCount\` 时，立即返回 \`failure\`
+                + 每次执行时，依次执行所有还没结束的子节点
+                + 成功的子节点达到 \`成功数量\`（默认全部子节点）时，立即返回 \`success\`
+                + 失败的子节点多到不可能达到 \`成功数量\` 时，立即返回 \`failure\`
                 + 有子节点返回 \`error\` 时，立即返回 \`error\`
                 + 返回时中止其他还在运行的子节点`,
         };

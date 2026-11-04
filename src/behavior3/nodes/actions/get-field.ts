@@ -40,21 +40,21 @@ export class GetField extends Node {
             group: ["Core"],
             children: 0,
             status: ["success", "failure"],
-            desc: "获取对象的字段值",
+            desc: "读取对象的字段值",
             args: [
                 {
                     name: "field",
                     type: "string?",
-                    desc: "字段(field)",
-                    oneof: "字段(field)",
+                    desc: "字段名",
+                    oneof: "字段名",
                 },
             ],
-            input: ["对象", "字段(field)?"],
-            output: ["字段值(value)"],
+            input: ["对象", "字段名?"],
+            output: ["字段值"],
             doc: `
-                + 合法元素不包括 \`undefined\` 和 \`null\`
-                + 只有获取到合法元素时候才会返回 \`success\`，否则返回 \`failure\`
-                + 输入不是对象，或者 \`field\` 不为 \`string\` 或 \`number\` 时，返回 \`error\`
+                + 读取 \`对象[字段名]\` 写入 \`字段值\`，\`字段名\` 可以用参数或输入变量指定
+                + 字段值不为 \`undefined\` 或 \`null\` 时返回 \`success\`，否则返回 \`failure\`
+                + 输入不是对象，或者字段名不是 \`string\` 或 \`number\` 时，返回 \`error\`
             `,
         };
     }

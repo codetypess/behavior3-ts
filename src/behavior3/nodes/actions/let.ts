@@ -20,20 +20,21 @@ export class Let extends Node {
             group: ["Core"],
             children: 0,
             status: ["success"],
-            desc: "定义新的变量名",
-            input: ["已存在变量名?"],
+            desc: "给变量赋值",
+            input: ["源变量?"],
             args: [
                 {
                     name: "value",
                     type: "json?",
-                    desc: "值(value)",
-                    oneof: "已存在变量名",
+                    desc: "值",
+                    oneof: "源变量",
                 },
             ],
-            output: ["新变量名"],
+            output: ["目标变量"],
             doc: `
-                + 如果有输入变量，则给已有变量重新定义一个名字
-                + 如果\`值(value)\`为 \`null\`，则清除变量
+                + 把 \`值\` 或 \`源变量\` 的值写入 \`目标变量\`，返回 \`success\`
+                + 用 \`源变量\` 时，相当于给已有的值换一个变量名
+                + 都没有配置，或者 \`值\` 为 \`null\` 时，清除 \`目标变量\`
             `,
         };
     }

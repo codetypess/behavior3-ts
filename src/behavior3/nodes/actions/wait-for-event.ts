@@ -52,14 +52,19 @@ export class WaitForEvent extends Node {
             group: ["Core"],
             children: 0,
             status: ["success", "running"],
-            desc: "等待事件触发",
+            desc: "等待事件触发后返回成功",
             args: [
                 {
                     name: "event",
                     type: "string",
-                    desc: "事件名称",
+                    desc: "事件名",
                 },
             ],
+            doc: `
+                + 开始执行时侦听 Context 上的 \`事件名\`（\`dispatch\` 时不带目标），事件触发前返回 \`running\`
+                + 事件触发后，下一次执行返回 \`success\`
+                + 被中止或打断时移除侦听
+            `,
         };
     }
 }

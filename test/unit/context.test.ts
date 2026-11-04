@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import v8 from "node:v8";
+import vm from "node:vm";
 import { Blackboard, getNodeDescriptors, Node, NodeDef, registerNode, Status } from "../../src/behavior3";
 import { n, probe, TestContext } from "./helpers";
 
@@ -346,6 +348,104 @@ describe("context event cancel", () => {
         ctx.dispatch("e");
         // b is removed by a before its turn, c removes itself
         assert.deepEqual(log, ["a", "c", "a"]);
+    });
+});
+
+describe("context releases finished subscriptions", () => {
+    v8.setFlagsFromString("--expose-gc");
+    const gc = vm.runInNewContext("gc") as () => void;
+
+    /** Collects the garbage, the WeakRef targets are released after the current job. */
+    const collect = async () => {
+        await new Promise((resolve) => setImmediate(resolve));
+        gc();
+        await new Promise((resolve) => setImmediate(resolve));
+        gc();
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const heapItems = (ctx: TestContext) => (ctx as any)._timers._items as { callback?: unknown; tag?: unknown }[];
+
+    it("drops the cancelled timers on top before they expire", () => {
+        const ctx = new TestContext();
+        for (let i = 0; i < 40; i++) {
+            ctx.delay(1, () => {}, "short");
+        }
+        // fewer than the compaction threshold
+        const cancels = Array.from({ length: 20 }, () => ctx.delay(1000, () => {}, "long"));
+        cancels.forEach((cancel) => cancel());
+        ctx.update(1);
+        assert.equal(heapItems(ctx).length, 0);
+    });
+
+    it("compacts after the update when the cancelled timers are many", () => {
+        const ctx = new TestContext();
+        for (let i = 0; i < 100; i++) {
+            ctx.delay(1, () => {}, "short");
+        }
+        const cancels = Array.from({ length: 40 }, () => ctx.delay(1000, () => {}, "long"));
+        ctx.delay(500, () => {}, "live");
+        cancels.forEach((cancel) => cancel());
+        ctx.update(1);
+        // the live timer is on top, the cancelled ones behind it are compacted
+        assert.equal(heapItems(ctx).length, 1);
+    });
+
+    it("releases the callback and tag of a cancelled timer left in the heap", () => {
+        const ctx = new TestContext();
+        ctx.delay(1, () => {}, "live");
+        const cancel = ctx.delay(1000, () => {}, {});
+        cancel();
+        const items = heapItems(ctx);
+        assert.equal(items.length, 2);
+        assert.ok(items.some((v) => v.callback === undefined && v.tag === undefined));
+    });
+
+    it("lets the owners of the cancelled timers be collected", async () => {
+        const ctx = new TestContext();
+        for (let i = 0; i < 1000; i++) {
+            ctx.delay(1, () => {}, "short");
+        }
+        const refs: WeakRef<object>[] = [];
+        const cancels = Array.from({ length: 500 }, () => {
+            const owner = { data: [1, 2, 3] };
+            refs.push(new WeakRef(owner));
+            return ctx.delay(1000, () => owner.data.length, owner);
+        });
+        cancels.forEach((cancel) => cancel());
+        ctx.update(1);
+        await collect();
+        assert.equal(refs.filter((ref) => ref.deref()).length, 0);
+    });
+
+    it("lets a fired timer's callback be collected while its cancel function is kept", async () => {
+        const ctx = new TestContext();
+        let ref: WeakRef<object> | undefined;
+        const cancel = (() => {
+            const owner = {};
+            ref = new WeakRef(owner);
+            return ctx.delay(1, () => owner, "t");
+        })();
+        ctx.update(1);
+        await collect();
+        assert.equal(ref!.deref(), undefined);
+        cancel();
+    });
+
+    it("lets a removed listener's target and callback be collected while its cancel function is kept", async () => {
+        const ctx = new TestContext();
+        const refs: WeakRef<object>[] = [];
+        const cancels = [0, 1].map((i) => {
+            const target = {};
+            const owner = {};
+            refs.push(new WeakRef(target), new WeakRef(owner));
+            return ctx.on("e", target, () => owner, i === 0 ? "a" : "b");
+        });
+        ctx.offAll("a");
+        cancels[1]();
+        await collect();
+        assert.equal(refs.filter((ref) => ref.deref()).length, 0);
+        cancels.forEach((cancel) => cancel());
     });
 });
 

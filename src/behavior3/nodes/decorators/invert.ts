@@ -20,12 +20,11 @@ export class Invert extends Node {
             group: ["Core"],
             children: 1,
             status: ["!success", "!failure", "|running"],
-            desc: "反转子节点运行结果",
+            desc: "反转子节点的成功和失败",
             doc: `
                 + 只能有一个子节点，多个仅执行第一个
-                + 当子节点返回 \`success\` 时返回 \`failure\`
-                + 当子节点返回 \`failure\` 时返回 \`success\`
-                + 当子节点返回 \`running\` 或 \`error\` 时原样返回，\`error\` 不会被反转
+                + 子节点返回 \`success\` 时返回 \`failure\`，返回 \`failure\` 时返回 \`success\`
+                + 子节点返回 \`running\` 或 \`error\` 时原样返回，\`error\` 不会被反转
             `,
         };
     }

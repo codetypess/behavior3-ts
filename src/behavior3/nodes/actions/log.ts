@@ -61,12 +61,12 @@ export class Log extends Node {
             children: 0,
             status: ["success"],
             desc: "打印日志",
-            input: ["日志?"],
+            input: ["附加内容?"],
             args: [
                 {
                     name: "message",
                     type: "string",
-                    desc: "日志",
+                    desc: "日志内容",
                 },
                 {
                     name: "level",
@@ -86,6 +86,10 @@ export class Log extends Node {
                     ],
                 },
             ],
+            doc: `
+                + 按 \`日志级别\` 打印 \`日志内容\`，配置了 \`附加内容\` 时把它的值打印在后面
+                + 总是返回 \`success\`
+            `,
         };
     }
 }

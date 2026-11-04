@@ -197,7 +197,7 @@ export class RunTree extends Node {
             children: 0,
             status: ["success", "failure", "running"],
             deferred: true,
-            desc: "执行另一棵行为树",
+            desc: "在独立实例中执行另一棵行为树",
             input: ["树路径?", "输入变量..."],
             output: ["输出变量..."],
             args: [

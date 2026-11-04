@@ -36,12 +36,12 @@ export class Calculate extends Node {
             group: ["Core"],
             children: 0,
             status: ["success"],
-            desc: "简单的数值公式计算",
-            args: [{ name: "value", type: "expr", desc: "计算公式" }],
+            desc: "计算表达式，结果写入输出变量",
+            args: [{ name: "value", type: "expr", desc: "表达式" }],
             output: ["计算结果"],
             doc: `
-                + 做简单的数值公式计算，返回结果到输出
-                + 求值出错时（比如引用不存在的变量），返回 \`error\`
+                + 用黑板变量计算 \`表达式\`，结果写入 \`计算结果\`，返回 \`success\`
+                + 求值出错时（比如引用了不存在的变量），返回 \`error\`
             `,
         };
     }

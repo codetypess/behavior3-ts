@@ -48,12 +48,12 @@ export class IfElse extends Node {
             group: ["Core"],
             children: 3,
             status: ["|success", "|failure", "|running"],
-            desc: "条件执行",
+            desc: "根据条件执行两个分支之一",
             doc: `
-                + 必须有三个子节点
-                + 第一个子节点为条件节点
-                + 第二个子节点为条件为 \`success\` 时执行的节点
-                + 第三个子节点为条件为 \`failure\` 时执行的节点,
+                + 必须有三个子节点：条件、成功分支、失败分支
+                + 先执行条件，返回 \`success\` 时执行成功分支，返回 \`failure\` 时执行失败分支
+                + 返回所执行分支的状态
+                + 条件返回 \`error\` 时，不执行任何分支，返回 \`error\`
             `,
         };
     }

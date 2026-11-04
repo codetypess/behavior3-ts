@@ -21,11 +21,11 @@ export class ErrorToFailure extends Node {
             group: ["Core"],
             children: 1,
             status: ["|success", "|failure", "|running"],
-            desc: "错误转失败",
+            desc: "把子节点的错误当成失败",
             doc: `
                 + 只能有一个子节点，多个仅执行第一个
-                + 当子节点返回 \`error\` 时，返回 \`failure\`，父节点可以接着执行其它分支
-                + 其余情况返回子节点的执行状态
+                + 子节点返回 \`error\` 时，返回 \`failure\`，父节点可以接着执行其它分支
+                + 其余情况返回子节点的状态
                 + 不处理异常：子树里抛异常时，仍然中断整棵树
             `,
         };

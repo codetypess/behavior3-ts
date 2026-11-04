@@ -55,12 +55,14 @@ export class Selector extends Node {
             group: ["Core"],
             children: -1,
             preemptive: true,
-            desc: "选择执行",
+            desc: "依次执行子节点，直到有一个成功",
             status: ["|success", "&failure", "|running"],
             doc: `
-                + 一直往下执行，直到有子节点返回 \`success\` 则返回 \`success\`
-                + 若全部节点返回 \`failure\` 则返回 \`failure\`
-                + 子节点的条件配置了 \`lower\` 或 \`both\` 时，右侧的子节点运行中，每次执行都会检查它的条件，满足则打断右侧的子节点，转而执行它`,
+                + 从上到下执行子节点，有子节点返回 \`success\` 时，立即返回 \`success\`
+                + 子节点返回 \`failure\` 时，接着执行下一个；全部返回 \`failure\` 时，返回 \`failure\`
+                + 子节点返回 \`running\` 时返回 \`running\`，下次从这个子节点继续执行
+                + 子节点返回 \`error\` 时，立即返回 \`error\`
+                + 抢占：子节点的条件配置了 \`lower\` 或 \`both\` 时，它下方的子节点运行中，每次执行都会先检查它的条件，满足则中止下方的子节点，转而执行它`,
         };
     }
 }

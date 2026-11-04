@@ -16,7 +16,7 @@ export class JustFailure extends Node {
             group: ["Core"],
             children: 0,
             status: ["failure"],
-            desc: "什么都不干，只返回失败",
+            desc: "不做任何事，直接返回失败",
         };
     }
 }

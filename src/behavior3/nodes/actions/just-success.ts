@@ -17,7 +17,10 @@ export class JustSuccess extends Node {
             group: ["Core"],
             children: 0,
             status: ["success"],
-            desc: "什么都不干，只返回成功",
+            desc: "不做任何事，直接返回成功",
+            doc: `
+                + 常用作占位，满足节点对子节点数量的要求，比如 \`IfElse\` 的空分支
+            `,
         };
     }
 }

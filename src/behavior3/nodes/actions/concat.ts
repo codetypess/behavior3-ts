@@ -24,11 +24,12 @@ export class Concat extends Node {
             group: ["Core"],
             children: 0,
             status: ["success", "failure"],
-            desc: "将两个输入合并为一个数组，并返回新数组",
+            desc: "拼接两个数组",
             input: ["数组1", "数组2"],
             output: ["新数组"],
             doc: `
-                + 如果输入不是数组，则返回 \`error\`
+                + 把 \`数组1\` 和 \`数组2\` 拼接成新数组写入 \`新数组\`，原数组不变，返回 \`success\`
+                + 任一输入不是数组时，返回 \`error\`
             `,
         };
     }

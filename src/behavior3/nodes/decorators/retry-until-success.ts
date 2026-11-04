@@ -50,20 +50,22 @@ export class RetryUntilSuccess extends Node {
             group: ["Core"],
             children: 1,
             status: ["|success", "failure", "running"],
-            desc: "一直尝试直到子节点返回成功",
+            desc: "重试子节点，直到它返回成功",
             input: ["最大尝试次数?"],
             args: [
                 {
                     name: "count",
                     type: "int?",
                     desc: "最大尝试次数",
+                    oneof: "最大尝试次数",
                 },
             ],
             doc: `
                 + 只能有一个子节点，多个仅执行第一个
-                + 只有当子节点返回 \`success\` 时，才返回 \`success\`；返回 \`failure\` 或 \`running\` 时返回 \`running\` 状态
-                + 当子节点返回 \`error\` 时返回 \`error\`，不再重试
-                + 如果设定了尝试次数，超过指定次数则返回 \`failure\``,
+                + 子节点返回 \`success\` 时，返回 \`success\`
+                + 子节点返回 \`failure\` 时，下次执行再试一次，期间返回 \`running\`
+                + 子节点返回 \`error\` 时，返回 \`error\`，不再重试
+                + 尝试了 \`最大尝试次数\` 次子节点仍然没有返回 \`success\` 时，返回 \`failure\`；没有配置时不限次数`,
         };
     }
 }

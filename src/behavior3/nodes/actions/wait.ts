@@ -32,7 +32,7 @@ export class Wait extends Node {
             group: ["Core"],
             children: 0,
             status: ["success", "running"],
-            desc: "等待",
+            desc: "等待一段时间后返回成功",
             input: ["等待时间?"],
             args: [
                 {
@@ -44,9 +44,13 @@ export class Wait extends Node {
                 {
                     name: "random",
                     type: "float?",
-                    desc: "随机范围",
+                    desc: "随机浮动范围",
                 },
             ],
+            doc: `
+                + 等待期间返回 \`running\`，时间到了返回 \`success\`
+                + 配置了 \`随机浮动范围\` 时，实际等待时间在 \`等待时间 ± 随机浮动范围 / 2\` 内随机
+            `,
         };
     }
 }

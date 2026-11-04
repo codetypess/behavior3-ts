@@ -23,8 +23,11 @@ export class NotNull extends Node {
             group: ["Core"],
             children: 0,
             status: ["success", "failure"],
-            desc: "判断变量是否存在",
-            input: ["判断的变量"],
+            desc: "变量不为空时返回成功",
+            input: ["变量"],
+            doc: `
+                + \`变量\` 不为 \`undefined\` 和 \`null\` 时返回 \`success\`，否则返回 \`failure\`
+            `,
         };
     }
 }

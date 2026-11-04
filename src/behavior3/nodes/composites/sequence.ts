@@ -40,11 +40,11 @@ export class Sequence extends Node {
             group: ["Core"],
             children: -1,
             status: ["&success", "|failure", "|running"],
-            desc: "顺序执行",
+            desc: "依次执行子节点，直到有一个失败",
             doc: `
-                + 一直往下执行，只有当所有子节点都返回 \`success\`, 才返回 \`success\`
-                + 若子节点返回 \`failure\`，则直接返回 \`failure\` 状态
-                + 其余情况返回 \`running\` 状态
+                + 从上到下执行子节点，所有子节点都返回 \`success\` 时，返回 \`success\`
+                + 子节点返回 \`failure\` 或 \`error\` 时，立即返回该状态，不再执行后面的子节点
+                + 子节点返回 \`running\` 时返回 \`running\`，下次从这个子节点继续执行
             `,
         };
     }
