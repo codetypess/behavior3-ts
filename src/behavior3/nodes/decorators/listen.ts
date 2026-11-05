@@ -47,8 +47,10 @@ export class Listen extends Node {
     override onTick(tree: Tree<Context, unknown>): Status {
         let [target] = this.input;
         const args = this.args;
+        // an event of the tree itself, the child still runs while the tree is torn down
+        const lifecycle = this._isBuiltinEvent(args.event);
 
-        if (this._isBuiltinEvent(args.event)) {
+        if (lifecycle) {
             if (target !== undefined) {
                 this.warn(`invalid target ${target} for builtin event ${args.event}`);
             }
@@ -58,8 +60,17 @@ export class Listen extends Node {
         // the callback runs in the scope where it is registered, even if the scope has ended
         const callback = (eventTarget?: EventTarget) => {
             return tree.bindCallback((...eventArgs: unknown[]) => {
+                if (!lifecycle && tree.__tearingDown) {
+                    // the tree is being interrupted or cleared: neither the output nor the child
+                    if (tree.debug) {
+                        this.warn(
+                            `event '${args.event}' skipped: the tree is being interrupted or cleared`,
+                        );
+                    }
+                    return;
+                }
                 this._processOutput(tree, eventTarget, ...eventArgs);
-                tree.__tickInCallback(this.children[0]);
+                tree.__tickInCallback(this.children[0], undefined, lifecycle);
             });
         };
         if (target !== undefined) {

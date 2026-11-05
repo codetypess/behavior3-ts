@@ -111,12 +111,6 @@ export class Tree<C extends Context, Owner> {
      * listeners or `onAbort`) does nothing.
      */
     private _interrupting: boolean = false;
-    /**
-     * `INTERRUPTED` is dispatched, only the abort is left: the nodes of a callback meanwhile (like
-     * from an event dispatched in the rest of a bound callback) don't run on the tree about to be
-     * aborted. Its listeners still run their callbacks, like `Listen(INTERRUPTED)`.
-     */
-    private _abortPending: boolean = false;
     /** How many times the tree is cleared, a callback bound before a clear is skipped. */
     private _clearCount: number = 0;
     /** The tick count when the node is ticked last time, only recorded in debug mode. */
@@ -355,10 +349,19 @@ export class Tree<C extends Context, Owner> {
         this._executing++;
         try {
             this.context.__dispatchIsolated(this.path, TreeEvent.INTERRUPTED, this);
-            this._abortPending = true;
         } finally {
             this._exitExecution();
         }
+    }
+
+    /**
+     * @private The tree is being interrupted or cleared: from `interrupt` or `clear` until the
+     * nodes are aborted or cleared. The callbacks meanwhile (like of an event dispatched by an
+     * `INTERRUPTED` listener, `onAbort` or `onClear`) don't tick the nodes of the tree, except
+     * `Listen` on the events of the tree itself (`INTERRUPTED`, `CLEANED`).
+     */
+    get __tearingDown() {
+        return this._interrupting || this._pendingClear || this._clearing;
     }
 
     /**
@@ -368,13 +371,19 @@ export class Tree<C extends Context, Owner> {
      *
      * @param scope The scope to tick the node in, the current scope by default: the bound scope in
      * a callback from `bindCallback`, the root blackboard in a callback outside the tick.
+     * @param lifecycle A callback of an event of the tree itself (like `Listen(CLEANED)`), which
+     * ticks the node even while the tree is torn down (`__tearingDown`).
      */
-    __tickInCallback(node: Node, scope: Blackboard = this._scope) {
+    __tickInCallback(node: Node, scope: Blackboard = this._scope, lifecycle: boolean = false) {
+        if (!lifecycle && this.__tearingDown) {
+            if (this.debug) {
+                node.warn("not ticked in a callback: the tree is being interrupted or cleared");
+            }
+            return;
+        }
         const runningNode = this.__runningNode;
         const outer = this.__stopScope;
-        // interrupted or cleared, not aborted yet (like an event dispatched in the rest of a bound
-        // callback): the nodes don't run on the tree about to be aborted
-        const stop: StopScope = { stopped: this._abortPending || this._pendingClear, outer };
+        const stop: StopScope = { stopped: false, outer };
         this.__stopScope = stop;
 
         const outerScope = this.__swapScope(scope);
@@ -554,7 +563,6 @@ export class Tree<C extends Context, Owner> {
         const values = this._rootBlackboard.values;
         this._status = this._tickException ? "exception" : "interrupted";
         this._tickException = false;
-        this._abortPending = false;
         // the whole tree is aborted from the root blackboard
         const outer = this.__swapScope(this._rootBlackboard);
         try {

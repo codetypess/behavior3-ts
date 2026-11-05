@@ -324,10 +324,7 @@ class BoundTick extends Node {
 const running = (id: string) => probe(id, { args: { status: "running" } });
 const listenE = (child = probe("cb")) => n("BindListen", "listen", { args: { event: "e", key: "k" }, children: [child] });
 
-/**
- * The order of the steps. The tests marked "current" are the behaviors planned to change (the
- * callbacks skipped while a clear is pending).
- */
+/** The order of the steps. */
 describe("lifecycle order", () => {
     it("aborts after a Delay callback restores its cacheVars", () => {
         const ctx = new TestContext();
@@ -417,14 +414,15 @@ describe("lifecycle order", () => {
         assert.deepEqual(ctx.takeLog(), []);
     });
 
-    it("runs the callbacks of an event dispatched by an INTERRUPTED listener, before the abort", () => {
+    it("doesn't tick the nodes of a callback of an event dispatched by an INTERRUPTED listener", () => {
         const ctx = new TestContext();
         const tree = ctx.createTree(n("Parallel", "par", { children: [running("p"), listenE()] }));
         assert.equal(tree.tick(), "running");
         ctx.on(TreeEvent.INTERRUPTED, tree, () => ctx.dispatch("e"), "test");
         ctx.takeLog();
         tree.interrupt();
-        assert.deepEqual(ctx.takeLog(), ["cb:listen=undefined", "tick:cb", "abort:p"]);
+        // the callback is called, its nodes don't run on the tree being interrupted
+        assert.deepEqual(ctx.takeLog(), ["cb:listen=undefined", "abort:p"]);
     });
 
     it("runs the children of Listen(CLEANED) and Listen(INTERRUPTED) in a clear", () => {
@@ -444,14 +442,14 @@ describe("lifecycle order", () => {
         assert.deepEqual(ctx.takeLog(), ["tick:cleaned", "tick:interrupted", "abort:p"]);
     });
 
-    it("current: runs the callbacks of an event dispatched by a CLEANED listener", () => {
+    it("doesn't tick the nodes of a callback of an event dispatched by a CLEANED listener", () => {
         const ctx = new TestContext();
         const tree = ctx.createTree(n("Parallel", "par", { children: [running("p"), listenE()] }));
         assert.equal(tree.tick(), "running");
         ctx.on(TreeEvent.CLEANED, tree, () => ctx.dispatch("e"), "test");
         ctx.takeLog();
         tree.clear();
-        assert.deepEqual(ctx.takeLog(), ["cb:listen=undefined", "tick:cb", "abort:p"]);
+        assert.deepEqual(ctx.takeLog(), ["cb:listen=undefined", "abort:p"]);
     });
 
     it("doesn't tick the nodes of a callback triggered after a clear in the tick", () => {
@@ -543,5 +541,74 @@ describe("lifecycle order", () => {
         assert.deepEqual(ctx.takeLog(), ["abort:p"]);
         assert.deepEqual(events, ["interrupted", "cleaned"]);
         assert.equal(tree.status, "success");
+    });
+
+    it("doesn't tick the nodes of a callback of an event dispatched by onAbort or onClear", () => {
+        for (const hook of ["onAbort", "onClear"] as const) {
+            const ctx = new TestContext();
+            const tree = ctx.createTree(n("Parallel", "par", { children: [running("p"), listenE()] }));
+            assert.equal(tree.tick(), "running");
+            const p = tree.root!.children[0];
+            p[hook] = () => ctx.dispatch("e");
+            ctx.takeLog();
+            if (hook === "onAbort") {
+                tree.interrupt();
+            } else {
+                tree.clear();
+            }
+            const aborted = hook === "onClear" ? ["abort:p"] : [];
+            assert.deepEqual(ctx.takeLog(), [...aborted, "cb:listen=undefined"], hook);
+            // the tree goes on after it
+            assert.equal(tree.tick(), "running");
+            ctx.dispatch("e");
+            assert.ok(ctx.takeLog().includes("tick:cb"), hook);
+        }
+    });
+
+    it("skips Listen of a business event while torn down, not Listen of the events of the tree", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            n("Parallel", "par", {
+                children: [
+                    running("p"),
+                    n("Listen", "lc", {
+                        args: { event: TreeEvent.CLEANED },
+                        children: [n("Sequence", "s", { children: [probe("cleaned"), n("Emit", "emit", { args: { event: "e" } })] })],
+                    }),
+                    n("Listen", "le", { args: { event: "e" }, output: ["target"], children: [probe("e")] }),
+                ],
+            }),
+        );
+        assert.equal(tree.tick(), "running");
+        tree.debug = true;
+        tree.blackboard.set("target", "kept");
+        const seen: unknown[] = [];
+        ctx.on("e", () => seen.push("host"), "test");
+        ctx.takeLog();
+        const { warn } = captureConsole(() => tree.clear());
+        // Listen(CLEANED) runs, the event it dispatches reaches the host but not Listen(e)
+        assert.deepEqual(ctx.takeLog(), ["tick:cleaned", "abort:p"]);
+        assert.deepEqual(seen, ["host"]);
+        assert.ok(warn.some((w) => /Listen#le: event 'e' skipped: the tree is being interrupted or cleared/.test(w)), warn.join("\n"));
+    });
+
+    it("doesn't write the output of Listen skipped while interrupted", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            n("Parallel", "par", {
+                children: [running("p"), n("Listen", "le", { args: { event: "e" }, output: ["", "arg"], children: [probe("e")] })],
+            }),
+        );
+        assert.equal(tree.tick(), "running");
+        ctx.on(TreeEvent.INTERRUPTED, tree, () => ctx.dispatch("e", undefined, 7), "test");
+        ctx.takeLog();
+        const { warn } = captureConsole(() => tree.interrupt());
+        assert.deepEqual(ctx.takeLog(), ["abort:p"]);
+        assert.equal(tree.blackboard.get("arg"), undefined);
+        // no warning out of debug mode
+        assert.deepEqual(warn, []);
+        assert.equal(tree.tick(), "running");
+        ctx.dispatch("e", undefined, 7);
+        assert.equal(tree.blackboard.get("arg"), 7);
     });
 });
