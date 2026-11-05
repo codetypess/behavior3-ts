@@ -820,20 +820,21 @@ describe("scope when interrupted", () => {
         assert.equal(tree.blackboard, tree.__rootBlackboard);
     });
 
-    it("ticks from the root blackboard when ticked in a bound callback", () => {
+    it("can't be ticked in a bound callback", () => {
         const ctx = new TestContext();
         const tree = ctx.createTree(read("r", "x"));
-        tree.blackboard.set("x", 9);
         const inner = tree.blackboard.fork();
-        inner.set("x", 1);
         const bound = tree.__withScope(inner, () =>
             tree.bindCallback(() => {
-                tree.tick();
+                assert.equal(tree.executing, true);
+                assert.throws(() => tree.tick(), /is executing a callback/);
                 return tree.blackboard;
             }),
         );
         assert.equal(bound(), inner);
-        assert.deepEqual(ctx.takeLog(), ["read:r=9"]);
+        assert.deepEqual(ctx.takeLog(), []);
+        assert.equal(tree.executing, false);
+        assert.equal(tree.blackboard, tree.__rootBlackboard);
     });
 });
 

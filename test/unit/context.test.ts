@@ -159,19 +159,36 @@ describe("context timer heap", () => {
         assert.equal(count, 2);
     });
 
-    it("runs a timer scheduled by a timer in the same update if it has expired", () => {
+    it("runs a timer scheduled by a timer in the next update, even if it has expired", () => {
         const ctx = new TestContext();
         const log: string[] = [];
         ctx.delay(1, () => {
             log.push("a");
             ctx.delay(0, () => log.push("now"), "t");
+            ctx.delay(-1, () => log.push("negative"), "t");
             ctx.delay(1, () => log.push("later"), "t");
         }, "t");
         ctx.delay(1, () => log.push("b"), "t");
         ctx.update(1);
-        assert.deepEqual(log, ["a", "b", "now"]);
+        assert.deepEqual(log, ["a", "b"]);
+        ctx.update(0);
+        assert.deepEqual(log, ["a", "b", "now", "negative"]);
         ctx.update(1);
-        assert.deepEqual(log, ["a", "b", "now", "later"]);
+        assert.deepEqual(log, ["a", "b", "now", "negative", "later"]);
+    });
+
+    it("doesn't loop on a timer rescheduling itself with a delay of 0", () => {
+        const ctx = new TestContext();
+        let count = 0;
+        const tick = () => {
+            count++;
+            ctx.delay(0, tick, "t");
+        };
+        ctx.delay(0, tick, "t");
+        ctx.update(0);
+        assert.equal(count, 1);
+        ctx.update(0);
+        assert.equal(count, 2);
     });
 
     it("lets a timer reschedule its own callback", () => {
@@ -294,6 +311,71 @@ describe("context events", () => {
         ctx.offAll("x");
         assert.equal(ctx.listenerCount("e1"), 0);
         assert.equal(ctx.listenerCount("e2"), 1);
+    });
+
+    it("calls the listeners registered when the dispatch starts", () => {
+        const ctx = new TestContext();
+        const log: string[] = [];
+        const added = () => log.push("added");
+        ctx.on("e", () => {
+            log.push("a");
+            ctx.on("e", added, "x");
+            ctx.off("e", "removed");
+        }, "x");
+        ctx.on("e", () => log.push("removed"), "removed");
+        ctx.on("e", () => log.push("b"), "x");
+        ctx.dispatch("e");
+        assert.deepEqual(log.splice(0), ["a", "b"]);
+        // registered again by "a": replaced, still called once
+        ctx.dispatch("e");
+        assert.deepEqual(log.splice(0), ["a", "b", "added"]);
+    });
+
+    it("calls a listener removed and registered again by a listener once", () => {
+        const ctx = new TestContext();
+        const log: string[] = [];
+        const x = () => log.push("x");
+        const cancel = ctx.on("e", x, "x");
+        const cancelY = ctx.on("e", () => {
+            log.push("y");
+            cancel();
+            ctx.on("e", x, "x");
+            cancelY();
+        }, "y");
+        // removed then registered again: a new listener, after "y"
+        ctx.dispatch("e");
+        assert.deepEqual(log.splice(0), ["x", "y"]);
+        ctx.dispatch("e");
+        assert.deepEqual(log.splice(0), ["x"]);
+    });
+
+    it("lets a nested dispatch call the listeners registered before it", () => {
+        const ctx = new TestContext();
+        const log: string[] = [];
+        ctx.on("e", (depth: number) => {
+            log.push(`a${depth}`);
+            if (depth === 0) {
+                ctx.on("e", (d: number) => log.push(`late${d}`), "x");
+                ctx.dispatch("e", undefined, 1);
+            }
+        }, "x");
+        ctx.dispatch("e", undefined, 0);
+        assert.deepEqual(log, ["a0", "a1", "late1"]);
+    });
+
+    it("doesn't loop on a listener registering a new listener of the event", () => {
+        const ctx = new TestContext();
+        let count = 0;
+        const listen = () =>
+            ctx.on("e", () => {
+                count++;
+                listen();
+            }, "x");
+        listen();
+        ctx.dispatch("e");
+        assert.equal(count, 1);
+        ctx.dispatch("e");
+        assert.equal(count, 3);
     });
 });
 

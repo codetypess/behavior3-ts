@@ -98,6 +98,8 @@ onAbort(tree): void      // 节点自己清理：停止移动、移除监听和�
 | `EXCEPTION` | 节点抛异常，参数是 `(error: Error, node: Node)` |
 | `CLEANED` | 调用 `tree.clear()`；在执行中调用时，等执行退出后才派发 |
 
+监听抛异常时打印日志（带树的路径、事件名和调用栈），其余的监听照常调用，树也照常继续，和 `onAbort`、`onClear` 抛异常的处理一样。比如 `CLEANED` 的监听出错，清理仍然完整做完。
+
 ## 3. error 与异常
 
 | | error 状态 | 异常 |
@@ -195,6 +197,7 @@ if (field === ERROR) return "error";
 - 子树执行完后，中止其中所有 running 的节点（回调里的子树不能跨帧运行）。
 - 事件在主树 tick 过程中同步派发时，也按回调处理，不影响这一次 tick。
 - 回调里的节点主动调用 `tree.interrupt()` 仍然中断整棵树，回调结束后生效（在 tick 过程中则在这一帧结束时生效）。
+- 回调执行中不能 tick 这棵树，和在节点里 tick 自己的树一样抛异常：回调的节点还在栈上，整棵树不能在它中间再跑一遍。tick 别的树可以，但子树的回调 tick 了调用方、调用方又通过 `RunTree` 回到这棵子树时，`RunTree` 在写入输入之前抛异常，日志的调用栈里能看到整个环。`tree.executing` 表示树正在执行（tick 或回调）。
 
 ## 4. 条件与打断
 
@@ -526,7 +529,7 @@ export class MyNode extends Node {
 
 - **黑板**：`get`、`set`（设成 `undefined` 或 `null` 时删除）、`eval(code)`。私有变量和临时变量的说明见 2.2 节。
   - `tree.blackboard` 是当前作用域：tick 之外是根黑板；`Scope` 和条件树会 fork 一个覆盖层，读取沿原型链读到外层，写入只留在覆盖层，覆盖层里设成 `undefined` 会遮住外层的变量。私有变量和临时变量始终在根黑板。详见 [scope-design.md](scope-design.md)。
-- **Context**：所有树共享，提供节点注册、树的加载和缓存（`loadTree` 由使用方实现；Promise 被 reject 时，`Tree` 记下 `loadError`，`tick()` 返回 `error`，需要重试在 `loadTree` 里实现）、时间（`time`、`update(dt)`）、定时器（`delay`）、事件（`on`、`off`、`offAll`、`dispatch`）、表达式编译（`compileCode`、`registerCode`）。`on` 和 `delay` 返回取消函数，只移除这一个监听或定时器；`off`、`offAll` 按标签批量移除。
+- **Context**：所有树共享，提供节点注册、树的加载和缓存（`loadTree` 由使用方实现；Promise 被 reject 时，`Tree` 记下 `loadError`，`tick()` 返回 `error`，需要重试在 `loadTree` 里实现）、时间（`time`、`update(dt)`）、定时器（`delay`）、事件（`on`、`off`、`offAll`、`dispatch`）、表达式编译（`compileCode`、`registerCode`）。`on` 和 `delay` 返回取消函数，只移除这一个监听或定时器；`off`、`offAll` 按标签批量移除。`dispatch` 只调用派发开始时已经注册的监听：派发过程中新注册的从下一次派发开始调用，移除的不再调用，同一个回调重新注册（替换）时保留原来的位置，这次照常调用一次。`update` 过程中新安排的定时器最早在下一次 `update` 触发，即使延迟是 0（负的延迟按 0 算），回调每次重新安排自己也不会在一次 `update` 里死循环。
 - 每个节点都要声明 `group`。`supportGroupTypes` 决定 Context 构造时注册哪些用 `registerNode` 注册的节点：Context 支持节点的某一个 group 才会注册。默认是 `["Core"]`，内置节点都属于 `Core` 分组；重写 `supportGroupTypes` 时要带上 `Core`，否则内置节点不会注册。`context.registerNode` 直接注册的节点不受 `supportGroupTypes` 限制。
 
 ## 9. 编辑器

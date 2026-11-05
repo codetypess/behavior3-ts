@@ -24,6 +24,8 @@ type Listener = {
     target: EventTarget | undefined;
     callback: Callback | undefined;
     tag: TagType;
+    /** The order of registration, a listener registered during a dispatch is not called by it. */
+    readonly seq: number;
 };
 
 /**
@@ -34,7 +36,10 @@ type Timer = {
     callback: Callback | undefined;
     tag: TagType;
     readonly expired: number;
-    /** The order of registration, the timers expiring at the same time run in this order. */
+    /**
+     * The order of scheduling, the timers expiring at the same time run in this order. A timer
+     * scheduled during an `update` doesn't run in it.
+     */
     readonly seq: number;
     /** Cancelled or fired: left in the heap until popped or compacted. */
     done: boolean;
@@ -42,7 +47,7 @@ type Timer = {
 
 type Subscription = Listener | Timer;
 
-const isTimer = (sub: Subscription): sub is Timer => "seq" in sub;
+const isTimer = (sub: Subscription): sub is Timer => "expired" in sub;
 
 /** The timers expiring first run first, those expiring at the same time in registration order. */
 const compareTimers = (a: Timer, b: Timer) => a.expired - b.expired || a.seq - b.seq;
@@ -61,6 +66,7 @@ export abstract class Context {
     /** The timers left in the heap after being cancelled, compacted when they are many. */
     private _cancelledTimers: number = 0;
     private _timerSeq: number = 0;
+    private _listenerSeq: number = 0;
     private readonly _listeners: Map<string, Map<EventTarget, Map<Callback, Listener>>> = new Map();
     /** The listeners and the pending timers of every tag, `offAll` only visits its own. */
     private readonly _subscriptions: Map<TagType, Set<Subscription>> = new Map();
@@ -83,9 +89,11 @@ export abstract class Context {
 
     /**
      * Schedules a callback to be executed after a specified delay, same callback will be replaced.
-     * The timers expiring at the same time run in the order they are scheduled.
+     * The timers expiring at the same time run in the order they are scheduled. A timer scheduled
+     * while the timers are running (in a timer callback) runs in the next `update` at the earliest,
+     * even with a delay of 0.
      *
-     * @param time The delay in seconds before the callback is executed
+     * @param time The delay in seconds before the callback is executed, a negative delay is 0
      * @param callback The function to call after the delay
      * @param tag The tag used to identify which timers to remove
      * @returns A function cancelling this timer only, calling it again or after the timer has
@@ -99,7 +107,8 @@ export abstract class Context {
         const timer: Timer = {
             callback,
             tag,
-            expired: time + this._time,
+            // not negative: a timer expiring before the ones of this `update` would stop it early
+            expired: Math.max(time, 0) + this._time,
             seq: this._timerSeq++,
             done: false,
         };
@@ -112,13 +121,18 @@ export abstract class Context {
     update(dt: number): void {
         this._time += dt;
 
+        // the timers scheduled from now on wait for the next update: a callback scheduling itself
+        // with a delay of 0 doesn't loop forever. Such a timer on top means no expired timer
+        // scheduled before is left, they come first (expired earlier, or at the same time with a
+        // lower seq)
+        const limit = this._timerSeq;
         const timers = this._timers;
         for (let timer = timers.peek(); timer; timer = timers.peek()) {
             if (timer.done) {
                 // a cancelled timer is dropped once on top, expired or not
                 timers.pop();
                 this._cancelledTimers--;
-            } else if (timer.expired <= this._time) {
+            } else if (timer.expired <= this._time && timer.seq < limit) {
                 timers.pop();
                 const callback = timer.callback!;
                 this._finishTimer(timer);
@@ -150,7 +164,8 @@ export abstract class Context {
      * @returns A function removing this listener only: `off` and `offAll` remove all the
      * listeners of a tag, like all the listeners of a tree. Calling it again does nothing. A
      * callback is registered once per event and target, registering it again replaces the
-     * previous registration, whose function then does nothing.
+     * previous registration, whose function then does nothing, but keeps its place. A listener
+     * registered during a dispatch of the event is called from the next dispatch on.
      */
     on(event: string, target: EventTarget, callback: Callback, tag: TagType): () => void;
 
@@ -186,7 +201,9 @@ export abstract class Context {
             this._unindex(old);
             Context._releaseListener(old);
         }
-        const listener: Listener = { event, target, callback, tag };
+        // a replaced listener keeps its place: called by a dispatch started before, like before
+        const seq = old ? old.seq : this._listenerSeq++;
+        const listener: Listener = { event, target, callback, tag, seq };
         targetListeners.set(callback, listener);
         this._index(listener);
 
@@ -198,17 +215,52 @@ export abstract class Context {
      * If a target is provided, only listeners registered for that target will be notified.
      * Otherwise, listeners registered for the context(default target) will be notified.
      *
+     * The listeners are the ones registered when the dispatch starts: a listener registered by a
+     * listener is not called by this dispatch (a removed then registered again one neither), a
+     * removed one is not called either, a replaced one is called once.
+     * An exception thrown by a listener goes to the caller, the other listeners are skipped.
+     *
      * @param event The event name to dispatch
      * @param target Optional target object that the event is associated with
      * @param args Additional arguments to pass to the event listeners
      */
     dispatch(event: string, target?: EventTarget | this, ...args: unknown[]) {
-        this._listeners
-            .get(event)
-            ?.get(target ?? this)
-            ?.forEach((_, callback) => {
-                callback(...args);
+        const listeners = this._listeners.get(event)?.get(target ?? this);
+        if (listeners) {
+            const limit = this._listenerSeq;
+            listeners.forEach((listener, callback) => {
+                if (listener.seq < limit) {
+                    callback(...args);
+                }
             });
+        }
+    }
+
+    /**
+     * @private Dispatches an event of the lifecycle of a tree, like `dispatch`, but an exception
+     * thrown by a listener is logged: the other listeners are still called, and the tree goes on
+     * (like an exception thrown by `onAbort` or `onClear`).
+     *
+     * @param path The path of the tree, shown in the log
+     */
+    __dispatchIsolated(path: string, event: string, target: EventTarget, ...args: unknown[]) {
+        const listeners = this._listeners.get(event)?.get(target);
+        if (listeners) {
+            const limit = this._listenerSeq;
+            listeners.forEach((listener, callback) => {
+                if (listener.seq < limit) {
+                    try {
+                        callback(...args);
+                    } catch (e) {
+                        const error = e instanceof Error ? e : new Error(String(e));
+                        console.error(
+                            `behavior3: a listener of '${event}' of tree '${path}' threw: ` +
+                                `${error.stack ?? error.message}`,
+                        );
+                    }
+                }
+            });
+        }
     }
 
     /**

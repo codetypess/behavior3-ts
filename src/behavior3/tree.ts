@@ -11,6 +11,10 @@ export interface TreeData {
     readonly group: string[];
 }
 
+/**
+ * The events of the lifecycle of a tree, dispatched with the tree as the target. An exception
+ * thrown by a listener is logged, the other listeners and the tree go on.
+ */
 export const enum TreeEvent {
     CLEANED = "treeCleaned",
     INTERRUPTED = "treeInterrupted",
@@ -204,6 +208,14 @@ export class Tree<C extends Context, Owner> {
         return this._ticking;
     }
 
+    /**
+     * Whether the tree is executing: ticking, ticking its nodes in a callback (like `Listen` and
+     * `Delay`), or running a callback from `bindCallback`. It can't be ticked meanwhile.
+     */
+    get executing() {
+        return this._executing > 0;
+    }
+
     get runningNode() {
         return this.__runningNode;
     }
@@ -242,7 +254,7 @@ export class Tree<C extends Context, Owner> {
             // force run clear
             const interrupted = this.__interrupted;
             this.__interrupted = false;
-            this.context.dispatch(TreeEvent.CLEANED, this);
+            this.context.__dispatchIsolated(this.path, TreeEvent.CLEANED, this);
             this.__interrupted = interrupted;
 
             this.interrupt();
@@ -273,7 +285,7 @@ export class Tree<C extends Context, Owner> {
 
     interrupt() {
         if (this._status === "running" || this._ticking) {
-            this.context.dispatch(TreeEvent.INTERRUPTED, this);
+            this.context.__dispatchIsolated(this.path, TreeEvent.INTERRUPTED, this);
             this.__interrupted = true;
             if (this._callback) {
                 this._callback.interrupt = true;
@@ -327,7 +339,7 @@ export class Tree<C extends Context, Owner> {
 
     /** @private Called when a node throws, dispatches `EXCEPTION` and stops the tick. */
     __exception(node: Node, error: Error) {
-        this.context.dispatch(TreeEvent.EXCEPTION, this, error, node);
+        this.context.__dispatchIsolated(this.path, TreeEvent.EXCEPTION, this, error, node);
         if (this._callback) {
             // only stops the subtree of the callback
             this.__interrupted = true;
@@ -415,17 +427,24 @@ export class Tree<C extends Context, Owner> {
         if (this._ticking) {
             const node = this.__runningNode;
             throw new Error(`tree '${this.path}' already ticking: ${node?.name}#${node?.id}`);
+        } else if (this._executing > 0) {
+            // like ticking it in a node: the nodes of the callback are on the stack, and the tick
+            // would run the whole tree in the middle of it (like a callback of a subtree ticking
+            // the caller, which runs the subtree again by `RunTree`)
+            throw new Error(
+                `tree '${this.path}' is executing a callback, it can't be ticked until it returns`,
+            );
         }
 
         this._ticking = true;
         this._tickException = false;
-        // the tree is ticked from the root blackboard, even if ticked in a bound callback
+        // the tree is ticked from the root blackboard
         const outerScope = this.__swapScope(this._rootBlackboard);
         this._executing++;
         let cleared = false;
         try {
             if (!this.isRunning(root)) {
-                context.dispatch(TreeEvent.BEFORE_TICKED, this);
+                context.__dispatchIsolated(this.path, TreeEvent.BEFORE_TICKED, this);
             }
 
             const status: Status = root.tick(this);
@@ -433,18 +452,18 @@ export class Tree<C extends Context, Owner> {
             if (status === "success") {
                 this.__runningNode = undefined;
                 this._status = "success";
-                context.dispatch(TreeEvent.AFTER_TICKED, this);
-                context.dispatch(TreeEvent.TICKED_SUCCESS, this);
+                context.__dispatchIsolated(this.path, TreeEvent.AFTER_TICKED, this);
+                context.__dispatchIsolated(this.path, TreeEvent.TICKED_SUCCESS, this);
             } else if (status === "failure") {
                 this._status = "failure";
                 this.__runningNode = undefined;
-                context.dispatch(TreeEvent.AFTER_TICKED, this);
-                context.dispatch(TreeEvent.TICKED_FAILURE, this);
+                context.__dispatchIsolated(this.path, TreeEvent.AFTER_TICKED, this);
+                context.__dispatchIsolated(this.path, TreeEvent.TICKED_FAILURE, this);
             } else if (status === "error") {
                 // finished like `failure`, the error is logged by the node returning it
                 this._status = "error";
                 this.__runningNode = undefined;
-                context.dispatch(TreeEvent.AFTER_TICKED, this);
+                context.__dispatchIsolated(this.path, TreeEvent.AFTER_TICKED, this);
             } else {
                 this._status = "running";
             }
@@ -459,7 +478,7 @@ export class Tree<C extends Context, Owner> {
 
             this._tickCount++;
         } finally {
-            // stopped by a clear, done below or by the outer execution (a bound callback)
+            // stopped by a clear, done below when the execution exits
             cleared = this._pendingClear;
             this._scope = outerScope;
             this._ticking = false;

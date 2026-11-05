@@ -347,6 +347,45 @@ describe("RunTree instance", () => {
     });
 });
 
+describe("RunTree re-entered from a callback of the subtree", () => {
+    /** The subtree listens `e` (in a Scope or not), the callback ticks the main tree. */
+    const reenter = (inScope: boolean) => {
+        const ctx = new TestContext();
+        let main: Tree<TestContext, unknown> | undefined;
+        const listen = n("BindListen", "bl", { args: { event: "e", key: "x" }, children: [probe("cb")] });
+        ctx.defineTree(
+            "sub",
+            seq("seq", read("r", "x"), inScope ? n("Scope", "sc", { children: [listen] }) : listen),
+        );
+        const tree = (main = ctx.createTree(runTree("rt", "sub", { input: ["x"] })));
+        tree.blackboard.set("x", 1);
+        assert.equal(tree.tick(), "success");
+        // the child of the callback ticks the main tree, whose RunTree comes back to the subtree
+        const bindListen = ctx.trees["sub"].children[1];
+        const callbackChild = (inScope ? bindListen.children[0] : bindListen).children[0];
+        callbackChild.onTick = () => {
+            ctx.log.push(`main=${main!.tick()}`);
+            return "success";
+        };
+        tree.blackboard.set("x", 2);
+        ctx.takeLog();
+        return { ctx, tree };
+    };
+
+    for (const inScope of [true, false]) {
+        it(`is an exception, the subtree is not touched${inScope ? " (in a Scope)" : ""}`, () => {
+            const { ctx, tree } = reenter(inScope);
+            const { error } = captureConsole(() => ctx.dispatch("e"));
+            assert.deepEqual(ctx.takeLog(), ["cb:bl=1", "main=exception"]);
+            assert.match(error[0], /->RunTree#rt: tree 'sub' is executing a callback, it can't be run again/);
+            assert.equal(error.length, 1);
+            // runs normally after the callback, with the new input
+            assert.equal(tree.tick(), "success");
+            assert.deepEqual(ctx.takeLog(), ["read:r=2"]);
+        });
+    }
+});
+
 describe("RunTree lifecycle", () => {
     it("keeps running across ticks", () => {
         const { ctx, tree } = setup(

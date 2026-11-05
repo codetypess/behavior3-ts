@@ -702,6 +702,26 @@ describe("tree", () => {
         assert.equal(tree.ticking, false);
     });
 
+    it("ticking the tree in a callback is an exception of the callback", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            n("Sequence", "s", {
+                children: [n("Listen", "l", { args: { event: "e" }, children: [probe("x")] }), probe("p", { args: { status: "running" } })],
+            }),
+        );
+        const listenChild = tree.root!.children[0].children[0];
+        listenChild.onTick = (t) => (t.tick(), "success");
+        assert.equal(tree.tick(), "running");
+        ctx.takeLog();
+        const { error } = captureConsole(() => ctx.dispatch("e"));
+        assert.match(error[0], /Probe#x: Error: tree '.*' is executing a callback, it can't be ticked/);
+        // only the callback is stopped, the tree goes on
+        assert.equal(tree.status, "running");
+        assert.equal(tree.executing, false);
+        assert.equal(tree.tick(), "running");
+        assert.deepEqual(ctx.takeLog(), ["tick:p"]);
+    });
+
     it("exposes the owner, the root and the running node", () => {
         const ctx = new TestContext();
         const owner = { name: "unit" };

@@ -79,6 +79,15 @@ export class RunTree extends Node {
             return "running";
         }
 
+        if (subtree.executing) {
+            // a callback of the subtree ticks this tree, which comes back to the subtree: checked
+            // before the input is written, the subtree is in the middle of the callback
+            this.throw(
+                `tree '${subtree.path}' is executing a callback, it can't be run again until the ` +
+                    `callback returns (the callback ticks '${tree.path}'?)`,
+            );
+        }
+
         if (!state.started) {
             const { blackboard } = subtree;
             // the output is the result of this run: the value left by the last run is removed,

@@ -668,23 +668,72 @@ describe("clear while executing", () => {
             inner();
             tree.clear();
             ctx.log.push("outer done");
-            // still executing: the nodes are stopped, the tree is not cleared yet
-            return tree.tick();
+            // still executing: the tree is not cleared yet, and can't be ticked
+            assert.throws(() => tree.tick(), /is executing a callback/);
         });
-        assert.equal(outer(), "interrupted");
+        outer();
         assert.deepEqual(ctx.takeLog(), ["inner done", "outer done", "CLEANED", "abort:p"]);
         assert.equal(tree.status, "success");
     });
 
-    it("resets the tick when a listener throws out of it", () => {
+    it("logs a listener throwing in the tick, the tick goes on", () => {
         const ctx = new TestContext();
         const tree = ctx.createTree(probe("p"));
+        const events: string[] = [];
         ctx.on(TreeEvent.AFTER_TICKED, tree, () => {
             throw new Error("boom");
         }, tree);
-        assert.throws(() => tree.tick(), /boom/);
+        ctx.on(TreeEvent.AFTER_TICKED, tree, () => events.push("after"), "other");
+        ctx.on(TreeEvent.TICKED_SUCCESS, tree, () => events.push("success"), tree);
+        const { result, error } = captureConsole(() => tree.tick());
+        assert.equal(result, "success");
+        assert.equal(error.length, 1);
+        assert.match(error[0], /a listener of 'treeAfterTicked' of tree '.*' threw: Error: boom/);
+        assert.deepEqual(events, ["after", "success"]);
         assert.equal(tree.ticking, false);
         assert.equal(tree.blackboard, tree.__rootBlackboard);
+    });
+
+    for (const event of [TreeEvent.CLEANED, TreeEvent.INTERRUPTED]) {
+        it(`clears the tree when a ${event} listener throws`, () => {
+            const ctx = new TestContext();
+            const tree = ctx.createTree(
+                n("Sequence", "s", {
+                    children: [
+                        n("BindListen", "bl", { args: { event: "e", key: "x" } }),
+                        probe("p", { args: { status: "running" } }),
+                    ],
+                }),
+            );
+            assert.equal(tree.tick(), "running");
+            ctx.takeLog();
+            ctx.on(event, tree, () => {
+                throw new Error("boom");
+            }, "test");
+            ctx.on(event, tree, () => ctx.log.push("next listener"), "test");
+            const { error } = captureConsole(() => tree.clear());
+            assert.equal(error.length, 1);
+            assert.match(error[0], new RegExp(`a listener of '${event}' of tree '.*' threw: Error: boom`));
+            assert.deepEqual(ctx.takeLog(), ["next listener", "abort:p"]);
+            assert.equal(tree.isRunning(tree.root!), false);
+            ctx.dispatch("e");
+            assert.deepEqual(ctx.takeLog(), []);
+        });
+    }
+
+    it("stops the tick once when an EXCEPTION listener throws", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(n("Sequence", "s1", { children: [n("Sequence", "s2", { children: [n("Throw", "t")] })] }));
+        ctx.on(TreeEvent.EXCEPTION, tree, () => {
+            throw new Error("listener boom");
+        }, "test");
+        const { result, error } = captureConsole(() => tree.tick());
+        assert.equal(result, "exception");
+        // the node exception, then the listener: not thrown again by every ancestor
+        assert.equal(error.length, 2);
+        assert.match(error[0], /Throw#t: Error: boom/);
+        assert.match(error[1], /a listener of 'treeException' of tree '.*' threw: Error: listener boom/);
+        assert.equal(tree.ticking, false);
     });
 
     it("ignores a clear from a CLEANED listener", () => {
