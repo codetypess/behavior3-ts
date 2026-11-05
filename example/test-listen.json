@@ -74,7 +74,7 @@
                     "id": 10,
                     "name": "Listen",
                     "args": {
-                      "event": "treeAfterTicked"
+                      "event": "treeTicked"
                     },
                     "input": [
                       ""

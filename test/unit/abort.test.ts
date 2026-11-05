@@ -680,16 +680,15 @@ describe("clear while executing", () => {
         const ctx = new TestContext();
         const tree = ctx.createTree(probe("p"));
         const events: string[] = [];
-        ctx.on(TreeEvent.AFTER_TICKED, tree, () => {
+        ctx.on(TreeEvent.TICKED, tree, () => {
             throw new Error("boom");
         }, tree);
-        ctx.on(TreeEvent.AFTER_TICKED, tree, () => events.push("after"), "other");
-        ctx.on(TreeEvent.TICKED_SUCCESS, tree, () => events.push("success"), tree);
+        ctx.on(TreeEvent.TICKED, tree, () => events.push("after"), "other");
         const { result, error } = captureConsole(() => tree.tick());
         assert.equal(result, "success");
         assert.equal(error.length, 1);
-        assert.match(error[0], /a listener of 'treeAfterTicked' of tree '.*' threw: Error: boom/);
-        assert.deepEqual(events, ["after", "success"]);
+        assert.match(error[0], /a listener of 'treeTicked' of tree '.*' threw: Error: boom/);
+        assert.deepEqual(events, ["after"]);
         assert.equal(tree.ticking, false);
         assert.equal(tree.blackboard, tree.__rootBlackboard);
     });

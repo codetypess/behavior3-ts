@@ -20,14 +20,14 @@ describe("error status", () => {
             n("Selector", "sel", { children: [n("Sequence", "seq", { children: [err("hero"), probe("a")] }), probe("minion")] }),
         );
         const events: string[] = [];
-        for (const e of [TreeEvent.EXCEPTION, TreeEvent.INTERRUPTED, TreeEvent.AFTER_TICKED, TreeEvent.TICKED_FAILURE]) {
-            ctx.on(e, tree, () => events.push(e), "test");
+        for (const e of [TreeEvent.EXCEPTION, TreeEvent.INTERRUPTED, TreeEvent.TICKED]) {
+            ctx.on(e, tree, (...args: unknown[]) => events.push([e, ...args].join(":")), "test");
         }
         assert.equal(tree.tick(), "error");
         assert.equal(tree.status, "error");
         assert.deepEqual(ctx.takeLog(), ["tick:hero"]);
-        // finished like failure, but no exception, no interrupt and no TICKED_FAILURE
-        assert.deepEqual(events, [TreeEvent.AFTER_TICKED]);
+        // finished like failure, but no exception and no interrupt
+        assert.deepEqual(events, [`${TreeEvent.TICKED}:error`]);
         assert.equal(tree.isRunning(tree.root!), false);
 
         // the next tick starts from the root

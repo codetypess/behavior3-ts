@@ -25,15 +25,15 @@ describe("execution model", () => {
         assert.deepEqual(ctx.takeLog(), ["tick:a", "tick:b", "tick:c"]);
     });
 
-    it("dispatches BEFORE_TICKED only when the tree is not running", () => {
+    it("dispatches TICKED only when the root finishes", () => {
         const ctx = new TestContext();
         const tree = ctx.createTree(probe("a"));
         let count = 0;
-        ctx.on("treeBeforeTicked", tree, () => count++, "test");
+        ctx.on("treeTicked", tree, () => count++, "test");
         tree.blackboard.set("a", "running");
         tree.tick();
         tree.tick();
-        assert.equal(count, 1);
+        assert.equal(count, 0);
         tree.blackboard.set("a", "success");
         tree.tick();
         tree.tick();
@@ -545,7 +545,11 @@ describe("callbacks", () => {
                         children: [
                             n("Once", "once", {
                                 children: [
-                                    n("Listen", "l", { args: { event: TreeEvent.TICKED_SUCCESS }, children: [probe("x")] }),
+                                    n("Listen", "l", {
+                                        args: { event: TreeEvent.TICKED },
+                                        output: ["", "result"],
+                                        children: [probe("x")],
+                                    }),
                                 ],
                             }),
                         ],
@@ -557,15 +561,20 @@ describe("callbacks", () => {
         tree.tick();
         tree.tick();
         assert.deepEqual(ctx.takeLog(), ["tick:a", "tick:x", "tick:a", "tick:x"]);
+        // the result of the tick is the argument of TICKED
+        assert.equal(tree.blackboard.get("result"), "success");
+        tree.blackboard.set("a", "failure");
+        tree.tick();
+        assert.deepEqual(ctx.takeLog(), ["tick:a", "tick:x"]);
+        assert.equal(tree.blackboard.get("result"), "failure");
 
         // the target of a tree event is always the tree
         const tree2 = ctx.createTree(
-            n("Listen", "l", { args: { event: TreeEvent.BEFORE_TICKED }, input: ["target"], children: [probe("y")] }),
+            n("Listen", "l", { args: { event: TreeEvent.TICKED }, input: ["target"], children: [probe("y")] }),
         );
         tree2.blackboard.set("target", {});
         const { warn } = captureConsole(() => tree2.tick());
         assert.match(warn[0], /invalid target/);
-        tree2.tick();
         assert.deepEqual(ctx.takeLog(), ["tick:y"]);
     });
 });
@@ -670,24 +679,18 @@ describe("tree", () => {
         const ctx = new TestContext();
         const tree = ctx.createTree(probe("a"));
         const events: string[] = [];
-        for (const event of [
-            TreeEvent.BEFORE_TICKED,
-            TreeEvent.AFTER_TICKED,
-            TreeEvent.TICKED_SUCCESS,
-            TreeEvent.TICKED_FAILURE,
-            TreeEvent.CLEANED,
-        ]) {
-            ctx.on(event, tree, () => events.push(event), "test");
+        for (const event of [TreeEvent.TICKED, TreeEvent.CLEANED]) {
+            ctx.on(event, tree, (...args: unknown[]) => events.push([event, ...args].join(":")), "test");
         }
         tree.blackboard.set("a", "running");
         tree.tick();
-        assert.deepEqual(events.splice(0), [TreeEvent.BEFORE_TICKED]);
+        assert.deepEqual(events.splice(0), []);
         tree.blackboard.set("a", "success");
         tree.tick();
-        assert.deepEqual(events.splice(0), [TreeEvent.AFTER_TICKED, TreeEvent.TICKED_SUCCESS]);
+        assert.deepEqual(events.splice(0), [`${TreeEvent.TICKED}:success`]);
         tree.blackboard.set("a", "failure");
         tree.tick();
-        assert.deepEqual(events.splice(0), [TreeEvent.BEFORE_TICKED, TreeEvent.AFTER_TICKED, TreeEvent.TICKED_FAILURE]);
+        assert.deepEqual(events.splice(0), [`${TreeEvent.TICKED}:failure`]);
         tree.clear();
         assert.deepEqual(events.splice(0), [TreeEvent.CLEANED]);
     });

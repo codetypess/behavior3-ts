@@ -20,10 +20,8 @@ export const enum TreeEvent {
     INTERRUPTED = "treeInterrupted",
     /** A node throws an exception while ticking, args: `(error: Error, node: Node)`. */
     EXCEPTION = "treeException",
-    BEFORE_TICKED = "treeBeforeTicked",
-    AFTER_TICKED = "treeAfterTicked",
-    TICKED_SUCCESS = "treeTickedSuccess",
-    TICKED_FAILURE = "treeTickedFailure",
+    /** The root finishes, args: `(status: "success" | "failure" | "error")`. */
+    TICKED = "treeTicked",
 }
 
 /**
@@ -516,29 +514,15 @@ export class Tree<C extends Context, Owner> {
         this._executing++;
         let cleared = false;
         try {
-            if (!this.isRunning(root)) {
-                context.__dispatchIsolated(this.path, TreeEvent.BEFORE_TICKED, this);
-            }
-
             const status: Status = root.tick(this);
 
-            if (status === "success") {
-                this.__runningNode = undefined;
-                this._status = "success";
-                context.__dispatchIsolated(this.path, TreeEvent.AFTER_TICKED, this);
-                context.__dispatchIsolated(this.path, TreeEvent.TICKED_SUCCESS, this);
-            } else if (status === "failure") {
-                this._status = "failure";
-                this.__runningNode = undefined;
-                context.__dispatchIsolated(this.path, TreeEvent.AFTER_TICKED, this);
-                context.__dispatchIsolated(this.path, TreeEvent.TICKED_FAILURE, this);
-            } else if (status === "error") {
-                // finished like `failure`, the error is logged by the node returning it
-                this._status = "error";
-                this.__runningNode = undefined;
-                context.__dispatchIsolated(this.path, TreeEvent.AFTER_TICKED, this);
-            } else {
+            if (status === "running") {
                 this._status = "running";
+            } else {
+                // `error` is finished like `failure`, the error is logged by the node returning it
+                this._status = status;
+                this.__runningNode = undefined;
+                context.__dispatchIsolated(this.path, TreeEvent.TICKED, this, status);
             }
 
             if (this.debug && !tickScope.stopped) {

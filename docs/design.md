@@ -96,9 +96,7 @@ onAbort(tree): void      // 节点自己清理：停止移动、移除监听和�
 
 | 事件 | 时机 |
 |---|---|
-| `BEFORE_TICKED` | 根节点不在 running，开始新的一轮执行之前 |
-| `AFTER_TICKED` | 根节点返回 `success`、`failure` 或 `error`，这一轮结束 |
-| `TICKED_SUCCESS` / `TICKED_FAILURE` | 根节点返回 `success` / `failure` |
+| `TICKED` | 根节点返回 `success`、`failure` 或 `error`，这一轮结束；参数是这个结果 |
 | `INTERRUPTED` | 树被中断 |
 | `EXCEPTION` | 节点抛异常，参数是 `(error: Error, node: Node)` |
 | `CLEANED` | 调用 `tree.clear()`；在执行中调用时，等执行退出后才派发 |

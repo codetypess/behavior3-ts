@@ -270,7 +270,7 @@ override onAbort(tree: Tree<Context, unknown>) {
 | 主树 `clear()` | `RunTree.onClear` 依次 `clear()` 缓存的子树实例（4.1 节），缓存随根黑板一起清掉。子树的监听注册在子树自己身上，主树的 `offAll` 清不掉，所以必须这样做 |
 | 主树开了 `debug` | tick 子树前同步 `debug` |
 
-- 子树的 `TreeEvent`（`BEFORE_TICKED`、`AFTER_TICKED` 等）在子树实例上派发。子树里 `Listen` 内置事件，监听的是子树自己的 tick。
+- 子树的 `TreeEvent`（`TICKED` 等）在子树实例上派发。子树里 `Listen` 内置事件，监听的是子树自己的 tick。
 - 子树的 `Listen`/`Delay` 回调由子树自己的 `__tickInCallback` 执行，和主树的 tick、作用域、状态都无关。
 
 ## 7. 和作用域的关系
@@ -286,7 +286,7 @@ override onAbort(tree: Tree<Context, unknown>) {
 - **按值传参**：input 只在开始执行时传一次。子树 running 期间，调用方的变量再变不会同步过去。
 - **导出不区分“没写过”和“清掉了”**：子树的黑板是根黑板，设成 `undefined` 就是删除，所以子树里没有的变量统一 `SKIP`，不会删除调用方的变量。
 - **output 是这一次执行的结果**：子树实例是复用的，如果不清理，这次执行没写的 output 变量还留着上一次的值，成功时会被导出，覆盖调用方在两次执行之间改过或清掉的值（比如调用方用完 `target` 就清掉，下次子树没找到目标，却又导出了上次的 `target`）。所以每次开始执行时，先清掉子树里的 output 变量：这次没写就不导出，调用方的变量保持不变，和主树里节点“没写就不动”一致。output 由调用方的 `RunTree` 声明，同一棵子树在不同地方可能导出不同的变量，所以由框架清理，不交给写子树的人。既是 input 又是 output 的变量先被清掉、再被 input 写入，结果不变。要跨多次执行累计的值（计数器等），用别的变量名保存，结束前再赋给 output 变量。
-- **性能**：每次 tick `RunTree` 都会执行一次完整的 `Tree.tick`，包括派发 `BEFORE_TICKED`、`AFTER_TICKED` 等事件。
+- **性能**：每次 tick `RunTree` 都会执行一次完整的 `Tree.tick`，包括派发 `TICKED` 等事件。
 
 ## 9. 改动清单
 

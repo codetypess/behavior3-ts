@@ -5,10 +5,7 @@ import { Tree, TreeEvent } from "../../tree";
 
 const builtinEventOptions = [
     { name: "行为树被中断", value: TreeEvent.INTERRUPTED },
-    { name: "行为树开始执行前", value: TreeEvent.BEFORE_TICKED },
-    { name: "行为树执行完成后", value: TreeEvent.AFTER_TICKED },
-    { name: "行为树执行成功后", value: TreeEvent.TICKED_SUCCESS },
-    { name: "行为树执行失败后", value: TreeEvent.TICKED_FAILURE },
+    { name: "行为树执行完成后", value: TreeEvent.TICKED },
     { name: "行为树被清理", value: TreeEvent.CLEANED },
 ];
 
@@ -115,6 +112,7 @@ export class Listen extends Node {
                 + 注册侦听后立即返回 \`success\`，事件触发时执行第一个子节点，多个仅执行第一个
                 + 配置了 \`目标对象\`（一个或数组）时侦听这些目标上的事件，否则侦听 Context 上的事件（\`dispatch\` 时不带目标）；内置的行为树事件固定侦听本树，不需要 \`目标对象\`
                 + 事件触发时，把事件目标写入 \`事件目标\`，事件参数依次写入 \`事件参数...\`
+                + 内置的行为树事件中，只有 \`行为树执行完成后\`（\`treeTicked\`）带事件参数：第一个参数是这一轮的结果，\`success\`、\`failure\` 或 \`error\`，可以写入 \`事件参数...\` 的第一个变量，再用条件节点判断；\`行为树被中断\`、\`行为树被清理\` 没有事件参数
                 + 如果子节点返回 \`running\`，会被中止
                 + 子节点返回 \`error\` 或抛异常时只打印日志，不影响行为树正在运行的分支
                 + 每次执行都会注册一次侦听，通常放在 \`Once\` 下使用
