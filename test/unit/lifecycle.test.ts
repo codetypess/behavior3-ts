@@ -50,7 +50,7 @@ const tickRules: Record<Place, Expected> = {
     callbackInTick: { result: ALREADY_TICKING, interrupted: 0, cleaned: 0, aborted: false, cleared: false, status: "running", logged: true },
     bound: { result: EXECUTING, interrupted: 0, cleaned: 0, aborted: false, cleared: false, status: "running", logged: false },
     abortExternal: { result: EXECUTING, interrupted: 1, cleaned: 0, aborted: true, cleared: false, status: "interrupted", logged: true },
-    abortTickEnd: { result: ALREADY_TICKING, interrupted: 1, cleaned: 0, aborted: true, cleared: false, status: "interrupted", logged: true },
+    abortTickEnd: { result: EXECUTING, interrupted: 1, cleaned: 0, aborted: true, cleared: false, status: "interrupted", logged: true },
     abortInClear: { result: EXECUTING, interrupted: 1, cleaned: 1, aborted: true, cleared: true, status: "success", logged: true },
     cleaned: { result: EXECUTING, interrupted: 1, cleaned: 1, aborted: true, cleared: true, status: "success", logged: true },
     onClear: { result: EXECUTING, interrupted: 1, cleaned: 1, aborted: true, cleared: true, status: "success", logged: true },
@@ -325,12 +325,11 @@ const running = (id: string) => probe(id, { args: { status: "running" } });
 const listenE = (child = probe("cb")) => n("BindListen", "listen", { args: { event: "e", key: "k" }, children: [child] });
 
 /**
- * The order of the steps, pinned before the refactoring of the stop scopes. The tests marked
- * "current" are the behaviors planned to change (interrupt deferred to the outermost exit, the
+ * The order of the steps. The tests marked "current" are the behaviors planned to change (the
  * callbacks skipped while a clear is pending).
  */
 describe("lifecycle order", () => {
-    it("current: aborts right after the nodes of a Delay callback, before restoring its cacheVars", () => {
+    it("aborts after a Delay callback restores its cacheVars", () => {
         const ctx = new TestContext();
         const tree = ctx.createTree(
             n("Parallel", "par", {
@@ -345,13 +344,13 @@ describe("lifecycle order", () => {
         tree.blackboard.set("x", 9);
         ctx.takeLog();
         ctx.update(1);
-        // onAbort sees the cached value, restored to 9 after
-        assert.deepEqual(ctx.takeLog(), ["abort:r=1"]);
+        // aborted when the whole callback exits: onAbort sees the value of the tree
+        assert.deepEqual(ctx.takeLog(), ["abort:r=9"]);
         assert.equal(tree.blackboard.get("x"), 9);
         assert.equal(tree.status, "interrupted");
     });
 
-    it("current: aborts in interrupt() called in a bound callback, before the rest of it", () => {
+    it("aborts after the rest of a bound callback calling interrupt(), like a clear", () => {
         const ctx = new TestContext();
         const tree = ctx.createTree(running("p"));
         assert.equal(tree.tick(), "running");
@@ -360,7 +359,7 @@ describe("lifecycle order", () => {
             tree.interrupt();
             ctx.log.push("after interrupt");
         })();
-        assert.deepEqual(ctx.takeLog(), ["abort:p", "after interrupt"]);
+        assert.deepEqual(ctx.takeLog(), ["after interrupt", "abort:p"]);
     });
 
     it("clears after the rest of a bound callback", () => {
@@ -455,7 +454,7 @@ describe("lifecycle order", () => {
         assert.deepEqual(ctx.takeLog(), ["cb:listen=undefined", "tick:cb", "abort:p"]);
     });
 
-    it("current: runs a callback triggered after a clear in the tick", () => {
+    it("doesn't tick the nodes of a callback triggered after a clear in the tick", () => {
         const ctx = new TestContext();
         const tree = ctx.createTree(n("Parallel", "par", { children: [running("p"), listenE(), running("hook")] }));
         assert.equal(tree.tick(), "running");
@@ -466,11 +465,11 @@ describe("lifecycle order", () => {
         };
         ctx.takeLog();
         assert.equal(tree.tick(), "interrupted");
-        // the callback runs on the tree about to be cleared
-        assert.deepEqual(ctx.takeLog(), ["tick:p", "cb:listen=undefined", "tick:cb", "abort:p", "abort:hook"]);
+        // the callback runs, its nodes don't on the tree about to be cleared
+        assert.deepEqual(ctx.takeLog(), ["tick:p", "cb:listen=undefined", "abort:p", "abort:hook"]);
     });
 
-    it("runs a callback triggered after an interrupt in the tick", () => {
+    it("doesn't tick the nodes of a callback triggered after an interrupt in the tick", () => {
         const ctx = new TestContext();
         const tree = ctx.createTree(n("Parallel", "par", { children: [running("p"), listenE(), running("hook")] }));
         assert.equal(tree.tick(), "running");
@@ -481,6 +480,68 @@ describe("lifecycle order", () => {
         };
         ctx.takeLog();
         assert.equal(tree.tick(), "interrupted");
-        assert.deepEqual(ctx.takeLog(), ["tick:p", "cb:listen=undefined", "tick:cb", "abort:p", "abort:hook"]);
+        assert.deepEqual(ctx.takeLog(), ["tick:p", "cb:listen=undefined", "abort:p", "abort:hook"]);
+    });
+
+    it("keeps a cached variable written by onAbort in a Delay callback", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            n("Parallel", "par", {
+                children: [
+                    running("p"),
+                    n("Delay", "delay", { args: { delay: 1, cacheVars: ["x"] }, children: [n("Interrupt", "i")] }),
+                ],
+            }),
+        );
+        tree.root!.children[0].onAbort = (t) => t.blackboard.set("x", 0);
+        tree.blackboard.set("x", 1);
+        assert.equal(tree.tick(), "running");
+        tree.blackboard.set("x", 9);
+        ctx.update(1);
+        // not restored to 9 over it
+        assert.equal(tree.blackboard.get("x"), 0);
+    });
+
+    it("doesn't tick the nodes of a callback triggered in the rest of a bound callback after interrupt()", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(n("Parallel", "par", { children: [running("p"), listenE()] }));
+        assert.equal(tree.tick(), "running");
+        ctx.takeLog();
+        tree.bindCallback(() => {
+            tree.interrupt();
+            ctx.dispatch("e");
+        })();
+        assert.deepEqual(ctx.takeLog(), ["cb:listen=undefined", "abort:p"]);
+        assert.equal(tree.status, "interrupted");
+    });
+
+    it("can't be ticked by an INTERRUPTED listener of an idle tree", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(running("p"));
+        assert.equal(tree.tick(), "running");
+        ctx.on(TreeEvent.INTERRUPTED, tree, () => tree.tick(), "test");
+        ctx.takeLog();
+        const { error } = captureConsole(() => tree.interrupt());
+        assert.equal(error.length, 1);
+        assert.match(error[0], EXECUTING);
+        assert.deepEqual(ctx.takeLog(), ["abort:p"]);
+        assert.equal(tree.status, "interrupted");
+    });
+
+    it("clears after the abort when an INTERRUPTED listener of an idle tree calls clear()", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(running("p"));
+        assert.equal(tree.tick(), "running");
+        const events: string[] = [];
+        ctx.on(TreeEvent.INTERRUPTED, tree, () => {
+            events.push("interrupted");
+            tree.clear();
+        }, "test");
+        ctx.on(TreeEvent.CLEANED, tree, () => events.push("cleaned"), "test");
+        ctx.takeLog();
+        tree.interrupt();
+        assert.deepEqual(ctx.takeLog(), ["abort:p"]);
+        assert.deepEqual(events, ["interrupted", "cleaned"]);
+        assert.equal(tree.status, "success");
     });
 });
