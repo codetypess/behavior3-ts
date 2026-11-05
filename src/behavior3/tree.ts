@@ -77,8 +77,9 @@ export class Tree<C extends Context, Owner> {
     private _tickException: boolean = false;
     private _callback?: { interrupt: boolean };
     /**
-     * How many executions are on the stack: `tick`, `__tickInCallback` and the callbacks from
-     * `bindCallback`. A `clear` while executing waits until it is back to 0.
+     * How many executions are on the stack: `tick`, `__tickInCallback`, the callbacks from
+     * `bindCallback` and `interrupt` aborting the nodes. A `clear` while executing waits until it
+     * is back to 0.
      */
     private _executing: number = 0;
     /** `clear` is called while executing, the tree is cleared when the execution exits. */
@@ -210,7 +211,8 @@ export class Tree<C extends Context, Owner> {
 
     /**
      * Whether the tree is executing: ticking, ticking its nodes in a callback (like `Listen` and
-     * `Delay`), or running a callback from `bindCallback`. It can't be ticked meanwhile.
+     * `Delay`), running a callback from `bindCallback`, or aborting its running nodes when
+     * interrupted outside the tick. It can't be ticked meanwhile.
      */
     get executing() {
         return this._executing > 0;
@@ -290,7 +292,13 @@ export class Tree<C extends Context, Owner> {
             if (this._callback) {
                 this._callback.interrupt = true;
             } else if (!this._ticking) {
-                this._doInterrupt();
+                // an execution: a `clear` from `onAbort` waits until every running node is aborted
+                this._executing++;
+                try {
+                    this._doInterrupt();
+                } finally {
+                    this._exitExecution();
+                }
             }
         }
     }
@@ -428,11 +436,12 @@ export class Tree<C extends Context, Owner> {
             const node = this.__runningNode;
             throw new Error(`tree '${this.path}' already ticking: ${node?.name}#${node?.id}`);
         } else if (this._executing > 0) {
-            // like ticking it in a node: the nodes of the callback are on the stack, and the tick
-            // would run the whole tree in the middle of it (like a callback of a subtree ticking
-            // the caller, which runs the subtree again by `RunTree`)
+            // like ticking it in a node: the nodes of the callback (or being aborted) are on the
+            // stack, and the tick would run the whole tree in the middle of it (like a callback of
+            // a subtree ticking the caller, which runs the subtree again by `RunTree`)
             throw new Error(
-                `tree '${this.path}' is executing a callback, it can't be ticked until it returns`,
+                `tree '${this.path}' is executing (a callback or an abort), it can't be ticked ` +
+                    `until it returns`,
             );
         }
 

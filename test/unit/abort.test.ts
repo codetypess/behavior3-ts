@@ -669,7 +669,7 @@ describe("clear while executing", () => {
             tree.clear();
             ctx.log.push("outer done");
             // still executing: the tree is not cleared yet, and can't be ticked
-            assert.throws(() => tree.tick(), /is executing a callback/);
+            assert.throws(() => tree.tick(), /is executing \(a callback or an abort\)/);
         });
         outer();
         assert.deepEqual(ctx.takeLog(), ["inner done", "outer done", "CLEANED", "abort:p"]);
@@ -734,6 +734,53 @@ describe("clear while executing", () => {
         assert.match(error[0], /Throw#t: Error: boom/);
         assert.match(error[1], /a listener of 'treeException' of tree '.*' threw: Error: listener boom/);
         assert.equal(tree.ticking, false);
+    });
+
+    /** Parallel of two running ClearSpy, `A.onAbort` runs `fn` after logging. */
+    const abortCalls = (fn: (tree: Tree<TestContext, unknown>) => void) => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(
+            n("Parallel", "par", {
+                children: [
+                    n("ClearSpy", "A", { args: { status: "running" } }),
+                    n("ClearSpy", "B", { args: { status: "running" } }),
+                ],
+            }),
+        );
+        assert.equal(tree.tick(), "running");
+        const a = tree.root!.children[0];
+        const onAbort = a.onAbort.bind(a);
+        a.onAbort = (t) => {
+            onAbort(t);
+            fn(t as Tree<TestContext, unknown>);
+        };
+        ctx.takeLog();
+        return { ctx, tree };
+    };
+
+    it("clears after aborting every running node when onAbort clears in an interrupt", () => {
+        const { ctx, tree } = abortCalls((t) => t.clear());
+        tree.interrupt();
+        assert.deepEqual(ctx.takeLog(), ["abort:A", "abort:B", "clear:A", "clear:B"]);
+        assert.equal(tree.isRunning(tree.root!), false);
+        assert.equal(tree.executing, false);
+        assert.equal(tree.status, "success");
+    });
+
+    it("aborts every running node once when onAbort interrupts in an interrupt", () => {
+        const { ctx, tree } = abortCalls((t) => t.interrupt());
+        tree.interrupt();
+        assert.deepEqual(ctx.takeLog(), ["abort:A", "abort:B"]);
+        assert.equal(tree.status, "interrupted");
+        assert.equal(tree.executing, false);
+    });
+
+    it("can't tick the tree in onAbort of an interrupt", () => {
+        const { ctx, tree } = abortCalls((t) => t.tick());
+        const { error } = captureConsole(() => tree.interrupt());
+        assert.match(error[0], /ClearSpy#A: .*is executing \(a callback or an abort\)/);
+        assert.deepEqual(ctx.takeLog(), ["abort:A", "abort:B"]);
+        assert.equal(tree.tick(), "running");
     });
 
     it("ignores a clear from a CLEANED listener", () => {

@@ -714,7 +714,7 @@ describe("tree", () => {
         assert.equal(tree.tick(), "running");
         ctx.takeLog();
         const { error } = captureConsole(() => ctx.dispatch("e"));
-        assert.match(error[0], /Probe#x: Error: tree '.*' is executing a callback, it can't be ticked/);
+        assert.match(error[0], /Probe#x: Error: tree '.*' is executing \(a callback or an abort\), it can't be ticked/);
         // only the callback is stopped, the tree goes on
         assert.equal(tree.status, "running");
         assert.equal(tree.executing, false);

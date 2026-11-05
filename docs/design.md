@@ -197,7 +197,7 @@ if (field === ERROR) return "error";
 - 子树执行完后，中止其中所有 running 的节点（回调里的子树不能跨帧运行）。
 - 事件在主树 tick 过程中同步派发时，也按回调处理，不影响这一次 tick。
 - 回调里的节点主动调用 `tree.interrupt()` 仍然中断整棵树，回调结束后生效（在 tick 过程中则在这一帧结束时生效）。
-- 回调执行中不能 tick 这棵树，和在节点里 tick 自己的树一样抛异常：回调的节点还在栈上，整棵树不能在它中间再跑一遍。tick 别的树可以，但子树的回调 tick 了调用方、调用方又通过 `RunTree` 回到这棵子树时，`RunTree` 在写入输入之前抛异常，日志的调用栈里能看到整个环。`tree.executing` 表示树正在执行（tick 或回调）。
+- 回调执行中（以及中止节点的过程中）不能 tick 这棵树，和在节点里 tick 自己的树一样抛异常：回调的节点还在栈上，整棵树不能在它中间再跑一遍。tick 别的树可以，但子树的回调 tick 了调用方、调用方又通过 `RunTree` 回到这棵子树时，`RunTree` 在写入输入之前抛异常，日志的调用栈里能看到整个环。`tree.executing` 表示树正在执行（tick 或回调）。
 
 ## 4. 条件与打断
 
@@ -509,7 +509,7 @@ export class MyNode extends Node {
 
 - 只实现 `onTick`、`onAbort` 和 `onClear`。重写 `tick` 或 `abort` 时加载抛异常。
 - `onClear` 在 `tree.clear()` 时对每个节点（包括条件树里的）调用一次：在 running 的节点 `onAbort` 之后、清空黑板之前，用来释放节点为这棵树保留的东西（比如私有变量里缓存的子树实例）。
-- `tree.clear()` 可以在执行中调用（比如节点把单位打死，宿主销毁单位）：它只标记停止，执行栈一路返回 `running` 退出，栈上的节点不会拿着已清空的状态继续执行。`tick`、`__tickInCallback` 和 `bindCallback` 绑定的回调都算执行，等最外层的那个退出后（绑定的回调剩下的代码也执行完，比如 `Delay` 恢复暂存变量），在同一个调用栈里从根黑板按 `CLEANED` → `INTERRUPTED` → `onAbort` → `onClear` → 清空状态、黑板和监听的顺序完成清理。树空闲时在回调里调用，同样会停下这个回调。`CLEANED` 的监听里再调用 `clear` 会被忽略。
+- `tree.clear()` 可以在执行中调用（比如节点把单位打死，宿主销毁单位）：它只标记停止，执行栈一路返回 `running` 退出，栈上的节点不会拿着已清空的状态继续执行。`tick`、`__tickInCallback`、`bindCallback` 绑定的回调，以及树空闲时 `interrupt()` 中止节点的过程都算执行（`onAbort` 里调用 `clear` 时，等所有 running 的节点都中止完才清理），等最外层的那个退出后（绑定的回调剩下的代码也执行完，比如 `Delay` 恢复暂存变量），在同一个调用栈里从根黑板按 `CLEANED` → `INTERRUPTED` → `onAbort` → `onClear` → 清空状态、黑板和监听的顺序完成清理。树空闲时在回调里调用，同样会停下这个回调。`CLEANED` 的监听里再调用 `clear` 会被忽略。
 - `onTick` 里的 `tree.blackboard` 是当前作用域，在 `Scope` 或条件树里是它的覆盖层（[scope-design.md](scope-design.md) 第 10 节）。
 - 节点注册的回调在节点返回之后才执行、属于整棵树时（像 `Listen`、`Delay`），或者运行的树到运行时才加载时（像 `RunTree`），在 NodeDef 里声明 `deferred: true`，放进条件树时加载报错。返回 `running` 等待的节点（像 `Wait`、`WaitForEvent`）不算：它们的状态由框架管理，被中止时会清理。
 - 注册监听或定时器时，回调用 `tree.bindCallback(fn)` 包一层，触发时回到注册时的作用域；不包的回调在 tick 之外执行时用的是根黑板，放在 `Scope` 里会写到外面。

@@ -827,7 +827,7 @@ describe("scope when interrupted", () => {
         const bound = tree.__withScope(inner, () =>
             tree.bindCallback(() => {
                 assert.equal(tree.executing, true);
-                assert.throws(() => tree.tick(), /is executing a callback/);
+                assert.throws(() => tree.tick(), /is executing \(a callback or an abort\)/);
                 return tree.blackboard;
             }),
         );
