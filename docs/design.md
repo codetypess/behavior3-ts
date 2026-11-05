@@ -116,7 +116,9 @@ Tree 的这些过程都算**执行**（`tree.executing` 为 true）：`tick`、�
 | 中断时的 `onAbort` | 抛异常，打日志 | 什么都不做（同一次中断） | 所有节点中止完后清理 |
 | 清理时的 `onAbort`、`CLEANED` 的监听、`onClear` | 抛异常，打日志 | 什么都不做，或者在清理之前中止（`CLEANED` 的监听里） | 忽略 |
 
-执行中不能 tick 的报错是 `is executing (a callback, an abort or a clear)`。这张表保证的不变量：
+执行中不能 tick 的报错是 `is executing (a callback, an abort or a clear)`。
+
+节点什么时候停下由**停止范围**决定：`tick` 和回调里执行节点（`__tickInCallback`）各建立一个范围，`bindCallback` 绑定的回调、中止和清理沿用当前的范围。节点在回调的范围里抛异常，只停下这个范围（这次回调后面的节点不再执行）；在 tick 的范围里抛异常，中断整棵树。`interrupt`、`clear` 停下栈上所有的范围，最外层的范围退出时中止整棵树（有待执行的清理时，由清理来中止）。这张表保证的不变量：
 
 - **最外层退出后才清理**：执行中调用 `clear` 只标记停止，最外层的执行退出时，在同一个调用栈里清理。
 - **每个节点只中止、清理一次**：一次中断或清理中，每个 running 的节点 `onAbort` 只调用一次，每个节点 `onClear` 只调用一次。

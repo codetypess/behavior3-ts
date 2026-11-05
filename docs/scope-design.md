@@ -263,7 +263,7 @@ for (let i = 0; i < outputKeys.length; i++) {
 private static _evalCondition(tree: Tree<Context, unknown>, root: Node): boolean {
     const evaluate = () => {
         const status = root.tick(tree);
-        if (!tree.__interrupted && status === "running") {
+        if (!tree.__stopScope.stopped && status === "running") {
             root.error(`condition tree must not return 'running'`);
             root.abort(tree);   // 还在条件的作用域里
         }
@@ -272,7 +272,7 @@ private static _evalCondition(tree: Tree<Context, unknown>, root: Node): boolean
     const status = root.__isScope
         ? evaluate()
         : tree.__withScope(tree.blackboard.fork(), evaluate);
-    return !tree.__interrupted && status === "success";
+    return !tree.__stopScope.stopped && status === "success";
 }
 ```
 
@@ -293,7 +293,7 @@ override get __isScope(): boolean {
 
 **running 时的 abort 要放在作用域里面**。如果在 `__withScope` 返回之后才 abort，条件树里节点的 `onAbort` 拿到的是 O，写黑板就会漏到外层。根节点是 `Scope` 时，中止它会重新进入它的覆盖层（5.3 节），放在 `evaluate` 里也一样正确。
 
-**被中断时也要在作用域里 abort**。条件树执行中抛异常或调用 `interrupt` 时，是一路返回 `running` 退出的，隐式覆盖层随后就丢掉了；如果留给之后的 `_doInterrupt`，条件树里节点的 `onAbort` 拿到的是外层作用域。所以 `evaluate` 里发现 `tree.__interrupted` 时，立即用 `__abortAll(root)` 中止条件树里所有 running 的节点（中断时 running 路径可能不完整，不能用 `root.abort`）。之后的 `_doInterrupt` 遍历到这里时它们已经不是 running，不会重复调用。
+**被中断时也要在作用域里 abort**。条件树执行中抛异常或调用 `interrupt` 时，是一路返回 `running` 退出的，隐式覆盖层随后就丢掉了；如果留给之后的 `_doInterrupt`，条件树里节点的 `onAbort` 拿到的是外层作用域。所以 `evaluate` 里发现 `tree.__stopScope.stopped` 时，立即用 `__abortAll(root)` 中止条件树里所有 running 的节点（中断时 running 路径可能不完整，不能用 `root.abort`）。之后的 `_doInterrupt` 遍历到这里时它们已经不是 running，不会重复调用。
 
 两种情况下 output 在哪里被阻断：
 

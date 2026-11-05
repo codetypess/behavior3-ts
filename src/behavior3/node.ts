@@ -403,7 +403,7 @@ export abstract class Node {
         const { blackboard } = tree;
         const { _cfg: cfg, input, output, args } = this;
 
-        if (tree.__interrupted) {
+        if (tree.__stopScope.stopped) {
             // unwinding the interrupted tick, don't execute any more node
             return "running";
         } else if (tree.debug) {
@@ -414,13 +414,13 @@ export abstract class Node {
             let passed: boolean;
             if (tree.isRunning(this)) {
                 passed = this.evalSelfConditions(tree);
-                if (!passed && !tree.__interrupted) {
+                if (!passed && !tree.__stopScope.stopped) {
                     this.abort(tree);
                 }
             } else {
                 passed = conditionsChecked || this.evalConditions(tree);
             }
-            if (tree.__interrupted) {
+            if (tree.__stopScope.stopped) {
                 return "running";
             } else if (!passed) {
                 if (cfg.debug || tree.debug) {
@@ -460,7 +460,7 @@ export abstract class Node {
             tree.__exception(this, error);
         }
 
-        if (tree.__interrupted) {
+        if (tree.__stopScope.stopped) {
             return "running";
         } else if (status !== "running") {
             if (status !== "error") {
@@ -668,7 +668,7 @@ export abstract class Node {
                 tree.__swapScope(outer);
             }
         }
-        return !tree.__interrupted && status === "success";
+        return !tree.__stopScope.stopped && status === "success";
     }
 
     /**
@@ -678,7 +678,7 @@ export abstract class Node {
      */
     private static _tickCondition(tree: Tree<Context, unknown>, root: Node): Status {
         const status = root.tick(tree);
-        if (tree.__interrupted) {
+        if (tree.__stopScope.stopped) {
             tree.__abortAll(root);
         } else if (status === "running") {
             root.error(`condition tree must not return 'running'`);
