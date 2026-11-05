@@ -372,8 +372,11 @@ export class Tree<C extends Context, Owner> {
         this._executing++;
         try {
             try {
-                node.tick(this);
-                this.__abortAll(node);
+                if (node.tick(this) === "running") {
+                    // nobody ticks the subtree again: abort the nodes left running, also when
+                    // stopped halfway (a finished node has aborted its children)
+                    this.__abortAll(node);
+                }
             } finally {
                 this._scope = outerScope;
                 this.__stopScope = outer;
