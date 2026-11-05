@@ -669,7 +669,7 @@ describe("clear while executing", () => {
             tree.clear();
             ctx.log.push("outer done");
             // still executing: the tree is not cleared yet, and can't be ticked
-            assert.throws(() => tree.tick(), /is executing \(a callback or an abort\)/);
+            assert.throws(() => tree.tick(), /is executing \(a callback, an abort or a clear\)/);
         });
         outer();
         assert.deepEqual(ctx.takeLog(), ["inner done", "outer done", "CLEANED", "abort:p"]);
@@ -778,7 +778,7 @@ describe("clear while executing", () => {
     it("can't tick the tree in onAbort of an interrupt", () => {
         const { ctx, tree } = abortCalls((t) => t.tick());
         const { error } = captureConsole(() => tree.interrupt());
-        assert.match(error[0], /ClearSpy#A: .*is executing \(a callback or an abort\)/);
+        assert.match(error[0], /ClearSpy#A: .*is executing \(a callback, an abort or a clear\)/);
         assert.deepEqual(ctx.takeLog(), ["abort:A", "abort:B"]);
         assert.equal(tree.tick(), "running");
     });

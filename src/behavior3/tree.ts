@@ -78,14 +78,19 @@ export class Tree<C extends Context, Owner> {
     private _callback?: { interrupt: boolean };
     /**
      * How many executions are on the stack: `tick`, `__tickInCallback`, the callbacks from
-     * `bindCallback` and `interrupt` aborting the nodes. A `clear` while executing waits until it
-     * is back to 0.
+     * `bindCallback`, `interrupt` aborting the nodes and `clear`. A `clear` while executing waits
+     * until it is back to 0.
      */
     private _executing: number = 0;
     /** `clear` is called while executing, the tree is cleared when the execution exits. */
     private _pendingClear: boolean = false;
     /** `clear` is running, a `clear` from its listeners is ignored. */
     private _clearing: boolean = false;
+    /**
+     * Interrupted and the running nodes not aborted yet: set before `INTERRUPTED` is dispatched,
+     * another `interrupt` meanwhile (like from its listeners or `onAbort`) does nothing.
+     */
+    private _interrupting: boolean = false;
     /** How many times the tree is cleared, a callback bound before a clear is skipped. */
     private _clearCount: number = 0;
     /** The tick count when the node is ticked last time, only recorded in debug mode. */
@@ -211,8 +216,8 @@ export class Tree<C extends Context, Owner> {
 
     /**
      * Whether the tree is executing: ticking, ticking its nodes in a callback (like `Listen` and
-     * `Delay`), running a callback from `bindCallback`, or aborting its running nodes when
-     * interrupted outside the tick. It can't be ticked meanwhile.
+     * `Delay`), running a callback from `bindCallback`, aborting its running nodes when
+     * interrupted outside the tick, or clearing. It can't be ticked meanwhile.
      */
     get executing() {
         return this._executing > 0;
@@ -247,10 +252,14 @@ export class Tree<C extends Context, Owner> {
         this._doClear();
     }
 
-    /** Clears the tree from the root blackboard, the whole tree is cleared in it. */
+    /**
+     * Clears the tree from the root blackboard, the whole tree is cleared in it. An execution: the
+     * tree can't be ticked by its listeners, `onAbort` or `onClear`.
+     */
     private _doClear() {
         this._pendingClear = false;
         this._clearing = true;
+        this._executing++;
         const outer = this.__swapScope(this._rootBlackboard);
         try {
             // force run clear
@@ -259,13 +268,20 @@ export class Tree<C extends Context, Owner> {
             this.context.__dispatchIsolated(this.path, TreeEvent.CLEANED, this);
             this.__interrupted = interrupted;
 
-            this.interrupt();
+            if (this._interrupting) {
+                // interrupted while executing, the abort was left to this clear: INTERRUPTED has
+                // been dispatched
+                this._doInterrupt();
+            } else {
+                this.interrupt();
+            }
             if (this.root) {
                 // after the running nodes are aborted, before the private vars are cleared
                 this._clearAll(this.root);
             }
             this.debug = false;
             this.__interrupted = false;
+            this._interrupting = false;
             this._status = "success";
             this._states.length = 0;
             this._rootBlackboard.clear();
@@ -275,6 +291,8 @@ export class Tree<C extends Context, Owner> {
         } finally {
             this._scope = outer;
             this._clearing = false;
+            // a `clear` meanwhile is ignored, nothing is pending
+            this._executing--;
         }
     }
 
@@ -285,8 +303,16 @@ export class Tree<C extends Context, Owner> {
         }
     }
 
+    /**
+     * Interrupts the tree: dispatches `INTERRUPTED` and aborts the running nodes, right away when
+     * the tree is idle, otherwise when the tick or the callback exits. Once per interruption: an
+     * `interrupt` before the nodes are aborted does nothing.
+     */
     interrupt() {
-        if (this._status === "running" || this._ticking) {
+        if (this._interrupting) {
+            return;
+        } else if (this._status === "running" || this._ticking) {
+            this._interrupting = true;
             this.context.__dispatchIsolated(this.path, TreeEvent.INTERRUPTED, this);
             this.__interrupted = true;
             if (this._callback) {
@@ -436,12 +462,12 @@ export class Tree<C extends Context, Owner> {
             const node = this.__runningNode;
             throw new Error(`tree '${this.path}' already ticking: ${node?.name}#${node?.id}`);
         } else if (this._executing > 0) {
-            // like ticking it in a node: the nodes of the callback (or being aborted) are on the
-            // stack, and the tick would run the whole tree in the middle of it (like a callback of
-            // a subtree ticking the caller, which runs the subtree again by `RunTree`)
+            // like ticking it in a node: the nodes of the callback (or being aborted, cleared) are
+            // on the stack, and the tick would run the whole tree in the middle of it (like a
+            // callback of a subtree ticking the caller, which runs the subtree again by `RunTree`)
             throw new Error(
-                `tree '${this.path}' is executing (a callback or an abort), it can't be ticked ` +
-                    `until it returns`,
+                `tree '${this.path}' is executing (a callback, an abort or a clear), it can't be ` +
+                    `ticked until it returns`,
             );
         }
 
@@ -518,6 +544,7 @@ export class Tree<C extends Context, Owner> {
             }
         }
         this.__interrupted = false;
+        this._interrupting = false;
     }
 
     /**

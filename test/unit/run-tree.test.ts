@@ -377,7 +377,7 @@ describe("RunTree re-entered from a callback of the subtree", () => {
             const { ctx, tree } = reenter(inScope);
             const { error } = captureConsole(() => ctx.dispatch("e"));
             assert.deepEqual(ctx.takeLog(), ["cb:bl=1", "main=exception"]);
-            assert.match(error[0], /->RunTree#rt: tree 'sub' is executing \(a callback or an abort\), it can't be run again/);
+            assert.match(error[0], /->RunTree#rt: tree 'sub' is executing \(a callback, an abort or a clear\), it can't be run again/);
             assert.equal(error.length, 1);
             // runs normally after the callback, with the new input
             assert.equal(tree.tick(), "success");

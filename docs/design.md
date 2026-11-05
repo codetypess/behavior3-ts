@@ -71,8 +71,10 @@ onAbort(tree): void      // 节点自己清理：停止移动、移除监听和�
 
 `tree.interrupt()` 中止整棵树：
 
-- 在 tick 过程中调用时，`Node.tick` 一进入就直接返回 running，这一帧不再执行任何节点（包括 Parallel 后面的兄弟节点）。帧结束时遍历整棵树（包括条件树），对所有有状态的节点调用 `onAbort`，清空状态和临时变量，派发 `TreeEvent.INTERRUPTED`，`tree.tick()` 返回 `"interrupted"`。
+- 调用时立即派发 `TreeEvent.INTERRUPTED`。
+- 在 tick 过程中调用时，`Node.tick` 一进入就直接返回 running，这一帧不再执行任何节点（包括 Parallel 后面的兄弟节点）。帧结束时遍历整棵树（包括条件树），对所有有状态的节点调用 `onAbort`，清空状态和临时变量，`tree.tick()` 返回 `"interrupted"`。
 - 不在 tick 过程中调用时立即执行上述清理；树没有在运行时什么都不做。
+- 一次中断只派发一次 `INTERRUPTED`：从调用 `interrupt()` 到节点中止完，再调用 `interrupt()`（比如在 `INTERRUPTED` 的监听或 `onAbort` 里）什么都不做。
 - 下一帧从根节点重新开始。
 
 ### 2.5 Tree 的状态和事件
@@ -99,6 +101,28 @@ onAbort(tree): void      // 节点自己清理：停止移动、移除监听和�
 | `CLEANED` | 调用 `tree.clear()`；在执行中调用时，等执行退出后才派发 |
 
 监听抛异常时打印日志（带树的路径、事件名和调用栈），其余的监听照常调用，树也照常继续，和 `onAbort`、`onClear` 抛异常的处理一样。比如 `CLEANED` 的监听出错，清理仍然完整做完。
+
+### 2.6 生命周期规则
+
+Tree 的这些过程都算**执行**（`tree.executing` 为 true）：`tick`、回调里执行节点（`Listen`、`Delay`）、`bindCallback` 绑定的回调、树空闲时 `interrupt()` 中止节点、`clear()` 清理。在执行中调用 `tick`、`interrupt`、`clear` 的结果（以 A、B 两个节点 running 为例，`test/unit/lifecycle.test.ts` 按这张表逐格测试）：
+
+| 在哪里调用 | `tick()` | `interrupt()` | `clear()` |
+|---|---|---|---|
+| 树空闲 | 正常执行 | 派发 `INTERRUPTED`，立即中止 A、B，`status` 为 `interrupted` | 立即清理 |
+| tick 中的节点 | 抛 `already ticking`，作为节点异常，树以 `exception` 结束 | 这一帧结束时中止，`tick()` 返回 `interrupted` | tick 退出时清理，`tick()` 返回 `interrupted` |
+| tick 外的回调里的节点 | 抛异常，只停下这次回调 | 回调结束后中止 | 回调退出时清理 |
+| tick 中触发的回调里的节点 | 抛 `already ticking`，只停下这次回调 | 交给 tick，这一帧结束时中止 | tick 退出时清理 |
+| `bindCallback` 绑定的回调 | 抛异常给回调的调用方 | 立即中止 | 回调退出时清理 |
+| 中断时的 `onAbort` | 抛异常，打日志 | 什么都不做（同一次中断） | 所有节点中止完后清理 |
+| 清理时的 `onAbort`、`CLEANED` 的监听、`onClear` | 抛异常，打日志 | 什么都不做，或者在清理之前中止（`CLEANED` 的监听里） | 忽略 |
+
+执行中不能 tick 的报错是 `is executing (a callback, an abort or a clear)`。这张表保证的不变量：
+
+- **最外层退出后才清理**：执行中调用 `clear` 只标记停止，最外层的执行退出时，在同一个调用栈里清理。
+- **每个节点只中止、清理一次**：一次中断或清理中，每个 running 的节点 `onAbort` 只调用一次，每个节点 `onClear` 只调用一次。
+- **一次中断只派发一次 `INTERRUPTED`**，一次清理只派发一次 `CLEANED`；中断后又清理时，`INTERRUPTED` 不再重复派发。
+- **执行中不能 tick**：不会在节点、回调、中止或清理的中间把整棵树再跑一遍。
+- 执行结束后 `executing`、`ticking` 都是 false，当前作用域回到根黑板。
 
 ## 3. error 与异常
 
@@ -197,7 +221,7 @@ if (field === ERROR) return "error";
 - 子树执行完后，中止其中所有 running 的节点（回调里的子树不能跨帧运行）。
 - 事件在主树 tick 过程中同步派发时，也按回调处理，不影响这一次 tick。
 - 回调里的节点主动调用 `tree.interrupt()` 仍然中断整棵树，回调结束后生效（在 tick 过程中则在这一帧结束时生效）。
-- 回调执行中（以及中止节点的过程中）不能 tick 这棵树，和在节点里 tick 自己的树一样抛异常：回调的节点还在栈上，整棵树不能在它中间再跑一遍。tick 别的树可以，但子树的回调 tick 了调用方、调用方又通过 `RunTree` 回到这棵子树时，`RunTree` 在写入输入之前抛异常，日志的调用栈里能看到整个环。`tree.executing` 表示树正在执行（tick 或回调）。
+- 回调执行中（以及中止节点、清理的过程中，见 2.6 节）不能 tick 这棵树，和在节点里 tick 自己的树一样抛异常：回调的节点还在栈上，整棵树不能在它中间再跑一遍。tick 别的树可以，但子树的回调 tick 了调用方、调用方又通过 `RunTree` 回到这棵子树时，`RunTree` 在写入输入之前抛异常，日志的调用栈里能看到整个环。`tree.executing` 表示树正在执行。
 
 ## 4. 条件与打断
 
@@ -509,7 +533,7 @@ export class MyNode extends Node {
 
 - 只实现 `onTick`、`onAbort` 和 `onClear`。重写 `tick` 或 `abort` 时加载抛异常。
 - `onClear` 在 `tree.clear()` 时对每个节点（包括条件树里的）调用一次：在 running 的节点 `onAbort` 之后、清空黑板之前，用来释放节点为这棵树保留的东西（比如私有变量里缓存的子树实例）。
-- `tree.clear()` 可以在执行中调用（比如节点把单位打死，宿主销毁单位）：它只标记停止，执行栈一路返回 `running` 退出，栈上的节点不会拿着已清空的状态继续执行。`tick`、`__tickInCallback`、`bindCallback` 绑定的回调，以及树空闲时 `interrupt()` 中止节点的过程都算执行（`onAbort` 里调用 `clear` 时，等所有 running 的节点都中止完才清理），等最外层的那个退出后（绑定的回调剩下的代码也执行完，比如 `Delay` 恢复暂存变量），在同一个调用栈里从根黑板按 `CLEANED` → `INTERRUPTED` → `onAbort` → `onClear` → 清空状态、黑板和监听的顺序完成清理。树空闲时在回调里调用，同样会停下这个回调。`CLEANED` 的监听里再调用 `clear` 会被忽略。
+- `tree.clear()` 可以在执行中调用（比如节点把单位打死，宿主销毁单位）：它只标记停止，执行栈一路返回 `running` 退出，栈上的节点不会拿着已清空的状态继续执行。`tick`、`__tickInCallback`、`bindCallback` 绑定的回调，以及树空闲时 `interrupt()` 中止节点、`clear()` 清理的过程都算执行（2.6 节）（`onAbort` 里调用 `clear` 时，等所有 running 的节点都中止完才清理），等最外层的那个退出后（绑定的回调剩下的代码也执行完，比如 `Delay` 恢复暂存变量），在同一个调用栈里从根黑板按 `CLEANED` → `INTERRUPTED` → `onAbort` → `onClear` → 清空状态、黑板和监听的顺序完成清理。树空闲时在回调里调用，同样会停下这个回调。`CLEANED` 的监听、`onAbort`、`onClear` 里再调用 `clear` 会被忽略，调用 `tick` 会抛异常。
 - `onTick` 里的 `tree.blackboard` 是当前作用域，在 `Scope` 或条件树里是它的覆盖层（[scope-design.md](scope-design.md) 第 10 节）。
 - 节点注册的回调在节点返回之后才执行、属于整棵树时（像 `Listen`、`Delay`），或者运行的树到运行时才加载时（像 `RunTree`），在 NodeDef 里声明 `deferred: true`，放进条件树时加载报错。返回 `running` 等待的节点（像 `Wait`、`WaitForEvent`）不算：它们的状态由框架管理，被中止时会清理。
 - 注册监听或定时器时，回调用 `tree.bindCallback(fn)` 包一层，触发时回到注册时的作用域；不包的回调在 tick 之外执行时用的是根黑板，放在 `Scope` 里会写到外面。
@@ -565,7 +589,7 @@ export class MyNode extends Node {
 
 ## 11. 测试
 
-- `npm test` 运行 `test/unit` 下的单元测试（node:test），覆盖执行模型、状态接口、每个内置节点、中止与中断、error 的传递（`error.test.ts`）、异常（包括异步回调和嵌套回调）、条件与抢占、表达式求值、黑板、作用域（`scope.test.ts`，条件树的作用域在 `conditions.test.ts`）、RunTree 和 `onClear`（`run-tree.test.ts`）、Context 的定时器和事件、节点注册，以及多个节点组合的场景。
+- `npm test` 运行 `test/unit` 下的单元测试（node:test），覆盖执行模型、状态接口、每个内置节点、中止与中断、error 的传递（`error.test.ts`）、异常（包括异步回调和嵌套回调）、条件与抢占、表达式求值、黑板、作用域（`scope.test.ts`，条件树的作用域在 `conditions.test.ts`）、RunTree 和 `onClear`（`run-tree.test.ts`）、生命周期规则表和不变量（`lifecycle.test.ts`）、Context 的定时器和事件、节点注册，以及多个节点组合的场景。
 - `npm run bench` 运行基准测试（第 10 节）。
 - `npm start` 运行 `test/main.ts`，用 `example/*.json` 跑一遍，并重新生成 `example/node-config.b3-setting`。
 

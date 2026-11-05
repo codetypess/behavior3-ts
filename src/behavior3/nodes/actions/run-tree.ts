@@ -83,7 +83,7 @@ export class RunTree extends Node {
             // a callback of the subtree ticks this tree, which comes back to the subtree: checked
             // before the input is written, the subtree is in the middle of the callback
             this.throw(
-                `tree '${subtree.path}' is executing (a callback or an abort), it can't be run ` +
+                `tree '${subtree.path}' is executing (a callback, an abort or a clear), it can't be run ` +
                     `again until it returns (it ticks '${tree.path}'?)`,
             );
         }
