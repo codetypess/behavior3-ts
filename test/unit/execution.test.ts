@@ -722,18 +722,12 @@ describe("tree", () => {
         assert.deepEqual(ctx.takeLog(), ["tick:p"]);
     });
 
-    it("exposes the owner, the root and the running node", () => {
+    it("exposes the owner and the root", () => {
         const ctx = new TestContext();
         const owner = { name: "unit" };
         const tree = new Tree(ctx, owner, ctx.createTree(probe("a")).path);
         assert.equal(tree.owner, owner);
         assert.equal(tree.ready, true);
         assert.equal(tree.root!.name, "Probe");
-        tree.blackboard.set("a", "running");
-        tree.tick();
-        assert.equal(tree.runningNode, tree.root);
-        tree.blackboard.set("a", "success");
-        tree.tick();
-        assert.equal(tree.runningNode, undefined);
     });
 });

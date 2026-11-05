@@ -77,7 +77,10 @@ export class Tree<C extends Context, Owner> {
     protected _ticking: boolean = false;
     protected _owner: Owner;
 
-    /** @private */
+    /**
+     * @private The last node whose tick started (not necessarily a running one), named in the
+     * error of ticking the tree while it's ticking.
+     */
     __runningNode: Node | undefined = undefined;
 
     /** @private The current stop scope, read by the nodes while ticking. */
@@ -244,10 +247,6 @@ export class Tree<C extends Context, Owner> {
      */
     get executing() {
         return this._executing > 0;
-    }
-
-    get runningNode() {
-        return this.__runningNode;
     }
 
     /**
