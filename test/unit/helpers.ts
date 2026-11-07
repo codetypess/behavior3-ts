@@ -426,7 +426,7 @@ export class TestContext extends Context {
                 name: path,
                 desc: "",
                 group: [],
-                root: structuredClone(this._sources.get(path)) as unknown as NodeData,
+                root: structuredClone(this._sources.get(path)) as NodeData,
             } satisfies TreeData;
             root = this._createTree(data);
             this.trees[path] = root;

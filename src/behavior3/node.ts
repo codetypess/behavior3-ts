@@ -180,10 +180,6 @@ export interface NodeData {
     output: string[];
     children: NodeData[];
     conditions?: ConditionData[];
-
-    tree: TreeData;
-    /** The index of the node in the tree, assigned when the tree is created. */
-    index: number;
 }
 
 export interface Condition {
@@ -192,6 +188,9 @@ export interface Condition {
 }
 
 const ABORT_MODES: readonly AbortMode[] = ["none", "self", "lower", "both"];
+
+/** The tree being created by `Node.__createRoot`, its nodes take their tree and index from it. */
+let creating: { tree: TreeData; index: number } | undefined;
 
 const deepFreeze = <T>(value: T): T => {
     if (value && typeof value === "object" && !Object.isFrozen(value)) {
@@ -213,6 +212,7 @@ export abstract class Node {
     private _parent: Node | null = null;
     private _children: Node[] = [];
     private _cfg: NodeData;
+    private _treeName: string;
     private _jsonArgs: Record<string, string> | undefined;
     private _conditions: Condition[] = [];
     private _selfConditions: Condition[] = [];
@@ -223,7 +223,11 @@ export abstract class Node {
     constructor(context: Context, cfg: NodeData) {
         this._context = context;
         this._cfg = cfg;
-        this.index = cfg.index;
+        if (!creating) {
+            throw new Error(`behavior3: node '${cfg.name}' is created outside of a tree`);
+        }
+        this._treeName = creating.tree.name;
+        this.index = creating.index++;
 
         const descriptor = context.nodeDefs[cfg.name] as NodeDef | undefined;
         Object.keys(cfg.args).forEach((k) => {
@@ -275,6 +279,11 @@ export abstract class Node {
 
     get cfg() {
         return this._cfg;
+    }
+
+    /** `tree->name#id`, the prefix of the messages of the node. */
+    private get _location() {
+        return `${this._treeName}->${this.name}#${this.id}`;
     }
 
     get id() {
@@ -451,7 +460,7 @@ export abstract class Node {
         } catch (e) {
             const error = e instanceof Error ? e : new Error(String(e));
             const msg = error.stack ?? error.message;
-            if (error.message.startsWith(`${cfg.tree.name}->${this.name}#${this.id}: `)) {
+            if (error.message.startsWith(`${this._location}: `)) {
                 // thrown by `node.throw`, the message already has the location of the node
                 console.error(msg);
             } else {
@@ -535,28 +544,28 @@ export abstract class Node {
      * throw an error
      */
     throw(msg: string): never {
-        throw new Error(`${this.cfg.tree.name}->${this.name}#${this.id}: ${msg}`);
+        throw new Error(`${this._location}: ${msg}`);
     }
 
     /**
      * use console.error to print error message
      */
     error(msg: string) {
-        console.error(`${this.cfg.tree.name}->${this.name}#${this.id}: ${msg}`);
+        console.error(`${this._location}: ${msg}`);
     }
 
     /**
      * use console.warn to print warning message
      */
     warn(msg: string) {
-        console.warn(`${this.cfg.tree.name}->${this.name}#${this.id}: ${msg}`);
+        console.warn(`${this._location}: ${msg}`);
     }
 
     /**
      * use console.debug to print debug message
      */
     debug(msg: string) {
-        console.debug(`${this.cfg.tree.name}->${this.name}#${this.id}: ${msg}`);
+        console.debug(`${this._location}: ${msg}`);
     }
 
     /**
@@ -564,14 +573,14 @@ export abstract class Node {
      */
 
     info(msg: string) {
-        console.info(`${this.cfg.tree.name}->${this.name}#${this.id}: ${msg}`);
+        console.info(`${this._location}: ${msg}`);
     }
 
     /**
      * use console.log to print log message
      */
     log(msg: string) {
-        console.log(`${this.cfg.tree.name}->${this.name}#${this.id}: ${msg}`);
+        console.log(`${this._location}: ${msg}`);
     }
 
     /**
@@ -643,7 +652,7 @@ export abstract class Node {
         }
         const indent = " ".repeat(depth);
         console.info(
-            `[DEBUG] behavior3 -> ${indent}${this.name}: tree:${cfg.tree.name} tree_id:${tree.id}, ` +
+            `[DEBUG] behavior3 -> ${indent}${this.name}: tree:${this._treeName} tree_id:${tree.id}, ` +
                 `node:${this.id}, status:${status}${extra}, values:{${varStr}} args:${JSON.stringify(
                     cfg.args,
                 )}`,
@@ -730,12 +739,27 @@ export abstract class Node {
         }
     }
 
+    /**
+     * @private Creates the nodes of the tree, they are indexed in pre-order (the node, its
+     * conditions, its children), disabled nodes are not created and not indexed.
+     */
+    static __createRoot(context: Context, treeCfg: TreeData) {
+        const last = creating;
+        creating = { tree: treeCfg, index: 0 };
+        try {
+            return Node.create(context, treeCfg.root);
+        } finally {
+            creating = last;
+        }
+    }
+
     static create(context: Context, cfg: NodeData) {
         const NodeCls = context.nodeCtors[cfg.name] as NodeContructor<Node> | undefined;
         const descriptor = context.nodeDefs[cfg.name] as NodeDef | undefined;
 
         if (!NodeCls || !descriptor) {
-            throw new Error(`behavior3: node '${cfg.tree.name}->${cfg.name}' is not registered`);
+            const treeName = creating?.tree.name ?? "?";
+            throw new Error(`behavior3: node '${treeName}->${cfg.name}' is not registered`);
         }
 
         const node = new NodeCls(context, cfg);

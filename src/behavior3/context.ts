@@ -400,10 +400,7 @@ export abstract class Context {
     }
 
     protected _createTree(treeCfg: TreeData) {
-        let index = 0;
         const traverse = (cfg: NodeData) => {
-            cfg.tree = treeCfg;
-            cfg.index = index++;
             cfg.input ||= [];
             cfg.output ||= [];
             cfg.children ||= [];
@@ -413,7 +410,7 @@ export abstract class Context {
         };
         traverse(treeCfg.root);
 
-        const root = Node.create(this, treeCfg.root);
+        const root = Node.__createRoot(this, treeCfg);
         if (root.abortsLower) {
             root.warn(`'lower' has no effect: root node has no parent`);
         }
