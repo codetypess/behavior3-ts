@@ -120,7 +120,7 @@ const run = (place: Place, op: Op) => {
         call(t as Tree<TestContext, unknown>, "onClear");
     };
     const hookTick = hook.onTick;
-    hook.onTick = (t) => {
+    hook.onTick = (t, input, output) => {
         call(t as Tree<TestContext, unknown>, "tick");
         if (armed === "callbackInTick") {
             t.context.dispatch("e");
@@ -128,13 +128,13 @@ const run = (place: Place, op: Op) => {
             t.interrupt();
         }
         bound ??= t.bindCallback(() => call(t as Tree<TestContext, unknown>, "bound"));
-        return hookTick.call(hook, t);
+        return hookTick.call(hook, t, input, output);
     };
     const cbTick = cb.onTick;
-    cb.onTick = (t) => {
+    cb.onTick = (t, input, output) => {
         call(t as Tree<TestContext, unknown>, "callback");
         call(t as Tree<TestContext, unknown>, "callbackInTick");
-        return cbTick.call(cb, t);
+        return cbTick.call(cb, t, input, output);
     };
 
     const events = { interrupted: 0, cleaned: 0 };

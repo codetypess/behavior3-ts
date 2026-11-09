@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { Context, Node, NodeDef, Status, Tree } from "../../src/behavior3";
-import { n, TestContext } from "./helpers";
+import { captureConsole, n, TestContext } from "./helpers";
 
 /**
  * Re-enters itself through the peer tree of the same path, then logs whether its input and
@@ -9,17 +9,20 @@ import { n, TestContext } from "./helpers";
  */
 class Reenter extends Node {
     declare args: { readonly value?: { tag: string } };
-    declare input: [unknown];
 
-    override onTick(tree: Tree<Context, unknown>): Status {
+    override onTick(
+        tree: Tree<Context, unknown>,
+        input: readonly [unknown],
+        output: unknown[],
+    ): Status {
         const ctx = tree.context as ReentryContext;
-        const [value] = this.input;
+        const [value] = input;
         const arg = this.args.value;
         if (ctx.peer && ctx.peer !== tree) {
             ctx.peer.tick();
         }
-        ctx.log.push(`${String(value)}:${this.input[0] === value}:${this.args.value === arg}`);
-        this.output.push(value);
+        ctx.log.push(`${String(value)}:${input[0] === value}:${this.args.value === arg}`);
+        output.push(value);
         return "success";
     }
 
@@ -34,12 +37,41 @@ class Reenter extends Node {
     }
 }
 
+/**
+ * Doubles `v` and dispatches `ping` heard by the `Listen` above it in the same tree, until it is
+ * called 3 times, then logs whether its input is still the one of this call.
+ */
+class Ping extends Node {
+    override onTick(
+        tree: Tree<Context, unknown>,
+        input: readonly [number],
+        output: [number?],
+    ): Status {
+        const ctx = tree.context as ReentryContext;
+        const [value] = input;
+        if (++ctx.pings < 3) {
+            tree.blackboard.set("v", value * 2);
+            ctx.dispatch("ping");
+        }
+        ctx.log.push(`${value}:${input[0] === value}:${output.length === 0}`);
+        output.push(value);
+        return "success";
+    }
+
+    static override get descriptor(): NodeDef {
+        return { name: "Ping", type: "Action", group: ["Test"], desc: "re-enter through Listen" };
+    }
+}
+
 class ReentryContext extends TestContext {
+    pings = 0;
+
     peer?: Tree<Context, unknown>;
 
     constructor() {
         super();
         this.registerNode(Reenter);
+        this.registerNode(Ping);
     }
 }
 
@@ -103,7 +135,7 @@ describe("re-entered node", () => {
         assert.equal(b.blackboard.get("seen"), 2);
     });
 
-    it("keeps the json args of the outer call", () => {
+    it("keeps the args of the outer call", () => {
         const ctx = new ReentryContext();
         ctx.defineTree(
             "json",
@@ -132,5 +164,45 @@ describe("re-entered node", () => {
         a.tick();
         assert.deepEqual(ctx.takeLog(), ["undefined:true:true", "1:true:true", "2:true:true"]);
         assert.equal(a.blackboard.get("out"), 2);
+    });
+
+    it("keeps the input and output of the outer call when a callback re-enters it", () => {
+        const ctx = new ReentryContext();
+        ctx.defineTree(
+            "ping",
+            n("Listen", "l", {
+                args: { event: "ping" },
+                children: [n("Ping", "p", { input: ["v"], output: ["out"] })],
+            }),
+        );
+        const tree = new Tree(ctx, {}, "ping");
+        tree.tick();
+        tree.blackboard.set("v", 1);
+        ctx.dispatch("ping");
+        // the same node of the same tree, three calls nested by the callbacks
+        assert.deepEqual(ctx.takeLog(), ["4:true:true", "2:true:true", "1:true:true"]);
+        assert.equal(tree.blackboard.get("out"), 1);
+    });
+
+    it("restores the frame stack when an exception escapes a node", () => {
+        const ctx = new ReentryContext();
+        const boom = (tree: Tree<Context, unknown>) =>
+            Object.defineProperty(tree.blackboard.values, "boom", {
+                get() {
+                    throw new Error("boom");
+                },
+            });
+        // reading the input of the root throws out of `tree.tick`
+        const root = ctx.createTree(n("Reenter", "call", { input: ["boom"] }));
+        boom(root);
+        assert.throws(() => root.tick(), /boom/);
+        assert.equal(Node.__frameDepth, 0);
+        // caught by the parent, which leaves the stack above for its own call to set back
+        const nested = ctx.createTree(
+            n("Sequence", "seq", { children: [n("Reenter", "call", { input: ["boom"] })] }),
+        );
+        boom(nested);
+        captureConsole(() => nested.tick());
+        assert.equal(Node.__frameDepth, 0);
     });
 });

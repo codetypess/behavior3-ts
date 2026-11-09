@@ -5,18 +5,21 @@ import { Tree } from "../../tree";
 
 @registerNode
 export class GetField extends Node {
-    declare input: [{ [key: string]: unknown }, string | undefined];
     declare args: { readonly field?: string };
 
-    override onTick(tree: Tree<Context, unknown>): Status {
-        const [obj] = this.input;
+    override onTick(
+        tree: Tree<Context, unknown>,
+        input: readonly [{ [key: string]: unknown }, string | undefined],
+        output: unknown[],
+    ): Status {
+        const [obj] = input;
         if (typeof obj !== "object" || !obj) {
             this.warn(`invalid object: ${obj}`);
             return "error";
         }
 
         const args = this.args;
-        const field = this._checkOneof(1, args.field);
+        const field = this._checkOneof(input, 1, args.field);
         if (field === ERROR) {
             return "error";
         } else if (typeof field !== "string" && typeof field !== "number") {
@@ -26,7 +29,7 @@ export class GetField extends Node {
 
         const value = obj[field];
         if (value !== undefined && value !== null) {
-            this.output.push(value);
+            output.push(value);
             return "success";
         } else {
             return "failure";

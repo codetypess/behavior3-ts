@@ -5,10 +5,9 @@ import { Tree } from "../../tree";
 
 @registerNode
 export class Includes extends Node {
-    declare input: [unknown, unknown[]];
 
-    override onTick(tree: Tree<Context, unknown>): Status {
-        const [arr, element] = this.input;
+    override onTick(tree: Tree<Context, unknown>, input: readonly [unknown, unknown[]]): Status {
+        const [arr, element] = input;
         if (!Array.isArray(arr)) {
             this.warn(`invalid array: ${arr}`);
             return "error";

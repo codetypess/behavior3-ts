@@ -2,9 +2,13 @@ import { Context, Node, NodeDef, Status, Tree } from "../../src/behavior3";
 import { Role } from "../role";
 
 export class GetHp extends Node {
-    override onTick(tree: Tree<Context, Role>): Status {
+    override onTick(
+        tree: Tree<Context, Role>,
+        _input: readonly unknown[],
+        output: unknown[],
+    ): Status {
         const owner = tree.owner;
-        this.output.push(owner.hp);
+        output.push(owner.hp);
         return "success";
     }
 

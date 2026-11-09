@@ -7,9 +7,14 @@ import { Tree } from "../../tree";
 export class Let extends Node {
     declare args: { readonly value?: unknown };
 
-    override onTick(tree: Tree<Context, unknown>): Status {
-        const value = this._checkOneof(0, this.args.value, null);
-        this.output.push(value);
+    override onTick(
+        tree: Tree<Context, unknown>,
+        input: readonly unknown[],
+        output: unknown[],
+    ): Status {
+        // the value is handed out to the blackboard: a copy of the arg, which is shared
+        const value = this._checkOneof(input, 0, this._ownArg("value"), null);
+        output.push(value);
         return "success";
     }
 

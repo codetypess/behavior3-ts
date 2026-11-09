@@ -5,10 +5,13 @@ import { Tree } from "../../tree";
 
 @registerNode
 export class Filter extends Node {
-    declare input: [unknown[]];
 
-    override onTick(tree: Tree<Context, unknown>): Status {
-        const [arr] = this.input;
+    override onTick(
+        tree: Tree<Context, unknown>,
+        input: readonly [unknown[]],
+        output: unknown[],
+    ): Status {
+        const [arr] = input;
         if (!(arr instanceof Array)) {
             this.warn(`invalid array: ${arr}`);
             return "error";
@@ -37,7 +40,7 @@ export class Filter extends Node {
             }
         }
 
-        this.output.push(undefined, newArr);
+        output.push(undefined, newArr);
 
         return newArr.length === 0 ? "failure" : "success";
     }

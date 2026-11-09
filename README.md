@@ -58,21 +58,23 @@ tree.tick();
 
 ```typescript
 export class FindEnemy extends Node {
-    declare input: [number];
     declare args: {
         readonly w: number;
         readonly h: number;
     };
 
-    override onTick(tree: Tree<GameContext, Unit>): Status {
-        const [count] = this.input;
+    override onTick(
+        tree: Tree<GameContext, Unit>,
+        [count]: readonly [number],
+        output: [Unit[]?],
+    ): Status {
         const { w, h } = this.args;
         const { x, y } = tree.owner;
         const list = tree.context.find((unit: Unit) => {
             return unit !== tree.owner && Math.abs(x - unit.x) <= w && Math.abs(y - unit.y) <= h;
         });
         if (list.length >= count) {
-            this.output.push(list);
+            output.push(list);
             return "success";
         } else {
             return "failure";
@@ -113,7 +115,9 @@ export class FindEnemy extends Node {
 
 ### 黑板、输入和输出
 
-一个节点通常要用到上一个节点的输出或者外部的输入，这些变量存在**黑板**（`tree.blackboard`）上。节点执行时，框架按 `input` 的变量名从黑板读取值放进 `this.input`；节点结束时，把 `this.output` 按 `output` 的变量名写回黑板。
+一个节点通常要用到上一个节点的输出或者外部的输入，这些变量存在**黑板**（`tree.blackboard`）上。节点执行时，框架按 `input` 的变量名从黑板读取值，作为 `onTick` 的 `input` 参数传入；节点结束时，把 `output` 参数里的值按 `output` 的变量名写回黑板。这两个数组只在本次 `onTick` 期间有效，不要存进闭包或字段。
+
+参数（`this.args`）是所有树共享的只读配置，对象参数被冻结；要把参数交给黑板或者宿主的对象，或者要修改它，用 `this._ownArg(name)` 拿一份副本。
 
 上面的 FindEnemy 执行成功后，黑板上的 `target` 变量就是找到的敌人列表，后面的节点可以把 `target` 作为输入。
 

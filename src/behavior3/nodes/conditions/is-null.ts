@@ -5,10 +5,9 @@ import { Tree } from "../../tree";
 
 @registerNode
 export class IsNull extends Node {
-    declare input: [unknown];
 
-    override onTick(tree: Tree<Context, unknown>): Status {
-        const [value] = this.input;
+    override onTick(tree: Tree<Context, unknown>, input: readonly [unknown]): Status {
+        const [value] = input;
         if (value === undefined || value === null) {
             return "success";
         } else {

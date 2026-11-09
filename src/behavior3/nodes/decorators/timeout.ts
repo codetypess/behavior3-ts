@@ -7,13 +7,13 @@ import { Tree } from "../../tree";
 export class Timeout extends Node {
     declare args: { readonly time?: number };
 
-    override onTick(tree: Tree<Context, unknown>): Status {
+    override onTick(tree: Tree<Context, unknown>, input: readonly unknown[]): Status {
         const child = this.children[0];
         const time = tree.context.time;
         let expired = tree.getState<number>(this);
 
         if (expired === undefined) {
-            expired = time + this._checkOneof(0, this.args.time, 0);
+            expired = time + this._checkOneof(input, 0, this.args.time, 0);
         } else if (time >= expired) {
             child.abort(tree);
             return "failure";

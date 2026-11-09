@@ -143,14 +143,22 @@ export class Emit extends Node {
     }
 }
 
-/** Records the args it receives, then mutates them. */
+/** Records its own copy of `value` and mutates it, mutates `json` and `list` in place. */
 export class ArgsSpy extends Node {
-    declare args: { value?: { list: number[] }; list?: readonly number[] };
+    declare args: {
+        readonly value?: { readonly list: readonly number[] };
+        readonly json?: { readonly list: readonly number[] };
+        readonly list?: readonly number[];
+    };
 
     override onTick(tree: Tree<TestContext, unknown>): Status {
         if (this.args.value) {
-            tree.context.received.push(this.args.value);
-            this.args.value.list.push(this.args.value.list.length);
+            const value = this._ownArg<{ list: number[] }>("value")!;
+            tree.context.received.push(value);
+            value.list.push(value.list.length);
+        }
+        if (this.args.json) {
+            (this.args.json.list as number[]).push(0);
         }
         if (this.args.list) {
             (this.args.list as number[]).push(0);
@@ -165,8 +173,9 @@ export class ArgsSpy extends Node {
             group: ["Test"],
             desc: "record args",
             args: [
-                { name: "value", type: "json?", desc: "json" },
-                { name: "list", type: "int[]?", desc: "readonly" },
+                { name: "value", type: "json?", desc: "json, copied by _ownArg" },
+                { name: "json", type: "json?", desc: "json, mutated in place" },
+                { name: "list", type: "int[]?", desc: "int[]" },
             ],
         };
     }

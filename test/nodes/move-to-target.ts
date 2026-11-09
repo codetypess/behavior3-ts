@@ -4,11 +4,10 @@ import { Role } from "../role";
 export class MoveToTarget extends Node {
     static SPEED = 50;
 
-    declare input: [Role | undefined];
 
-    override onTick(tree: Tree<Context, Role>): Status {
+    override onTick(tree: Tree<Context, Role>, input: readonly [Role | undefined]): Status {
         const owner = tree.owner;
-        const [target] = this.input;
+        const [target] = input;
         if (!target) {
             return "failure";
         }

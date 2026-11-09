@@ -5,10 +5,13 @@ import { Tree } from "../../tree";
 
 @registerNode
 export class RandomIndex extends Node {
-    declare input: [unknown[]];
 
-    override onTick(tree: Tree<Context, unknown>): Status {
-        const [arr] = this.input;
+    override onTick(
+        tree: Tree<Context, unknown>,
+        input: readonly [unknown[]],
+        output: unknown[],
+    ): Status {
+        const [arr] = input;
         if (!(arr instanceof Array)) {
             this.warn(`invalid array: ${arr}`);
             return "error";
@@ -21,8 +24,8 @@ export class RandomIndex extends Node {
         const idx = Math.floor(Math.random() * arr.length);
         const value = arr[idx];
         if (value !== undefined && value !== null) {
-            this.output.push(value);
-            this.output.push(idx);
+            output.push(value);
+            output.push(idx);
             return "success";
         } else {
             return "failure";

@@ -5,8 +5,12 @@ import { Tree } from "../../tree";
 
 @registerNode
 export class Now extends Node {
-    override onTick(tree: Tree<Context, unknown>): Status {
-        this.output.push(tree.context.time);
+    override onTick(
+        tree: Tree<Context, unknown>,
+        _input: readonly unknown[],
+        output: unknown[],
+    ): Status {
+        output.push(tree.context.time);
         return "success";
     }
 

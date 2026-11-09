@@ -5,11 +5,9 @@ import { Tree } from "../../tree";
 
 @registerNode
 export class Foreach extends Node {
-    declare input: [unknown[]];
-    declare output: [unknown, number?];
 
-    override onTick(tree: Tree<Context, unknown>): Status {
-        const [arr] = this.input;
+    override onTick(tree: Tree<Context, unknown>, input: readonly [unknown[]]): Status {
+        const [arr] = input;
         if (!Array.isArray(arr)) {
             this.warn(`invalid array: ${arr}`);
             return "error";

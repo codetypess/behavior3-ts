@@ -385,6 +385,7 @@ export class Tree<C extends Context, Owner> {
         this.__stopScope = stop;
 
         const outerScope = this.__swapScope(scope);
+        const frameDepth = Node.__frameDepth;
         this._executing++;
         try {
             try {
@@ -394,6 +395,7 @@ export class Tree<C extends Context, Owner> {
                     this.__abortAll(node);
                 }
             } finally {
+                Node.__frameDepth = frameDepth;
                 this._scope = outerScope;
                 this.__stopScope = outer;
             }
@@ -511,6 +513,7 @@ export class Tree<C extends Context, Owner> {
         this.__stopScope = tickScope;
         // the tree is ticked from the root blackboard
         const outerScope = this.__swapScope(this._rootBlackboard);
+        const frameDepth = Node.__frameDepth;
         this._executing++;
         let cleared = false;
         try {
@@ -534,6 +537,7 @@ export class Tree<C extends Context, Owner> {
         } finally {
             // stopped by a clear or an interrupt, done below when the execution exits
             cleared = this._pendingClear;
+            Node.__frameDepth = frameDepth;
             this._scope = outerScope;
             this.__stopScope = this._idleScope;
             this._ticking = false;

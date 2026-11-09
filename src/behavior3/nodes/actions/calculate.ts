@@ -16,7 +16,11 @@ export class Calculate extends Node {
         context.compileCode(this.args.value);
     }
 
-    override onTick(tree: Tree<Context, unknown>): Status {
+    override onTick(
+        tree: Tree<Context, unknown>,
+        _input: readonly unknown[],
+        output: unknown[],
+    ): Status {
         let value: unknown;
         try {
             value = tree.blackboard.eval(this.args.value);
@@ -25,7 +29,7 @@ export class Calculate extends Node {
             this.warn(e instanceof Error ? e.message : String(e));
             return "error";
         }
-        this.output.push(value);
+        output.push(value);
         return "success";
     }
 

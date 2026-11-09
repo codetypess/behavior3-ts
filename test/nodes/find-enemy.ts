@@ -8,7 +8,11 @@ export class FindEnemy extends Node {
         count?: number;
     };
 
-    override onTick(tree: Tree<RoleContext, Role>): Status {
+    override onTick(
+        tree: Tree<RoleContext, Role>,
+        _input: readonly unknown[],
+        output: unknown[],
+    ): Status {
         const owner = tree.owner;
         const args = this.args;
         const x = owner.x;
@@ -24,7 +28,7 @@ export class FindEnemy extends Node {
             return Math.abs(x - tx) <= w && Math.abs(y - ty) <= h;
         }, args.count ?? -1);
         if (list.length) {
-            this.output.push(...list);
+            output.push(...list);
             return "success";
         } else {
             return "failure";

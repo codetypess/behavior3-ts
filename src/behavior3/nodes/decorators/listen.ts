@@ -12,13 +12,6 @@ const builtinEventOptions = [
 @registerNode
 export class Listen extends Node {
     declare args: { readonly event: string };
-    declare input: [EventTarget | EventTarget[] | undefined];
-    declare output: [
-        target?: string,
-        arg0?: string,
-        arg1?: string,
-        // argN?:string
-    ];
 
     protected _isBuiltinEvent(event: string): boolean {
         return !!builtinEventOptions.find((e) => e.value === event);
@@ -41,8 +34,11 @@ export class Listen extends Node {
         }
     }
 
-    override onTick(tree: Tree<Context, unknown>): Status {
-        let [target] = this.input;
+    override onTick(
+        tree: Tree<Context, unknown>,
+        input: readonly [EventTarget | EventTarget[] | undefined],
+    ): Status {
+        let [target] = input;
         const args = this.args;
         // an event of the tree itself, the child still runs while the tree is torn down
         const lifecycle = this._isBuiltinEvent(args.event);

@@ -44,10 +44,14 @@ export class MathNode extends Node {
         }
     }
 
-    override onTick(tree: Tree<Context, unknown>): Status {
+    override onTick(
+        tree: Tree<Context, unknown>,
+        input: readonly unknown[],
+        output: unknown[],
+    ): Status {
         const op = this._op;
         const args = this.args as { value1?: number; value2?: number };
-        const inputValues = this.input.filter((value) => value !== undefined).map(Number);
+        const inputValues = input.filter((value) => value !== undefined).map(Number);
 
         // 优先使用常量参数，如果没有则使用输入参数
         const values: number[] = [];
@@ -231,7 +235,7 @@ export class MathNode extends Node {
             return "error";
         }
 
-        this.output.push(result);
+        output.push(result);
         return "success";
     }
 

@@ -2,10 +2,9 @@ import { Node, NodeDef, Status, Tree } from "../../src/behavior3";
 import { Role, RoleContext } from "../role";
 
 export class Attack extends Node {
-    declare input: [Role | undefined];
 
-    override onTick(tree: Tree<RoleContext, unknown>): Status {
-        const [enemy] = this.input;
+    override onTick(tree: Tree<RoleContext, unknown>, input: readonly [Role | undefined]): Status {
+        const [enemy] = input;
         if (!enemy) {
             return "failure";
         }

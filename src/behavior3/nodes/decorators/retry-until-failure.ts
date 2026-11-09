@@ -7,9 +7,9 @@ import { Tree } from "../../tree";
 export class RetryUntilFailure extends Node {
     declare args: { readonly count?: number };
 
-    override onTick(tree: Tree<Context, unknown>): Status {
+    override onTick(tree: Tree<Context, unknown>, input: readonly unknown[]): Status {
         const child = this.children[0];
-        const maxTryTimes = this._checkOneof(0, this.args.count, Number.MAX_SAFE_INTEGER);
+        const maxTryTimes = this._checkOneof(input, 0, this.args.count, Number.MAX_SAFE_INTEGER);
         let count = tree.getState<number>(this);
         const resumed = count !== undefined && tree.isRunning(child);
 

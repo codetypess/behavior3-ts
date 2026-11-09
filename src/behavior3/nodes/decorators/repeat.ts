@@ -7,8 +7,8 @@ import { Tree } from "../../tree";
 export class Repeat extends Node {
     declare args: { readonly count: number };
 
-    override onTick(tree: Tree<Context, unknown>): Status {
-        const count = this._checkOneof(0, this.args.count, Number.MAX_SAFE_INTEGER);
+    override onTick(tree: Tree<Context, unknown>, input: readonly unknown[]): Status {
+        const count = this._checkOneof(input, 0, this.args.count, Number.MAX_SAFE_INTEGER);
         let i = tree.getState<number>(this) ?? 0;
 
         for (; i < count; i++) {

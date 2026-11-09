@@ -13,14 +13,13 @@ enum LogLevel {
 
 @registerNode
 export class Log extends Node {
-    declare input: [unknown?];
     declare args: {
         readonly message: string;
         readonly level: LogLevel;
     };
 
-    override onTick(tree: Tree<Context, unknown>): Status {
-        const [inputMsg] = this.input;
+    override onTick(tree: Tree<Context, unknown>, input: readonly [unknown?]): Status {
+        const [inputMsg] = input;
         const args = this.args;
         const level = args.level ?? LogLevel.LOG;
         let print = console.log;

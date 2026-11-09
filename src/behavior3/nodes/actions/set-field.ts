@@ -5,22 +5,25 @@ import { Tree } from "../../tree";
 
 @registerNode
 export class SetField extends Node {
-    declare input: [ObjectType, string?, unknown?];
     declare args: {
         readonly field?: string;
         readonly value?: unknown;
     };
 
-    override onTick(tree: Tree<Context, unknown>): Status {
-        const [obj] = this.input;
+    override onTick(
+        tree: Tree<Context, unknown>,
+        input: readonly [ObjectType, string?, unknown?],
+    ): Status {
+        const [obj] = input;
         if (typeof obj !== "object" || !obj) {
             this.warn(`invalid object: ${obj}`);
             return "error";
         }
 
         const args = this.args;
-        const field = this._checkOneof(1, args.field);
-        const value = this._checkOneof(2, args.value, null);
+        const field = this._checkOneof(input, 1, args.field);
+        // the value is handed out to the object: a copy of the arg, which is shared
+        const value = this._checkOneof(input, 2, this._ownArg("value"), null);
 
         if (field === ERROR) {
             return "error";

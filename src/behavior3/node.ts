@@ -192,6 +192,15 @@ const ABORT_MODES: readonly AbortMode[] = ["none", "self", "lower", "both"];
 /** The tree being created by `Node.__createRoot`, its nodes take their tree and index from it. */
 let creating: { tree: TreeData; index: number } | undefined;
 
+/**
+ * The input and output of a call of `onTick`, a stack of them shared by all the trees: the
+ * execution is synchronous, a call re-entering a node (another tree of the path, a callback of
+ * the same tree) just takes the next frame. The frames are reused, only valid during the call.
+ */
+type Frame = { readonly input: unknown[]; readonly output: unknown[] };
+const frames: Frame[] = [];
+let sp = 0;
+
 const deepFreeze = <T>(value: T): T => {
     if (value && typeof value === "object" && !Object.isFrozen(value)) {
         Object.freeze(value);
@@ -201,9 +210,8 @@ const deepFreeze = <T>(value: T): T => {
 };
 
 export abstract class Node {
+    /** The config of the node, shared by all the trees and deep frozen, see `_ownArg`. */
     readonly args: unknown = {};
-    readonly input: unknown[] = [];
-    readonly output: unknown[] = [];
     /** The index of the node in the tree, used to store the state of the node. */
     readonly index: number;
 
@@ -213,12 +221,11 @@ export abstract class Node {
     private _children: Node[] = [];
     private _cfg: NodeData;
     private _treeName: string;
-    private _jsonArgs: Record<string, string> | undefined;
+    /** The json of the object args, parsed again by `_ownArg`. */
+    private _argJson: Record<string, string> | undefined;
     private _conditions: Condition[] = [];
     private _selfConditions: Condition[] = [];
     private _preemptors: number[] | undefined;
-    /** How many calls of `tick` are on the stack, more than one when the node is re-entered. */
-    private _depth: number = 0;
 
     constructor(context: Context, cfg: NodeData) {
         this._context = context;
@@ -233,15 +240,11 @@ export abstract class Node {
         Object.keys(cfg.args).forEach((k) => {
             const value = cfg.args[k];
             if (value && typeof value === "object") {
-                const type = descriptor?.args?.find((v) => v.name === k)?.type;
-                if (!type || type.startsWith("json")) {
-                    // json literal: a fresh copy every tick, owned by the tick
-                    this._jsonArgs = this._jsonArgs ?? {};
-                    this._jsonArgs[k] = JSON.stringify(value);
-                } else {
-                    // readonly config: shared by all trees
-                    (this.args as ObjectType)[k] = deepFreeze(JSON.parse(JSON.stringify(value)));
-                }
+                // readonly config: shared by all trees, `_ownArg` gives a copy to hand out
+                const json = JSON.stringify(value);
+                this._argJson = this._argJson ?? {};
+                this._argJson[k] = json;
+                (this.args as ObjectType)[k] = deepFreeze(JSON.parse(json));
             } else {
                 (this.args as ObjectType)[k] = value;
             }
@@ -359,58 +362,21 @@ export abstract class Node {
      * just evaluated the conditions of the node.
      */
     tick(tree: Tree<Context, unknown>, conditionsChecked: boolean = false): Status {
-        if (this._depth > 0) {
-            return this._reenter(tree, conditionsChecked);
-        }
-        // no try/finally on the hot path: `_tick` catches the exceptions of `onTick`, and a count
-        // left behind by another exception only takes the slower path of `_reenter`
-        this._depth = 1;
-        const status = this._tick(tree, conditionsChecked);
-        this._depth = 0;
+        // no try/finally on the hot path: `_tick` catches the exceptions of `onTick`, another
+        // exception leaves `sp` above, set back by the call below when it returns, or by the
+        // entry (`tree.tick`, a callback) when it exits
+        const base = sp;
+        const frame = frames[base] ?? (frames[base] = { input: [], output: [] });
+        sp = base + 1;
+        const status = this._tick(tree, conditionsChecked, frame);
+        sp = base;
         return status;
     }
 
-    /**
-     * Ticks the node while it is still on the stack: the nodes are shared by the trees of the
-     * same path, a recursive `RunTree` or another tree ticked synchronously re-enters them. The
-     * input, output and json args of the outer call are saved and restored in place after this
-     * call, the outer `onTick` may hold them.
-     */
-    private _reenter(tree: Tree<Context, unknown>, conditionsChecked: boolean): Status {
-        const input = this.input as unknown[];
-        const output = this.output as unknown[];
-        const savedInput = input.slice();
-        const savedOutput = output.slice();
-        const jsonArgs = this._jsonArgs;
-        let savedArgs: ObjectType | undefined;
-        if (jsonArgs) {
-            savedArgs = {};
-            for (const k in jsonArgs) {
-                savedArgs[k] = (this.args as ObjectType)[k];
-            }
-        }
-        this._depth++;
-        try {
-            return this._tick(tree, conditionsChecked);
-        } finally {
-            this._depth--;
-            input.length = savedInput.length;
-            for (let i = 0; i < savedInput.length; i++) {
-                input[i] = savedInput[i];
-            }
-            output.length = savedOutput.length;
-            for (let i = 0; i < savedOutput.length; i++) {
-                output[i] = savedOutput[i];
-            }
-            if (savedArgs) {
-                Object.assign(this.args as ObjectType, savedArgs);
-            }
-        }
-    }
-
-    private _tick(tree: Tree<Context, unknown>, conditionsChecked: boolean): Status {
+    private _tick(tree: Tree<Context, unknown>, conditionsChecked: boolean, frame: Frame): Status {
         const { blackboard } = tree;
-        const { _cfg: cfg, input, output, args } = this;
+        const cfg = this._cfg;
+        const { input, output } = frame;
 
         if (tree.__stopScope.stopped) {
             // unwinding the interrupted tick, don't execute any more node
@@ -446,17 +412,11 @@ export abstract class Node {
         }
         output.length = 0;
 
-        if (this._jsonArgs) {
-            for (const k in this._jsonArgs) {
-                (args as ObjectType)[k] = JSON.parse(this._jsonArgs[k]);
-            }
-        }
-
         tree.__runningNode = this;
 
         let status: Status = "failure";
         try {
-            status = this.onTick(tree);
+            status = this.onTick(tree, input, output);
         } catch (e) {
             const error = e instanceof Error ? e : new Error(String(e));
             const msg = error.stack ?? error.message;
@@ -588,11 +548,27 @@ export abstract class Node {
      *
      * A missing input falls back to `defaultValue` with a warning, or returns `ERROR` without
      * `defaultValue`, the node should return `error` then.
+     *
+     * @param input The input of `onTick`
      */
-    protected _checkOneof<V>(inputIndex: number, argValue: V | undefined): V | typeof ERROR;
-    protected _checkOneof<V>(inputIndex: number, argValue: V | undefined, defaultValue: V): V;
-    protected _checkOneof<V>(inputIndex: number, argValue: V | undefined, defaultValue?: V) {
-        const inputValue = this.input[inputIndex];
+    protected _checkOneof<V>(
+        input: readonly unknown[],
+        inputIndex: number,
+        argValue: V | undefined,
+    ): V | typeof ERROR;
+    protected _checkOneof<V>(
+        input: readonly unknown[],
+        inputIndex: number,
+        argValue: V | undefined,
+        defaultValue: V,
+    ): V;
+    protected _checkOneof<V>(
+        input: readonly unknown[],
+        inputIndex: number,
+        argValue: V | undefined,
+        defaultValue?: V,
+    ) {
+        const inputValue = input[inputIndex];
         const inputName = this.cfg.input[inputIndex];
         let value: V | undefined;
         if (inputName) {
@@ -607,6 +583,16 @@ export abstract class Node {
             value = argValue;
         }
         return (value ?? defaultValue) as V;
+    }
+
+    /**
+     * A fresh mutable copy of the arg, to hand it out (to the blackboard, to an object of the
+     * host) or to change it: the args are deep frozen and shared by all the trees. A primitive
+     * is returned as is, `undefined` if the arg is not configured.
+     */
+    protected _ownArg<V = unknown>(name: string): V | undefined {
+        const json = this._argJson?.[name];
+        return (json !== undefined ? JSON.parse(json) : (this.args as ObjectType)[name]) as V;
     }
 
     /**
@@ -659,6 +645,15 @@ export abstract class Node {
         );
     }
 
+    /** @private The depth of the frame stack, saved by an entry and restored when it exits. */
+    static get __frameDepth() {
+        return sp;
+    }
+
+    static set __frameDepth(depth: number) {
+        sp = depth;
+    }
+
     /**
      * A condition is only true or false, `error` (untrustworthy data) is false.
      *
@@ -702,11 +697,18 @@ export abstract class Node {
      * The node is re-entered from the root every tick. Use `tree.getState` and `tree.setState`
      * to keep the state between ticks when returning `running`.
      *
+     * `input` and `output` are only valid during this call, they are reused by the next calls:
+     * don't keep them in a closure or a field. Narrow their types in the override, like
+     * `[count]: readonly [number]`.
+     *
      * @param tree The behavior tree instance
+     * @param input The values of `cfg.input`, read from the current scope before the call
+     * @param output Filled by the node, written to `cfg.output` in the current scope when the
+     * node returns `success` or `failure`, `SKIP` leaves the variable untouched
      * @returns The execution status: `success`, `failure`, `running` or `error`, returns `error`
      * when a child returns `error`
      */
-    abstract onTick(tree: Tree<Context, unknown>): Status;
+    abstract onTick(tree: Tree<Context, unknown>, input: readonly unknown[], output: unknown[]): Status;
 
     /**
      * Called when the running node is aborted, cleans up: stops moving, removes listeners and timers, etc.

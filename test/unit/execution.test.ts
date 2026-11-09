@@ -580,22 +580,29 @@ describe("callbacks", () => {
 });
 
 describe("args", () => {
-    it("json args are fresh copies every tick", () => {
+    it("_ownArg gives a fresh copy every call", () => {
         const ctx = new TestContext();
         const tree = ctx.createTree(n("ArgsSpy", "spy", { args: { value: { list: [] } } }));
         tree.tick();
         tree.tick();
-        // each tick mutates its own copy
+        // each tick mutates its own copy, the arg is untouched
         assert.deepEqual(ctx.received, [{ list: [0] }, { list: [0] }]);
+        assert.notEqual(ctx.received[0], ctx.received[1]);
+        assert.deepEqual((tree.root!.args as { value: unknown }).value, { list: [] });
     });
 
-    it("other object args are frozen", () => {
-        const ctx = new TestContext();
-        const tree = ctx.createTree(n("ArgsSpy", "spy", { args: { list: [1, 2] } }));
-        const { result, error } = captureConsole(() => tree.tick());
-        assert.equal(result, "exception");
-        assert.match(error[0], /not extensible|read.only|frozen/i);
-    });
+    for (const [type, args] of [
+        ["json", { json: { list: [1] } }],
+        ["int[]", { list: [1, 2] }],
+    ] as const) {
+        it(`${type} args are frozen`, () => {
+            const ctx = new TestContext();
+            const tree = ctx.createTree(n("ArgsSpy", "spy", { args }));
+            const { result, error } = captureConsole(() => tree.tick());
+            assert.equal(result, "exception");
+            assert.match(error[0], /not extensible|read.only|frozen/i);
+        });
+    }
 
     it("does not freeze the tree config", () => {
         const ctx = new TestContext();
@@ -624,17 +631,15 @@ describe("args from inputs", () => {
         assert.equal(tree.tick(), "success");
     });
 
-    it("args not declared in the descriptor are json literals", () => {
+    it("args not declared in the descriptor are frozen and shared by the ticks", () => {
         const ctx = new TestContext();
         const tree = ctx.createTree(probe("a", { args: { extra: { list: [1] } } }));
         const args = tree.root!.args as { extra: { list: number[] } };
         tree.tick();
         const first = args.extra;
-        assert.equal(Object.isFrozen(first), false);
-        first.list.push(2);
+        assert.equal(Object.isFrozen(first.list), true);
         tree.tick();
-        assert.notEqual(args.extra, first);
-        assert.deepEqual(args.extra, { list: [1] });
+        assert.equal(args.extra, first);
     });
 });
 

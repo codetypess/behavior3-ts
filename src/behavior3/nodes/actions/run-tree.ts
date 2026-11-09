@@ -45,10 +45,14 @@ export class RunTree extends Node {
         this._lastKey = Blackboard.makePrivateVar(this, "LAST");
     }
 
-    override onTick(tree: Tree<Context, unknown>): Status {
+    override onTick(
+        tree: Tree<Context, unknown>,
+        input: readonly unknown[],
+        output: unknown[],
+    ): Status {
         let state = tree.getState<RunTreeState>(this);
         if (!state) {
-            const path = this._checkOneof(0, this.args.path);
+            const path = this._checkOneof(input, 0, this.args.path);
             if (path === ERROR) {
                 return "error";
             } else if (typeof path !== "string" || !path) {
@@ -99,7 +103,6 @@ export class RunTree extends Node {
             }
             // passed by value on start, `undefined` deletes the value left by the last run
             const keys = this.cfg.input;
-            const input = this.input;
             for (let i = 1; i < keys.length; i++) {
                 blackboard.set(keys[i], input[i]);
             }
@@ -122,7 +125,7 @@ export class RunTree extends Node {
         const keys = this.cfg.output;
         for (let i = 0; i < keys.length; i++) {
             const value = status === "success" ? subtree.blackboard.get(keys[i]) : undefined;
-            this.output[i] = value === undefined ? SKIP : value;
+            output[i] = value === undefined ? SKIP : value;
         }
         if (state.last) {
             // the run is over: its variables, listeners and timers are removed now

@@ -5,15 +5,18 @@ import { Tree } from "../../tree";
 
 @registerNode
 export class Concat extends Node {
-    declare input: [unknown[], unknown[]];
 
-    override onTick(tree: Tree<Context, unknown>): Status {
-        const [arr1, arr2] = this.input;
+    override onTick(
+        tree: Tree<Context, unknown>,
+        input: readonly [unknown[], unknown[]],
+        output: unknown[],
+    ): Status {
+        const [arr1, arr2] = input;
         if (!Array.isArray(arr1) || !Array.isArray(arr2)) {
             this.warn(`invalid array: ${arr1} or ${arr2}`);
             return "error";
         }
-        this.output.push(arr1.concat(arr2));
+        output.push(arr1.concat(arr2));
         return "success";
     }
 

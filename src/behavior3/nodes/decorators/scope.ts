@@ -14,7 +14,11 @@ export class Scope extends Node {
         return true;
     }
 
-    override onTick(tree: Tree<Context, unknown>): Status {
+    override onTick(
+        tree: Tree<Context, unknown>,
+        _input: readonly unknown[],
+        output: unknown[],
+    ): Status {
         const scope = tree.getState<Blackboard>(this) ?? tree.blackboard.fork();
         const outer = tree.__swapScope(scope);
         let status: Status;
@@ -32,7 +36,7 @@ export class Scope extends Node {
             const success = status === "success";
             for (let i = 0; i < keys.length; i++) {
                 const key = keys[i];
-                this.output[i] = success && scope.hasOwn(key) ? scope.get(key) : SKIP;
+                output[i] = success && scope.hasOwn(key) ? scope.get(key) : SKIP;
             }
         }
         return status;

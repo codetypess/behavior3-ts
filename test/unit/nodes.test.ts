@@ -155,6 +155,18 @@ describe("action nodes", () => {
         assert.match(bad.warn[0], /invalid field: true/);
     });
 
+    it("Let gets a fresh json value every tick", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(n("Let", "x", { args: { value: { n: 1 } }, output: ["v"] }));
+        tree.tick();
+        const a = tree.blackboard.get("v") as { n: number };
+        tree.tick();
+        const b = tree.blackboard.get("v") as { n: number };
+        assert.notEqual(a, b);
+        a.n = 2;
+        assert.equal(b.n, 1);
+    });
+
     it("SetField gets a fresh json value every tick", () => {
         const ctx = new TestContext();
         const tree = ctx.createTree(n("SetField", "x", { args: { field: "v", value: { n: 1 } }, input: ["obj"] }));

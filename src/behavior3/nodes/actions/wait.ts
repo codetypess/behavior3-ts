@@ -10,14 +10,14 @@ export class Wait extends Node {
         readonly random?: number;
     };
 
-    override onTick(tree: Tree<Context, unknown>): Status {
+    override onTick(tree: Tree<Context, unknown>, input: readonly unknown[]): Status {
         const expired = tree.getState<number>(this);
         if (expired !== undefined) {
             return tree.context.time >= expired ? "success" : "running";
         }
 
         const args = this.args;
-        let time = this._checkOneof(0, args.time, 0);
+        let time = this._checkOneof(input, 0, args.time, 0);
         if (args.random) {
             time += (Math.random() - 0.5) * args.random;
         }

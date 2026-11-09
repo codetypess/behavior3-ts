@@ -5,18 +5,21 @@ import { Tree } from "../../tree";
 
 @registerNode
 export class Index extends Node {
-    declare input: [unknown[], number | undefined];
     declare args: { readonly index: number };
 
-    override onTick(tree: Tree<Context, unknown>): Status {
-        const [arr] = this.input;
+    override onTick(
+        tree: Tree<Context, unknown>,
+        input: readonly [unknown[], number | undefined],
+        output: unknown[],
+    ): Status {
+        const [arr] = input;
 
         if (!Array.isArray(arr)) {
             this.warn(`invalid array: ${arr}`);
             return "error";
         }
 
-        const index = this._checkOneof(1, this.args.index);
+        const index = this._checkOneof(input, 1, this.args.index);
         if (index === ERROR) {
             return "error";
         } else if (typeof index !== "number" || isNaN(index)) {
@@ -26,7 +29,7 @@ export class Index extends Node {
 
         const value = arr[index];
         if (value !== undefined && value !== null) {
-            this.output.push(value);
+            output.push(value);
             return "success";
         }
 

@@ -4,7 +4,7 @@
 
 ## 1. 概述
 
-- **树和单位分开**：同一个树文件只创建一份 Node 实例，存在 `context.trees[path]` 里，所有单位共享。每个单位有自己的 `Tree`，运行状态和黑板都存在 Tree 上。节点身上只有 `input`、`output` 和 `json` 参数是一次调用的数据，节点在执行中被重入时（递归 `RunTree`、同步 tick 同一路径的另一棵树），`Node.tick` 保存外层调用的这些数据，内层结束后原地恢复。
+- **树和单位分开**：同一个树文件只创建一份 Node 实例，存在 `context.trees[path]` 里，所有单位共享。每个单位有自己的 `Tree`，运行状态和黑板都存在 Tree 上。节点身上没有属于一次调用的数据：参数是冻结的共享配置，input 和 output 的值作为 `onTick` 的参数传入，放在按调用深度复用的帧里，节点在执行中被重入（递归 `RunTree`、同步 tick 同一路径的另一棵树、回调同步执行同一棵树的节点）时，内层调用用的是另一帧（[io-design.md](io-design.md)）。
 - **每帧从根节点执行**：每次 `tree.tick()` 都从根节点出发，沿着 running 的路径往下执行。执行路径上的每个节点每帧都会被执行到，所以挂在祖先节点上的条件每帧都能重新判断。
 - **条件与打断**：节点上可以挂条件，参考 UE（Unreal Engine）行为树的装饰器打断（Observer Aborts），按 `none` / `self` / `lower` / `both` 四种模式，在节点运行期间打断自己，或者让高优先级的分支抢占正在运行的低优先级分支（第 4 节）。
 - **四种节点状态**：`success`、`failure`、`running`、`error`。`error` 表示数据不可信，和代码 bug 引起的异常分开处理（第 3 节）。
@@ -35,8 +35,8 @@ onTick(tree) {
 `Node.tick` 不允许重写，节点只实现 `onTick`。`Node.tick` 负责：
 
 1. 检查条件（第 4 节）；
-2. 从黑板读取 input，准备 `json` 参数的副本（第 5 节）；
-3. 调用 `onTick`，捕获异常（3.4 节）；
+2. 从黑板读取 input，放进这一次调用的帧；
+3. 调用 `onTick(tree, input, output)`，捕获异常（3.4 节）；
 4. 节点结束时写回 output，中止仍在运行的子节点，清除自己的状态；返回 running 时记录运行状态。
 
 `node.tick()` 只能由父节点或框架调用，外部一律用 `tree.tick()`。节点抛异常时要靠 `tree.tick()`（或回调）把这一次执行退出来，绕开 Tree 直接调用时只会得到 `failure`。
@@ -172,8 +172,7 @@ Selector
 ### 3.2 在节点里返回 error
 
 ```ts
-override onTick(tree: Tree<Context, unknown>): Status {
-    const [id] = this.input;
+override onTick(tree: Tree<Context, unknown>, [id]: readonly [number?]): Status {
     if (typeof id !== "number") {
         this.warn(`invalid id: ${id}`);
         return "error";
@@ -185,7 +184,7 @@ override onTick(tree: Tree<Context, unknown>): Status {
 辅助函数没法替节点返回状态，出错时返回专用值 `ERROR`（模块级的 `unique symbol`），调用方判断后返回 `"error"`。返回类型是 `V | typeof ERROR`，不判断就当成 `V` 使用会编译报错；也不用像返回 tuple 那样每次分配数组（`_checkOneof` 在 Wait、Repeat、Timeout 等节点里每帧都会调用）：
 
 ```ts
-const field = this._checkOneof(1, args.field);   // 缺少必需的输入：打印 warning，返回 ERROR
+const field = this._checkOneof(input, 1, args.field);   // 缺少必需的输入：打印 warning，返回 ERROR
 if (field === ERROR) return "error";
 ```
 
@@ -457,27 +456,25 @@ UE 的行为树不会每帧从根节点重入，所以用事件驱动。这里�
 
 ## 5. 参数语义
 
-| 参数类型 | 语义 | 实现 |
-|---|---|---|
-| `json`、`json?`、`json[]`、`json[]?`，以及 descriptor 里没声明的参数 | **字面量**：每次 tick 都生成新副本，归本次执行所有，可以修改，也可以交出去 | 缓存 JSON 字符串，每次 tick 调用 `JSON.parse` |
-| 其他对象参数（`int[]`、`string[]`、`expr[]` 等） | **只读配置**：所有树、所有次执行共享 | 构造时解析一次并 deep freeze，修改时抛异常 |
+参数是节点的配置：所有对象参数（包括 `json`、`json[]`，以及 descriptor 里没声明类型的）在构造时解析一次并 deep freeze，所有树、所有次执行共享，修改时抛异常（ES module 是严格模式），节点返回 error 并派发 `EXCEPTION`。参数类型不再决定能不能修改，`json` 只表示编辑器里填的是一段自由格式的 JSON。
 
-- 判断规则：**这个值会被修改或者交出去吗？会，就声明成 `json`。**
+- 判断规则：**这个值要交出去（写进黑板、交给宿主的对象），或者要修改吗？要，就用 `_ownArg(name)` 拿一份新副本。** 由交出值的节点复制，下游修改它的节点不知道值来自配置。内置节点里只有 `Let` 和 `SetField` 交出参数。
+- `_ownArg` 用构造时缓存的 JSON 字符串重新 parse，原始类型原样返回，没配置时返回 `undefined`。
 - 来自 input 的值是**黑板对象的引用**，不是副本，修改它就是修改黑板。
-- `json` 副本的生命周期是**一次 tick**。running 的节点如果需要跨帧保留修改，自己存进 `setState`。
-- 在 TS 声明里体现可变性：
+- running 的节点如果需要跨帧修改一份参数，开始时 `_ownArg`，存进 `setState`。
+- 在 TS 声明里参数都是只读的：
 
 ```ts
 class Let extends Node {
-    declare args: { value?: unknown };                    // json：可变，归本次执行所有
+    declare args: { readonly value?: unknown };                    // json：交出去时用 _ownArg("value")
 }
 
 class RandomPick extends Node {
-    declare args: { readonly list: readonly number[] };   // int[]：只读配置
+    declare args: { readonly list: readonly number[] };            // int[]
 }
 ```
 
-- 参数可以和 input 二选一（NodeDef 里 arg 的 `oneof`）：配置了 input 就用黑板上的值，否则用参数。用 `_checkOneof(inputIndex, argValue, defaultValue?)` 读取：input 不存在时，有默认值就打印 warning 并使用默认值，没有就返回 `ERROR`。
+- 参数可以和 input 二选一（NodeDef 里 arg 的 `oneof`）：配置了 input 就用黑板上的值，否则用参数。用 `_checkOneof(input, inputIndex, argValue, defaultValue?)` 读取：input 不存在时，有默认值就打印 warning 并使用默认值，没有就返回 `ERROR`。
 
 ## 6. 内置节点
 
@@ -522,10 +519,10 @@ class RandomPick extends Node {
 ```ts
 @registerNode                        // 注册到全局，创建 Context 时自动注册；也可以用 context.registerNode(MyNode)
 export class MyNode extends Node {
-    declare input: [number];
     declare args: { readonly range: number };
 
-    override onTick(tree: Tree<Context, unknown>): Status { ... }
+    // 在参数上收窄 input 和 output 的类型，用不到时省略
+    override onTick(tree: Tree<Context, unknown>, [count]: readonly [number], output: [unknown?]): Status { ... }
     override onAbort(tree: Tree<Context, unknown>): void { ... }
 
     static override get descriptor(): NodeDef {
@@ -549,14 +546,15 @@ export class MyNode extends Node {
 - `bindCallback` 只绑定同步执行的那一段：回调可以在任意时刻触发，但触发后要同步执行完。`fn` 是 async 函数时编译报错，运行时返回 Promise 会抛异常，因为 `await` 之后的代码已经不在绑定的作用域里了。异步任务在外面完成，完成时再调用绑定好的同步回调：`task.then(tree.bindCallback((result) => { ... }))`。
 - 树被 `clear()` 之后，之前绑定的回调触发时什么都不做，返回 `undefined`。`offAll` 能移除 context 上的监听和定时器，Promise 这类移除不了的回调靠这条规则，不会在清理过的树上执行。
 - 跨帧的状态用 `tree.setState`，不要存在节点实例上：节点实例被所有单位共享。
-- 一次调用里的临时数据用局部变量，不要存在节点实例的字段上。节点可能在执行中被重入：递归的 `RunTree`，或者执行中同步 tick 了同一路径的另一棵树（宿主同步派发事件、直接调用 `tick`）。框架在重入时保存并恢复 `input`、`output` 和 `json` 参数，节点自己的字段保护不了。
+- 一次调用里的临时数据用局部变量，不要存在节点实例的字段上。节点可能在执行中被重入：递归的 `RunTree`，执行中同步 tick 了同一路径的另一棵树（宿主同步派发事件、直接调用 `tick`），或者回调同步执行了同一棵树里的这个节点（`Listen` 的子节点派发了它监听的事件）。每次调用的 `input`、`output` 是各自的，节点自己的字段没有这种保护。
+- `input`、`output` 只在本次 `onTick` 期间有效，之后会被别的调用复用，不要存进闭包或字段；回调要用的值，先取出来存进局部变量。
 - 返回 running 时启动了需要清理的东西（移动、监听、定时器），在 `onAbort` 里清理。监听用 `context.on` 返回的取消函数移除，它只移除这一个；`off(event, tree)` 会移除整棵树在这个事件上的所有监听，只适合整体清理。
 - **组合节点和装饰节点收到子节点的 `"error"` 时，要返回 `"error"`**（ErrorToFailure 这类专门处理 error 的节点除外）。框架不会替节点传递 error。
 - 数据不可信时返回 `"error"` 并打印 warning；代码 bug 用 `this.throw(msg)` 或直接抛异常。
 - `_checkOneof` 返回 `ERROR` 时，返回 `"error"`。
 - 声明了 `preemptive` 的组合节点，在重入 running 的子节点之前调用 `_checkPreempt`。
 - 会放进条件树的节点要声明 `status`，编辑器才能检查（4.4 节）。
-- 修改或交出去的参数声明成 `json`（第 5 节）。
+- 参数是只读的共享配置，交出去或者修改时用 `_ownArg` 拿一份副本（第 5 节）。
 
 ## 8. 黑板与 Context
 
@@ -586,7 +584,7 @@ export class MyNode extends Node {
 ## 10. 性能
 
 - 每帧执行 running 路径上的所有节点，调用次数等于树的深度。
-- `json` 以外的对象参数在构造时解析一次；状态用数组下标存储并保持紧凑；`Node.tick` 的热路径不创建闭包；没有子节点带 lower/both 时不做抢占检查。
+- 对象参数在构造时解析一次，只有交出参数时才用 `_ownArg` 重新 parse；input 和 output 放在按调用深度复用的帧里，不分配；状态用数组下标存储并保持紧凑；`Node.tick` 的热路径不创建闭包；没有子节点带 lower/both 时不做抢占检查。
 - Context 按标签索引监听和定时器，`offAll` 只遍历这个标签自己的；定时器放在通用的优先队列 `PriorityQueue`（二叉堆，`priority-queue.ts`，库里导出，宿主可以复用）里，按到期时间和注册顺序排序（同一时刻到期的按注册顺序执行），注册和取出是 O(log n)，取消只做标记，弹出时跳过，已取消的超过一半时整理一次。
 - 基准测试：`npm run bench`（`test/bench.ts`），不在 `npm test` 里，改运行时前后手动对比。每个场景 1000 个单位共享一棵树（和游戏里一样只有一份节点图），各 tick 1000 次，输出耗时、GC 次数和耗时、堆用量的变化：
   - `deep`：8 层、running 路径上有 Parallel 和 Timeout，只测沿 running 路径往下走（进入 running 后组合节点直接接着执行 running 的子节点，表达式不再求值）；
@@ -625,3 +623,11 @@ export class MyNode extends Node {
 - Filter 恢复执行时从上次的元素继续，1.x 会从第 0 个重新开始。
 - 表达式：只写一个变量名时返回变量的值，1.x 返回变量名字符串（永远为真）；修复了三元表达式取错分支、`&&`/`||` 两边是布尔变量时报错、`^`/`~` 无法解析、多层属性访问和字符串属性出错、下标里带运算解析错误等问题。
 - 在 2.0 的执行模型下，每帧执行的节点数大约是 1.x 的两倍；一棵不含表达式的 8 层树，1.x 约 540ms，2.0 约 580ms。
+
+## 13. 与 2.x 的区别
+
+详见 [io-design.md](io-design.md) 第 6 节的迁移表。
+
+- input 和 output 从节点的字段（`this.input`、`this.output`）改成 `onTick(tree, input, output)` 的参数，`declare input`、`declare output` 改成在参数上收窄类型。
+- `_checkOneof` 第一个参数改为 `input`。
+- 所有对象参数都冻结，`json` 参数不再每次 tick 生成新副本；要修改或者交出去时用 `_ownArg`。
