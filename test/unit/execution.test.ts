@@ -39,6 +39,44 @@ describe("execution model", () => {
         tree.tick();
         assert.equal(count, 2);
     });
+
+    for (const stop of ["interrupt", "clear"] as const) {
+        it(`does not dispatch TICKED when onAbort calls ${stop} as the root finishes`, () => {
+            const ctx = new TestContext();
+            const tree = ctx.createTree(
+                n("Race", "root", {
+                    children: [probe("waiting", { args: { status: "running" } }), probe("winner")],
+                }),
+            );
+            const root = tree.root!;
+            let stopOnAbort = true;
+            root.children[0].onAbort = (t) => {
+                if (stopOnAbort) {
+                    t[stop]();
+                }
+            };
+            const events: string[] = [];
+            for (const event of [TreeEvent.TICKED, TreeEvent.INTERRUPTED, TreeEvent.CLEANED]) {
+                ctx.on(event, tree, () => events.push(event), "test");
+            }
+
+            assert.equal(tree.tick(), "interrupted");
+            assert.deepEqual(events, stop === "clear"
+                ? [TreeEvent.CLEANED, TreeEvent.INTERRUPTED]
+                : [TreeEvent.INTERRUPTED]);
+            assert.equal(tree.status, stop === "clear" ? "success" : "interrupted");
+            assert.equal(tree.isRunning(root), false);
+            assert.equal(tree.isRunning(root.children[0]), false);
+            assert.equal(tree.executing, false);
+            assert.equal(tree.ticking, false);
+
+            // A later run can finish and dispatch TICKED normally.
+            stopOnAbort = false;
+            events.length = 0;
+            assert.equal(tree.tick(), "success");
+            assert.deepEqual(events, [TreeEvent.TICKED]);
+        });
+    }
 });
 
 describe("state api", () => {

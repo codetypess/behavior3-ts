@@ -528,7 +528,8 @@ export class Tree<C extends Context, Owner> {
         try {
             const status: Status = root.tick(this);
 
-            if (status === "running") {
+            // The root may stop the tree from a child's onAbort while finishing.
+            if (tickScope.stopped || status === "running") {
                 this._status = "running";
             } else {
                 // `error` is finished like `failure`, the error is logged by the node returning it
