@@ -429,6 +429,12 @@ export abstract class Node {
             tree.__exception(this, error);
         }
 
+        // Register a running result before checking stop: onTick may have started resources
+        // before a synchronous interrupt or clear, and they still need onAbort when we exit.
+        if (status === "running" && !tree.isRunning(this)) {
+            tree.__markRunning(this);
+        }
+
         if (tree.__stopScope.stopped) {
             return "running";
         } else if (status !== "running") {
@@ -448,8 +454,6 @@ export abstract class Node {
                 children[i].abort(tree);
             }
             tree.__clearState(this);
-        } else if (!tree.isRunning(this)) {
-            tree.__markRunning(this);
         }
 
         if (cfg.debug || tree.debug) {

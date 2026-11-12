@@ -153,6 +153,41 @@ describe("interrupt", () => {
         assert.equal(tree.isRunning(tree.root!), false);
     });
 
+    for (const operation of ["interrupt", "clear"] as const) {
+        it(`aborts a node first returning running after a synchronous ${operation}`, () => {
+            const ctx = new TestContext();
+            const tree = ctx.createTree(
+                n("Parallel", "par", { children: [probe("active"), probe("after")] }),
+            );
+            const active = tree.root!.children[0];
+            let resources = 0;
+            ctx.on("started", () => tree[operation](), "test");
+            active.onTick = (t) => {
+                // A host operation can synchronously interrupt the tree before this first
+                // running return. The node relies on automatic running tracking, not setState.
+                resources++;
+                ctx.log.push("start:active");
+                t.context.dispatch("started");
+                ctx.log.push("return:running");
+                return "running";
+            };
+            active.onAbort = () => {
+                resources--;
+                ctx.log.push("abort:active");
+            };
+
+            // Each run releases its resource once, after onTick returns; the sibling never runs.
+            for (let i = 0; i < 2; i++) {
+                assert.equal(tree.tick(), "interrupted");
+                assert.deepEqual(ctx.takeLog(), ["start:active", "return:running", "abort:active"]);
+                assert.equal(resources, 0);
+                assert.equal(tree.isRunning(active), false);
+                assert.equal(tree.isRunning(tree.root!), false);
+                assert.equal(tree.status, operation === "clear" ? "success" : "interrupted");
+            }
+        });
+    }
+
     it("an exception stops the tick and returns exception", () => {
         const ctx = new TestContext();
         const tree = ctx.createTree(n("Sequence", "seq", { children: [probe("a"), n("Throw", "t"), probe("b")] }));
