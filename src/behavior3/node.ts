@@ -1,6 +1,6 @@
 import { Blackboard } from "./blackboard";
 import type { Context, NodeContructor, ObjectType } from "./context";
-import type { Tree, TreeData } from "./tree";
+import type { TickFrame, Tree, TreeData } from "./tree";
 
 /**
  * The status of a node.
@@ -192,15 +192,6 @@ const ABORT_MODES: readonly AbortMode[] = ["none", "self", "lower", "both"];
 /** The tree being created by `Node.__createRoot`, its nodes take their tree and index from it. */
 let creating: { tree: TreeData; index: number } | undefined;
 
-/**
- * The input and output of a call of `onTick`, a stack of them shared by all the trees: the
- * execution is synchronous, a call re-entering a node (another tree of the path, a callback of
- * the same tree) just takes the next frame. The frames are reused, only valid during the call.
- */
-type Frame = { readonly input: unknown[]; readonly output: unknown[] };
-const frames: Frame[] = [];
-let sp = 0;
-
 const deepFreeze = <T>(value: T): T => {
     if (value && typeof value === "object" && !Object.isFrozen(value)) {
         Object.freeze(value);
@@ -363,17 +354,22 @@ export abstract class Node {
      */
     tick(tree: Tree<Context, unknown>, conditionsChecked: boolean = false): Status {
         // no try/finally on the hot path: `_tick` catches the exceptions of `onTick`, another
-        // exception leaves `sp` above, set back by the call below when it returns, or by the
+        // exception leaves `depth` above, set back by the call below when it returns, or by the
         // entry (`tree.tick`, a callback) when it exits
-        const base = sp;
+        const tickingStack = tree.__tickingStack;
+        const { frames, depth: base } = tickingStack;
         const frame = frames[base] ?? (frames[base] = { input: [], output: [] });
-        sp = base + 1;
+        tickingStack.depth = base + 1;
         const status = this._tick(tree, conditionsChecked, frame);
-        sp = base;
+        tickingStack.depth = base;
         return status;
     }
 
-    private _tick(tree: Tree<Context, unknown>, conditionsChecked: boolean, frame: Frame): Status {
+    private _tick(
+        tree: Tree<Context, unknown>,
+        conditionsChecked: boolean,
+        frame: TickFrame,
+    ): Status {
         const { blackboard } = tree;
         const cfg = this._cfg;
         const { input, output } = frame;
@@ -649,15 +645,6 @@ export abstract class Node {
         );
     }
 
-    /** @private The depth of the frame stack, saved by an entry and restored when it exits. */
-    static get __frameDepth() {
-        return sp;
-    }
-
-    static set __frameDepth(depth: number) {
-        sp = depth;
-    }
-
     /**
      * A condition is only true or false, `error` (untrustworthy data) is false.
      *
@@ -712,7 +699,11 @@ export abstract class Node {
      * @returns The execution status: `success`, `failure`, `running` or `error`, returns `error`
      * when a child returns `error`
      */
-    abstract onTick(tree: Tree<Context, unknown>, input: readonly unknown[], output: unknown[]): Status;
+    abstract onTick(
+        tree: Tree<Context, unknown>,
+        input: readonly unknown[],
+        output: unknown[],
+    ): Status;
 
     /**
      * Called when the running node is aborted, cleans up: stops moving, removes listeners and timers, etc.

@@ -196,13 +196,13 @@ describe("re-entered node", () => {
         const root = ctx.createTree(n("Reenter", "call", { input: ["boom"] }));
         boom(root);
         assert.throws(() => root.tick(), /boom/);
-        assert.equal(Node.__frameDepth, 0);
+        assert.equal(root.__tickingStack.depth, 0);
         // caught by the parent, which leaves the stack above for its own call to set back
         const nested = ctx.createTree(
             n("Sequence", "seq", { children: [n("Reenter", "call", { input: ["boom"] })] }),
         );
         boom(nested);
         captureConsole(() => nested.tick());
-        assert.equal(Node.__frameDepth, 0);
+        assert.equal(nested.__tickingStack.depth, 0);
     });
 });

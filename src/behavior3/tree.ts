@@ -50,6 +50,9 @@ const isThenable = (value: unknown): value is PromiseLike<unknown> =>
 /** The state of a running node which has not set its own state. */
 const RUNNING = {};
 
+/** @private The input and output of an `onTick` call, only valid during that call. */
+export type TickFrame = { readonly input: unknown[]; readonly output: unknown[] };
+
 /**
  * @private The nodes ticked together by `tick` or by a callback (`__tickInCallback`), which stop
  * together. The callbacks from `bindCallback`, the abort and the clear run in the current one.
@@ -72,6 +75,12 @@ export class Tree<C extends Context, Owner> {
 
     protected _ticking: boolean = false;
     protected _owner: Owner;
+
+    /**
+     * @private The tree's reusable frame stack. A callback re-entering a node takes the next
+     * frame; another tree has its own stack. Each entry restores its depth when it exits.
+     */
+    readonly __tickingStack = { frames: [] as TickFrame[], depth: 0 };
 
     /**
      * @private The last node whose tick started (not necessarily a running one), named in the
@@ -385,7 +394,7 @@ export class Tree<C extends Context, Owner> {
         this.__stopScope = stop;
 
         const outerScope = this.__swapScope(scope);
-        const frameDepth = Node.__frameDepth;
+        const frameDepth = this.__tickingStack.depth;
         this._executing++;
         try {
             try {
@@ -395,7 +404,7 @@ export class Tree<C extends Context, Owner> {
                     this.__abortAll(node);
                 }
             } finally {
-                Node.__frameDepth = frameDepth;
+                this.__tickingStack.depth = frameDepth;
                 this._scope = outerScope;
                 this.__stopScope = outer;
             }
@@ -513,7 +522,7 @@ export class Tree<C extends Context, Owner> {
         this.__stopScope = tickScope;
         // the tree is ticked from the root blackboard
         const outerScope = this.__swapScope(this._rootBlackboard);
-        const frameDepth = Node.__frameDepth;
+        const frameDepth = this.__tickingStack.depth;
         this._executing++;
         let result: TreeStatus;
         try {
@@ -544,7 +553,7 @@ export class Tree<C extends Context, Owner> {
             } else {
                 result = this._status;
             }
-            Node.__frameDepth = frameDepth;
+            this.__tickingStack.depth = frameDepth;
             this._scope = outerScope;
             this.__stopScope = this._idleScope;
             this._ticking = false;
