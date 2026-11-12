@@ -552,6 +552,40 @@ describe("RunTree results", () => {
         assert.equal(tree.tick(), "failure");
     });
 
+    for (const stop of ["interrupt", "exception"] as const) {
+        it(`propagates ${stop} when the subtree clears itself in onAbort`, () => {
+            const { ctx, tree } = setup(
+                n("Parallel", "sub", {
+                    children: [
+                        probe("active", { args: { status: "running" } }),
+                        probe("stop", { args: { status: "running" } }),
+                    ],
+                }),
+                (path) => seq("main", runTree("rt", path), probe("after")),
+            );
+            assert.equal(tree.tick(), "running");
+            ctx.takeLog();
+            const [active, trigger] = ctx.trees.sub.children;
+            const onAbort = active.onAbort;
+            active.onAbort = (t) => {
+                onAbort.call(active, t);
+                t.clear();
+            };
+            trigger.onTick = (t) => {
+                if (stop === "exception") {
+                    throw new Error("boom");
+                }
+                t.interrupt();
+                return "running";
+            };
+
+            const { result } = captureConsole(() => tree.tick());
+            assert.equal(result, stop === "exception" ? "error" : "failure");
+            // The caller must not continue down the success path after the subtree stops.
+            assert.deepEqual(ctx.takeLog(), ["tick:active", "abort:active", "abort:stop"]);
+        });
+    }
+
     it("returns the status of the subtree", () => {
         for (const status of ["success", "failure", "error"] as const) {
             const { tree } = setup(probe("a", { args: { status } }));

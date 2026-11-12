@@ -801,6 +801,46 @@ describe("clear while executing", () => {
         assert.equal(tree.status, "success");
     });
 
+    for (const stop of ["interrupt", "exception"] as const) {
+        it(`preserves the ${stop} tick result when onAbort clears`, () => {
+            const { ctx, tree } = abortCalls((t) => t.clear());
+            const b = tree.root!.children[1];
+            const onTick = b.onTick;
+            b.onTick = (t) => {
+                if (stop === "exception") {
+                    throw new Error("boom");
+                }
+                t.interrupt();
+                return "running";
+            };
+
+            const { result } = captureConsole(() => tree.tick());
+            assert.equal(result, stop === "exception" ? "exception" : "interrupted");
+            assert.deepEqual(ctx.takeLog(), ["tick:A", "abort:A", "abort:B", "clear:A", "clear:B"]);
+            assert.equal(tree.status, "success");
+            assert.equal(tree.isRunning(tree.root!), false);
+            assert.equal(tree.executing, false);
+            assert.equal(tree.ticking, false);
+
+            // The cleared tree starts another run without retaining this tick's result.
+            b.onTick = onTick;
+            assert.equal(tree.tick(), "running");
+            assert.deepEqual(ctx.takeLog(), ["tick:A", "tick:B"]);
+        });
+    }
+
+    it("preserves an exception when its listener requests a clear", () => {
+        const ctx = new TestContext();
+        const tree = ctx.createTree(n("Throw", "t"));
+        ctx.on(TreeEvent.EXCEPTION, tree, () => tree.clear(), "test");
+
+        const { result, error } = captureConsole(() => tree.tick());
+        assert.equal(result, "exception");
+        assert.match(error[0], /boom/);
+        assert.equal(tree.status, "success");
+        assert.equal(tree.executing, false);
+    });
+
     it("aborts every running node once when onAbort interrupts in an interrupt", () => {
         const { ctx, tree } = abortCalls((t) => t.interrupt());
         tree.interrupt();

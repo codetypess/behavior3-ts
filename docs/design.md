@@ -92,6 +92,8 @@ onAbort(tree): void      // 节点自己清理：停止移动、移除监听和�
 | `interrupted` | 这一帧调用了 `tree.interrupt()`；在 tick 中调用 `tree.clear()` 时，这次 `tick()` 也返回它，清理之后 `status` 是 `success` |
 | `exception` | 这一帧有节点抛了异常，整棵树被中断（3.4 节）；和 `interrupted` 同时发生时以它为准 |
 
+`tick()` 的返回值表示这一次执行的结果，在执行退出、处理中止和清理之前确定。即使 `onAbort` 或异常监听里调用了 `clear()`，清理后 `tree.status` 重置为 `success`，这次 `tick()` 仍返回 `interrupted`（主动中断）或 `exception`（节点抛异常）。
+
 `TreeEvent`（通过 `context.on(event, tree, callback, tag)` 监听）：
 
 | 事件 | 时机 |

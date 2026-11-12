@@ -515,7 +515,7 @@ export class Tree<C extends Context, Owner> {
         const outerScope = this.__swapScope(this._rootBlackboard);
         const frameDepth = Node.__frameDepth;
         this._executing++;
-        let cleared = false;
+        let result: TreeStatus;
         try {
             const status: Status = root.tick(this);
 
@@ -535,8 +535,15 @@ export class Tree<C extends Context, Owner> {
 
             this._tickCount++;
         } finally {
-            // stopped by a clear or an interrupt, done below when the execution exits
-            cleared = this._pendingClear;
+            // Keep this tick's result before teardown: onAbort can request a clear, which resets
+            // the tree's status to success. An exception still takes priority over interruption.
+            if (this._tickException) {
+                result = "exception";
+            } else if (this._interrupting || this._pendingClear) {
+                result = "interrupted";
+            } else {
+                result = this._status;
+            }
             Node.__frameDepth = frameDepth;
             this._scope = outerScope;
             this.__stopScope = this._idleScope;
@@ -544,7 +551,7 @@ export class Tree<C extends Context, Owner> {
             this._exitExecution();
         }
 
-        return cleared ? "interrupted" : this._status;
+        return result;
     }
 
     private _doInterrupt() {
